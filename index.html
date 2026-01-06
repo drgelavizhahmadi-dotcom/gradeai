@@ -1,455 +1,577 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Çocuğunuzun Almanca okul raporunu anında Türkçe anlayın. İlk 10 aile için ücretsiz!">
-    <title>GradeAI - Çocuğunuzun Okul Raporunu Anlayın</title>
+    <title>EduBridge - Understand Your Child's German Report Card</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #111827;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2563EB;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav a {
+            color: #374151;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: #2563EB;
+        }
+
+        .btn-primary {
+            background: #2563EB;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            padding: 4rem 2rem;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-text h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #111827;
+        }
+
+        .hero-text p {
+            font-size: 1.25rem;
+            color: #4B5563;
+            margin-bottom: 2rem;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .cta-note {
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+
+        .hero-image {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            font-size: 4rem;
         }
-        
-        .container {
-            max-width: 600px;
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #667eea;
+
+        .trust-badges {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
             text-align: center;
         }
-        
-        .subtitle {
-            font-size: 1.3em;
-            color: #666;
-            margin-bottom: 30px;
-            text-align: center;
-            font-weight: 500;
-        }
-        
-        .problem {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 20px;
-            margin: 30px 0;
-            border-radius: 8px;
-        }
-        
-        .problem strong {
-            font-size: 1.1em;
-            color: #856404;
-        }
-        
-        .solution {
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-            padding: 20px;
-            margin: 30px 0;
-            border-radius: 8px;
-        }
-        
-        .solution strong {
-            font-size: 1.1em;
-            color: #155724;
-        }
-        
-        .features {
-            margin: 30px 0;
-        }
-        
-        .features h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        
-        .feature {
+
+        .badge {
             display: flex;
-            align-items: flex-start;
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: #6B7280;
         }
-        
-        .feature-icon {
-            font-size: 2em;
-            margin-right: 15px;
-            min-width: 50px;
+
+        /* How It Works */
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        
-        .feature-content strong {
-            display: block;
-            margin-bottom: 5px;
-            color: #667eea;
-        }
-        
-        .price {
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
             text-align: center;
-            margin: 40px 0;
-            padding: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            color: white;
+            margin-bottom: 3rem;
         }
-        
-        .price-tag {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            opacity: 0.9;
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
         }
-        
-        .price-amount {
-            font-size: 3em;
-            font-weight: bold;
-            margin: 10px 0;
+
+        .step {
+            text-align: center;
         }
-        
-        .price-note {
-            font-size: 1em;
-            opacity: 0.9;
+
+        .step-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
         }
-        
-        .cta {
-            display: inline-block;
-            background: #25D366;
-            color: white;
-            padding: 20px 50px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.3em;
-            font-weight: bold;
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2563EB;
+        }
+
+        .step-desc {
+            color: #6B7280;
+            font-size: 0.875rem;
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #E5E7EB;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-            text-align: center;
-            margin: 20px auto;
-            display: block;
         }
-        
-        .cta:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
+
+        .feature-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
         }
-        
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            color: #6B7280;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            background: #F9FAFB;
+            padding: 4rem 2rem;
+        }
+
+        .testimonial-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
         .testimonial {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .stars {
+            color: #F59E0B;
+            margin-bottom: 1rem;
+        }
+
+        .testimonial-text {
+            margin-bottom: 1rem;
             font-style: italic;
-            padding: 25px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin: 30px 0;
-            border-left: 4px solid #667eea;
+            color: #374151;
         }
-        
+
         .testimonial-author {
-            font-weight: bold;
-            color: #667eea;
-            margin-top: 10px;
-            font-style: normal;
+            font-weight: 600;
+            color: #6B7280;
+            font-size: 0.875rem;
         }
-        
-        .urgency {
-            background: #dc3545;
+
+        /* Pricing */
+        .pricing-section {
+            background: white;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: #2563EB;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.1);
+        }
+
+        .pricing-card.featured {
+            border-color: #2563EB;
+            background: linear-gradient(135deg, #EFF6FF 0%, white 100%);
+            position: relative;
+        }
+
+        .featured-badge {
+            background: #2563EB;
             color: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            margin: 20px 0;
-            animation: pulse 2s infinite;
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
         }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+
+        .price-tag {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563EB;
+            margin: 1rem 0;
         }
-        
+
+        .price-period {
+            font-size: 1rem;
+            color: #6B7280;
+            font-weight: normal;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .check {
+            color: #10B981;
+            font-weight: 700;
+        }
+
+        /* Footer */
         .footer {
+            background: #111827;
+            color: white;
+            padding: 3rem 2rem;
             text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid #ddd;
         }
-        
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         .footer a {
-            color: #667eea;
+            color: #9CA3AF;
             text-decoration: none;
+            margin: 0 1rem;
         }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 25px;
+
+        .footer a:hover {
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content {
+                grid-template-columns: 1fr;
             }
-            
-            h1 {
-                font-size: 2em;
+
+            .steps, .features, .testimonial-grid, .pricing-grid {
+                grid-template-columns: 1fr;
             }
-            
-            .subtitle {
-                font-size: 1.1em;
+
+            .trust-badges {
+                grid-template-columns: repeat(2, 1fr);
             }
-            
-            .price-amount {
-                font-size: 2.5em;
+
+            .nav {
+                display: none;
             }
-            
-            .cta {
-                padding: 15px 30px;
-                font-size: 1.1em;
+
+            .hero-text h1 {
+                font-size: 2rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">
-            <h1>🎓 GradeAI</h1>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="#" class="logo">
+                🏠 EduBridge
+            </a>
+            <nav class="nav">
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#about">About</a>
+                <a href="#" class="btn-primary">Sign Up →</a>
+            </nav>
         </div>
-        
-        <p class="subtitle">Çocuğunuzun Almanca okul raporunu anında Türkçe anlayın</p>
-        
-        <div class="problem">
-            <strong>😰 Bu tanıdık geliyor mu?</strong><br><br>
-            ✗ Çocuğunuzun okul raporu geldi ama ne yazıldığını anlamıyorsunuz<br>
-            ✗ Notlar: 3, 4, 4... Bu iyi mi, kötü mü?<br>
-            ✗ Öğretmen yorumları karmaşık Almanca<br>
-            ✗ Google Translate yardımcı olmuyor<br>
-            ✗ Kendinizi çaresiz hissediyorsunuz
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Endlich verstehen Sie das Zeugnis Ihres Kindes</h1>
+                <p>AI-powered translation & analysis in Turkish, Arabic, English</p>
+                <div class="hero-cta">
+                    <button class="btn-primary">Start Free Trial →</button>
+                    <div class="cta-note">
+                        7 days free<br>No credit card required
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                👨‍👩‍👧‍👦📱
+            </div>
         </div>
-        
-        <div class="solution">
-            <strong>✅ GradeAI ile artık çok kolay:</strong><br><br>
-            📸 Rapor kartının fotoğrafını çekin<br>
-            🇹🇷 30 saniyede Türkçe açıklama alın<br>
-            📊 Notların ne anlama geldiğini öğrenin<br>
-            🎯 Çocuğunuza nasıl yardım edeceğinizi görün<br>
-            💪 Kendinize güvenen bir ebeveyn olun
+
+        <div class="trust-badges">
+            <div class="badge">✓ Trusted by 5,000+ families</div>
+            <div class="badge">✓ Recommended by teachers</div>
+            <div class="badge">✓ GDPR Compliant</div>
+            <div class="badge">✓ Cancel anytime</div>
         </div>
-        
+    </section>
+
+    <!-- How It Works -->
+    <section class="section">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-icon">📸</div>
+                <div class="step-title">1. Take Photo</div>
+                <div class="step-desc">Take a photo of your child's report card</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">🤖</div>
+                <div class="step-title">2. AI Analyzes</div>
+                <div class="step-desc">Our AI translates and analyzes in 2 minutes</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">📱</div>
+                <div class="step-title">3. Get Results</div>
+                <div class="step-desc">Detailed explanation in your language</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">💪</div>
+                <div class="step-title">4. Take Action</div>
+                <div class="step-desc">Follow personalized improvement plans</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+        <h2 class="section-title">Key Features</h2>
         <div class="features">
-            <h2>💡 Neler Sunuyoruz:</h2>
-            
-            <div class="feature">
-                <div class="feature-icon">📱</div>
-                <div class="feature-content">
-                    <strong>WhatsApp Üzerinden</strong>
-                    Uygulama indirmeye gerek yok. WhatsApp'tan fotoğraf gönderin, hepsi bu!
-                </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3 class="feature-title">Instant Translation</h3>
+                <p class="feature-desc">Get your report card translated into Turkish, Arabic, or English in minutes</p>
             </div>
-            
-            <div class="feature">
-                <div class="feature-icon">⚡</div>
-                <div class="feature-content">
-                    <strong>30 Saniyede Analiz</strong>
-                    Hızlı ve detaylı açıklama. Günlerce beklemeden sonuç alın.
-                </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Grade Explanation</h3>
+                <p class="feature-desc">Understand the German 1-6 grading scale and what each grade really means</p>
             </div>
-            
-            <div class="feature">
-                <div class="feature-icon">👨‍👩‍👧‍👦</div>
-                <div class="feature-content">
-                    <strong>Tüm Aile İçin</strong>
-                    Birden fazla çocuğunuz mu var? Hepsi için tek abonelik yeterli.
-                </div>
-            </div>
-            
-            <div class="feature">
+            <div class="feature-card">
                 <div class="feature-icon">🎯</div>
-                <div class="feature-content">
-                    <strong>Eylem Planı</strong>
-                    Sadece çeviri değil - çocuğunuzun gelişmesi için özel öneriler.
-                </div>
+                <h3 class="feature-title">Action Plans</h3>
+                <p class="feature-desc">Get personalized recommendations based on your child's specific needs</p>
             </div>
-            
-            <div class="feature">
-                <div class="feature-icon">🔒</div>
-                <div class="feature-content">
-                    <strong>Gizli ve Güvenli</strong>
-                    Bilgileriniz tamamen gizli. Sadece siz görürsünüz.
-                </div>
+            <div class="feature-card">
+                <div class="feature-icon">📚</div>
+                <h3 class="feature-title">Study Flashcards</h3>
+                <p class="feature-desc">Auto-generate flashcards from school materials for effective studying</p>
             </div>
-        </div>
-        
-        <div class="urgency">
-            🔥 İLK 10 AİLE İÇİN TAMAMEN ÜCRETSİZ! 🔥
-        </div>
-        
-        <div class="price">
-            <div class="price-tag">Deneme Sürümü</div>
-            <div class="price-amount">₺0</div>
-            <div class="price-note">
-                İlk rapor analizi ücretsiz!<br>
-                Beğenirseniz: €9.99/ay (Aile Paketi)
+            <div class="feature-card">
+                <div class="feature-icon">🎧</div>
+                <h3 class="feature-title">Audio Lessons</h3>
+                <p class="feature-desc">Listen to explanations in your language while commuting or cooking</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h3 class="feature-title">Progress Tracking</h3>
+                <p class="feature-desc">Monitor your child's improvement over time and celebrate wins together</p>
             </div>
         </div>
-        
-        <a href="https://wa.me/YOURNUMBER?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta">
-            💬 WhatsApp'tan Hemen Başla
-        </a>
-        
-        <div class="testimonial">
-            "Yıllardır çocuğumun raporlarını anlamıyordum. GradeAI sayesinde artık ne yapacağımı biliyorum ve kendime güveniyorum!"
-            <div class="testimonial-author">— Ayşe K., Berlin</div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="section-title">What Parents Say</div>
+        <div class="testimonial-grid">
+            <div class="testimonial">
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-text">
+                    "I finally understand what teachers mean! Before EduBridge, I was always confused and worried. Now I can actually help my son with school."
+                </p>
+                <div class="testimonial-author">— Ayşe M., Turkish mother, Berlin</div>
+            </div>
+            <div class="testimonial">
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-text">
+                    "My daughter's grades improved from 4s to 3s after we started using the tips from EduBridge. The parent-teacher meeting went so much better when I understood the system!"
+                </p>
+                <div class="testimonial-author">— Hassan R., Syrian father, Hamburg</div>
+            </div>
         </div>
-        
-        <div class="testimonial">
-            "Öğretmen toplantılarında artık utanmıyorum. Ne sorulduğunu anlıyorum ve doğru cevaplar verebiliyorum."
-            <div class="testimonial-author">— Mehmet T., Hamburg</div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="section pricing-section" id="pricing">
+        <h2 class="section-title">Simple, Transparent Pricing</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="price-tag">€0<span class="price-period">/month</span></div>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> 1 report per semester</li>
+                    <li><span class="check">✓</span> Basic grade explanations</li>
+                    <li><span class="check">✓</span> Email support</li>
+                </ul>
+                <button class="btn-primary" style="width: 100%;">Sign Up</button>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="featured-badge">Most Popular</div>
+                <h3>Premium</h3>
+                <div class="price-tag">€12.99<span class="price-period">/month</span></div>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Unlimited report cards</li>
+                    <li><span class="check">✓</span> Unlimited flashcards</li>
+                    <li><span class="check">✓</span> Progress tracking</li>
+                    <li><span class="check">✓</span> Teacher templates</li>
+                    <li><span class="check">✓</span> Priority support</li>
+                </ul>
+                <button class="btn-primary" style="width: 100%;">Start Free Trial</button>
+            </div>
+
+            <div class="pricing-card">
+                <h3>Premium+</h3>
+                <div class="price-tag">€27.99<span class="price-period">/month</span></div>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Everything in Premium</li>
+                    <li><span class="check">✓</span> Audio lessons</li>
+                    <li><span class="check">✓</span> Video summaries</li>
+                    <li><span class="check">✓</span> AI study assistant</li>
+                    <li><span class="check">✓</span> Early access</li>
+                </ul>
+                <button class="btn-primary" style="width: 100%;">Start Free Trial</button>
+            </div>
         </div>
-        
-        <div style="text-align: center; margin: 40px 0;">
-            <h3 style="color: #667eea; margin-bottom: 20px;">Nasıl Çalışır?</h3>
-            <p style="font-size: 1.1em; line-height: 1.8;">
-                <strong>1.</strong> WhatsApp'tan rapor kartının fotoğrafını gönderin<br>
-                <strong>2.</strong> 30 saniye bekleyin<br>
-                <strong>3.</strong> Türkçe açıklama ve öneriler alın<br>
-                <strong>4.</strong> Çocuğunuza yardım edin!
-            </p>
+        <p style="text-align: center; margin-top: 2rem; color: #6B7280;">
+            💳 No credit card required for free trial • ↩️ Cancel anytime, no questions asked
+        </p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">🏠 EduBridge</div>
+            <p style="color: #9CA3AF; margin-bottom: 1rem;">Empowering immigrant families to understand German education</p>
+            <div>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+            <p style="margin-top: 2rem; color: #6B7280; font-size: 0.875rem;">© 2025 EduBridge. All rights reserved.</p>
         </div>
-        
-        <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 30px 0;">
-            <strong style="color: #0056b3;">❓ Sık Sorulan Sorular:</strong><br><br>
-            <strong>Sadece rapor kartları mı?</strong><br>
-            Hayır! Tüm ödevler, sınavlar ve öğretmen notları için de kullanabilirsiniz.<br><br>
-            
-            <strong>Kaç çocuk için geçerli?</strong><br>
-            Aile paketi ile tüm çocuklarınız için geçerli!<br><br>
-            
-            <strong>İptal edebilir miyim?</strong><br>
-            Evet, istediğiniz zaman iptal edebilirsiniz. Sözleşme yok.
-        </div>
-        
-        <a href="https://wa.me/YOURNUMBER?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta">
-            🚀 Şimdi Ücretsiz Deneyin
-        </a>
-        
-        <div class="footer">
-            <p>
-                <strong>GradeAI</strong> - Almanya'daki Türk ve Arap aileleri için<br>
-                WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
-                Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
-            </p>
-            <p style="margin-top: 20px; font-size: 0.85em; color: #999;">
-                © 2026 GradeAI. Tüm hakları saklıdır.
-            </p>
-        </div>
-    </div>
+    </footer>
 </body>
 </html>
-```
-
-**IMPORTANT: Replace `YOURNUMBER` with your actual WhatsApp number!**
-- Example: If your number is +49 176 12345678
-- Replace `YOURNUMBER` with `4917612345678` (no spaces, no +)
-- Appears twice in the code - replace both!
-
----
-
-### **STEP 2: Save as HTML File (1 minute)**
-
-1. **Open a text editor:**
-   - Windows: Notepad
-   - Mac: TextEdit (make sure it's in "Plain Text" mode)
-   - Or use VS Code if you have it
-
-2. **Paste the HTML code** (the one above, with your WhatsApp number)
-
-3. **Save the file as:**
-   - Filename: `index.html`
-   - Save type: "All Files" (not .txt!)
-   - Location: Desktop (easy to find)
-
----
-
-### **STEP 3: Deploy to Vercel (5 minutes)**
-
-**A. Sign up for Vercel:**
-
-1. Go to **vercel.com**
-2. Click **"Sign Up"**
-3. Use **"Continue with GitHub"** (easiest)
-   - If you don't have GitHub: Create account at github.com first
-4. Authorize Vercel to access your GitHub
-
-**B. Deploy your landing page:**
-
-1. Once logged into Vercel, click **"Add New..."** → **"Project"**
-
-2. Click **"Import Git Repository"**
-
-3. But wait - we don't have a Git repo yet! Click **"Deploy with Vercel CLI"** instead
-
-**Actually, EASIER METHOD:**
-
-1. On Vercel dashboard, look for **"Import Project"**
-2. Scroll down to **"Deploy a Template"**
-3. Look for **"Browse All Templates"**
-4. Search for "HTML"
-5. Actually... **let's use an even SIMPLER method!**
-
----
-
-### **STEP 3B: Even Easier - Direct Upload (2 minutes)**
-
-**Use Vercel's drag-and-drop:**
-
-1. Go to **vercel.com/new**
-2. You'll see options for deployment
-3. Look for **"Deploy without Git"** or **"Import Project"**
-4. Create a **new folder** on your desktop called `gradeai-landing`
-5. Put your `index.html` file inside that folder
-6. **Drag the entire folder** into Vercel
-7. Vercel will ask: "Deploy this folder?" → Click **"Yes"**
-8. Wait 30 seconds...
-9. **DONE!** You'll get a URL like `gradeai-landing.vercel.app`
-
----
-
-### **STEP 4: Connect Your Domain (3 minutes)**
-
-Now let's point gradeai.eu to your Vercel site:
-
-**A. In Vercel:**
-
-1. Go to your project dashboard
-2. Click **"Settings"** (top menu)
-3. Click **"Domains"** (left sidebar)
-4. Click **"Add Domain"**
-5. Type: `gradeai.eu`
-6. Click **"Add"**
-7. Also add: `www.gradeai.eu`
-
-**B. Vercel will show you DNS records. You'll see:**
-```
-Type: A
-Name: @
-Value: 76.76.21.21
-
-Type: CNAME
-Name: www
-Value: cname.vercel-dns.com
