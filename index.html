@@ -1,26 +1,18 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Understand your child's German school reports in Turkish, Arabic, German, Russian, Romanian, or Polish. AI-powered analysis in 30 seconds. Free for first 10 families!">
-    <title>GradeAI - Çocuğunuzun Okul Raporunu Anlayın | Understand School Reports</title>
-    
+    <meta name="description" content="Understand your child's German school reports instantly. AI-powered analysis in 7 languages. Free for first 10 families!">
+    <title>GradeAI - Understand Your Child's School Reports</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             line-height: 1.6;
             color: #2d3748;
             background: #f7fafc;
         }
-        
-        /* Language Switcher */
         .lang-bar {
             background: white;
             border-bottom: 1px solid #e2e8f0;
@@ -30,7 +22,6 @@
             z-index: 1000;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        
         .lang-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -38,22 +29,21 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        
         .logo-text {
             font-size: 1.5em;
             font-weight: bold;
             color: #667eea;
         }
-        
         .lang-switcher {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
-        
         .lang-btn {
-            padding: 6px 14px;
+            padding: 6px 12px;
             border: 2px solid #e2e8f0;
             background: white;
             color: #4a5568;
@@ -61,45 +51,32 @@
             cursor: pointer;
             font-weight: 600;
             transition: all 0.2s;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
-        
         .lang-btn:hover {
             border-color: #667eea;
             color: #667eea;
             transform: translateY(-1px);
         }
-        
         .lang-btn.active {
             background: #667eea;
             color: white;
             border-color: #667eea;
         }
-        
-        /* Content Sections */
-        .lang-content {
-            display: none;
-        }
-        
-        .lang-content.active {
-            display: block;
-        }
-        
-        /* Hero Section */
+        .lang-content { display: none; }
+        .lang-content.active { display: block; }
         .hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 80px 20px;
             text-align: center;
         }
-        
         .hero h1 {
             font-size: 2.5em;
             margin-bottom: 20px;
             font-weight: 800;
             line-height: 1.2;
         }
-        
         .hero .subtitle {
             font-size: 1.3em;
             margin-bottom: 40px;
@@ -108,27 +85,14 @@
             margin-left: auto;
             margin-right: auto;
         }
-        
-        /* Container */
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 0 20px;
         }
-        
-        /* Section Styling */
-        .section {
-            padding: 60px 20px;
-        }
-        
-        .section-white {
-            background: white;
-        }
-        
-        .section-gray {
-            background: #f7fafc;
-        }
-        
+        .section { padding: 60px 20px; }
+        .section-white { background: white; }
+        .section-gray { background: #f7fafc; }
         .section-title {
             font-size: 2em;
             font-weight: 700;
@@ -136,8 +100,6 @@
             margin-bottom: 40px;
             color: #2d3748;
         }
-        
-        /* Problem/Solution Boxes */
         .problem-box {
             background: #fff5f5;
             border-left: 4px solid #fc8181;
@@ -145,24 +107,20 @@
             margin: 30px 0;
             border-radius: 8px;
         }
-        
         .problem-box h3 {
             color: #c53030;
             font-size: 1.4em;
             margin-bottom: 15px;
         }
-        
         .problem-list {
             list-style: none;
             padding: 0;
         }
-        
         .problem-list li {
             padding: 10px 0;
             padding-left: 30px;
             position: relative;
         }
-        
         .problem-list li:before {
             content: "✗";
             position: absolute;
@@ -171,7 +129,6 @@
             font-weight: bold;
             font-size: 1.2em;
         }
-        
         .solution-box {
             background: #f0fff4;
             border-left: 4px solid #48bb78;
@@ -179,24 +136,20 @@
             margin: 30px 0;
             border-radius: 8px;
         }
-        
         .solution-box h3 {
             color: #2f855a;
             font-size: 1.4em;
             margin-bottom: 15px;
         }
-        
         .solution-list {
             list-style: none;
             padding: 0;
         }
-        
         .solution-list li {
             padding: 10px 0;
             padding-left: 30px;
             position: relative;
         }
-        
         .solution-list li:before {
             content: "✓";
             position: absolute;
@@ -205,15 +158,12 @@
             font-weight: bold;
             font-size: 1.2em;
         }
-        
-        /* Features Grid */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 30px;
             margin: 40px 0;
         }
-        
         .feature-card {
             background: white;
             padding: 30px;
@@ -221,42 +171,34 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.07);
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        
         .feature-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 15px rgba(0,0,0,0.12);
         }
-        
         .feature-icon {
             font-size: 3em;
             margin-bottom: 15px;
         }
-        
         .feature-card h3 {
             color: #667eea;
             font-size: 1.3em;
             margin-bottom: 10px;
         }
-        
         .feature-card p {
             color: #4a5568;
             line-height: 1.6;
         }
-        
-        /* How It Works */
         .steps {
             display: flex;
             flex-direction: column;
             gap: 30px;
             margin: 40px 0;
         }
-        
         .step {
             display: flex;
             align-items: flex-start;
             gap: 20px;
         }
-        
         .step-number {
             flex-shrink: 0;
             width: 50px;
@@ -270,18 +212,14 @@
             font-size: 1.5em;
             font-weight: bold;
         }
-        
         .step-content h3 {
             font-size: 1.3em;
             margin-bottom: 8px;
             color: #2d3748;
         }
-        
         .step-content p {
             color: #4a5568;
         }
-        
-        /* Pricing */
         .pricing-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -291,24 +229,20 @@
             margin: 40px 0;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
-        
         .price-tag {
             font-size: 1.2em;
             opacity: 0.9;
             margin-bottom: 10px;
         }
-        
         .price-amount {
             font-size: 4em;
             font-weight: 800;
             margin: 15px 0;
         }
-        
         .price-note {
             font-size: 1.1em;
             opacity: 0.9;
         }
-        
         .price-features {
             text-align: left;
             max-width: 400px;
@@ -316,13 +250,11 @@
             list-style: none;
             padding: 0;
         }
-        
         .price-features li {
             padding: 10px 0;
             padding-left: 30px;
             position: relative;
         }
-        
         .price-features li:before {
             content: "✓";
             position: absolute;
@@ -330,8 +262,6 @@
             font-weight: bold;
             font-size: 1.3em;
         }
-        
-        /* CTA Button */
         .cta-btn {
             display: inline-block;
             background: #25D366;
@@ -345,14 +275,11 @@
             box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
             margin: 20px 0;
         }
-        
         .cta-btn:hover {
             background: #1fb855;
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
         }
-        
-        /* Urgency Banner */
         .urgency {
             background: #feb2b2;
             color: #742a2a;
@@ -364,20 +291,16 @@
             margin: 30px 0;
             animation: pulse 2s infinite;
         }
-        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.85; }
         }
-        
-        /* Testimonials */
         .testimonials {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
             margin: 40px 0;
         }
-        
         .testimonial {
             background: white;
             padding: 30px;
@@ -385,49 +308,39 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.07);
             border-left: 4px solid #667eea;
         }
-        
         .testimonial-text {
             font-style: italic;
             color: #4a5568;
             margin-bottom: 15px;
             line-height: 1.7;
         }
-        
         .testimonial-author {
             font-weight: 700;
             color: #667eea;
         }
-        
         .testimonial-location {
             color: #718096;
             font-size: 0.9em;
         }
-        
-        /* FAQ */
         .faq {
             background: #edf2f7;
             padding: 30px;
             border-radius: 12px;
             margin: 20px 0;
         }
-        
         .faq-item {
             margin: 20px 0;
         }
-        
         .faq-question {
             font-weight: 700;
             color: #2d3748;
             font-size: 1.1em;
             margin-bottom: 8px;
         }
-        
         .faq-answer {
             color: #4a5568;
             line-height: 1.7;
         }
-        
-        /* Stats */
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -435,122 +348,327 @@
             margin: 40px 0;
             text-align: center;
         }
-        
         .stat {
             padding: 30px;
         }
-        
         .stat-number {
             font-size: 3em;
             font-weight: 800;
             color: #667eea;
             margin-bottom: 10px;
         }
-        
         .stat-label {
             color: #4a5568;
             font-size: 1.1em;
         }
-        
-        /* Footer */
         .footer {
             background: #2d3748;
             color: white;
             padding: 40px 20px;
             text-align: center;
         }
-        
         .footer a {
             color: #90cdf4;
             text-decoration: none;
         }
-        
         .footer a:hover {
             text-decoration: underline;
         }
-        
-        /* RTL Support for Arabic */
         .rtl {
             direction: rtl;
             text-align: right;
         }
-        
         .rtl .step {
             flex-direction: row-reverse;
         }
-        
         .rtl .problem-list li,
         .rtl .solution-list li,
         .rtl .price-features li {
             padding-left: 0;
             padding-right: 30px;
         }
-        
         .rtl .problem-list li:before,
         .rtl .solution-list li:before,
         .rtl .price-features li:before {
             left: auto;
             right: 0;
         }
-        
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2em;
-            }
-            
-            .hero .subtitle {
-                font-size: 1.1em;
-            }
-            
-            .section-title {
-                font-size: 1.6em;
-            }
-            
-            .price-amount {
-                font-size: 3em;
-            }
-            
-            .cta-btn {
-                padding: 18px 40px;
-                font-size: 1.2em;
-            }
-            
-            .lang-container {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .features-grid,
-            .testimonials {
-                grid-template-columns: 1fr;
-            }
+            .hero h1 { font-size: 2em; }
+            .hero .subtitle { font-size: 1.1em; }
+            .section-title { font-size: 1.6em; }
+            .price-amount { font-size: 3em; }
+            .cta-btn { padding: 18px 40px; font-size: 1.2em; }
+            .lang-container { justify-content: center; }
+            .features-grid, .testimonials { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <!-- Language Bar -->
     <div class="lang-bar">
         <div class="lang-container">
             <div class="logo-text">🎓 GradeAI</div>
             <div class="lang-switcher">
-                <button class="lang-btn active" onclick="switchLanguage('tr')" data-lang="tr">🇹🇷 Türkçe</button>
-                <button class="lang-btn" onclick="switchLanguage('ar')" data-lang="ar">🇸🇦 العربية</button>
-                <button class="lang-btn" onclick="switchLanguage('de')" data-lang="de">🇩🇪 Deutsch</button>
-                <button class="lang-btn" onclick="switchLanguage('ru')" data-lang="ru">🇷🇺 Русский</button>
-                <button class="lang-btn" onclick="switchLanguage('ro')" data-lang="ro">🇷🇴 Română</button>
-                <button class="lang-btn" onclick="switchLanguage('pl')" data-lang="pl">🇵🇱 Polski</button>
+                <button class="lang-btn active" onclick="switchLanguage('en')" data-lang="en">🇬🇧 EN</button>
+                <button class="lang-btn" onclick="switchLanguage('tr')" data-lang="tr">🇹🇷 TR</button>
+                <button class="lang-btn" onclick="switchLanguage('ar')" data-lang="ar">🇸🇦 AR</button>
+                <button class="lang-btn" onclick="switchLanguage('de')" data-lang="de">🇩🇪 DE</button>
+                <button class="lang-btn" onclick="switchLanguage('ru')" data-lang="ru">🇷🇺 RU</button>
+                <button class="lang-btn" onclick="switchLanguage('ro')" data-lang="ro">🇷🇴 RO</button>
+                <button class="lang-btn" onclick="switchLanguage('pl')" data-lang="pl">🇵🇱 PL</button>
             </div>
         </div>
-    </div>
+    </div><!-- ENGLISH CONTENT -->
+    <div class="lang-content active" id="content-en">
+        <div class="hero">
+            <div class="container">
+                <h1>Finally Understand Your<br>Child's School Reports!</h1>
+                <p class="subtitle">Translate and analyze German school reports in 30 seconds. AI-powered insights to support your child's educational future.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Hello%20GradeAI!%20I%20want%20to%20understand%20my%20child's%20school%20report." class="cta-btn">
+                    💬 Start Free
+                </a>
+            </div>
+        </div>
 
-    <!-- TURKISH CONTENT -->
-    <div class="lang-content active" id="content-tr">
+        <div class="section section-white">
+            <div class="container">
+                <div class="problem-box">
+                    <h3>😰 Do These Feelings Sound Familiar?</h3>
+                    <ul class="problem-list">
+                        <li><strong>Helplessness:</strong> Your child's report is in your hands but you have no idea what it says or if it's good or bad</li>
+                        <li><strong>Embarrassment:</strong> At parent-teacher meetings, the teacher asks questions and you don't understand</li>
+                        <li><strong>Anxiety:</strong> Will your child go to Hauptschule? What does that even mean? How can you prevent it?</li>
+                        <li><strong>Guilt:</strong> You want to help your child but don't know how</li>
+                        <li><strong>Isolation:</strong> German parents understand the system, you feel like an outsider</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h3>✨ With GradeAI, Everything Changes!</h3>
+                    <ul class="solution-list">
+                        <li><strong>You Understand:</strong> Every grade, every comment clearly explained in your language</li>
+                        <li><strong>You're Confident:</strong> You go to parent-teacher meetings prepared</li>
+                        <li><strong>You Prevent Problems:</strong> You see Hauptschule risk early and prevent it</li>
+                        <li><strong>You Help Effectively:</strong> You support your child with specific, actionable advice</li>
+                        <li><strong>You're Empowered:</strong> Now you understand the system, you're in control</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">🚀 How It Works</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Take a Photo of the Report Card</h3>
+                            <p>Send it to us via WhatsApp. No app download needed, your WhatsApp is enough!</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Wait 30 Seconds</h3>
+                            <p>Our AI technology analyzes the report. Grades, comments, risk assessment...</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Receive Detailed Analysis</h3>
+                            <p>Everything in clear language: meaning of grades, teacher comments, strengths/weaknesses, Hauptschule risk</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Implement Your Action Plan</h3>
+                            <p>Personalized recommendations: which subjects need focus, what help is needed, how to talk with teachers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💎 Why GradeAI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Not Just Translation</h3>
+                        <p>Google Translate does word-for-word. We understand the German education system and provide context-appropriate explanations.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Instant Results</h3>
+                        <p>Full analysis in 30 seconds. Don't wait days for a translator appointment, know now.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                        <h3>For the Whole Family</h3>
+                        <p>Have 3 children? One subscription for everyone. Unlimited report analyses.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Education Expert</h3>
+                        <p>Not just language, we know the German education system too. We understand the Hauptschule/Gymnasium difference.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Private & Secure</h3>
+                        <p>Your child's information is completely confidential. We never share it, only you see it.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💪</div>
+                        <h3>Action Plan</h3>
+                        <p>Instead of "child needs to study more," we say "focus on fractions in Math for 2 weeks."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <div class="urgency">
+                    🔥 COMPLETELY FREE FOR FIRST 10 FAMILIES! 🔥
+                </div>
+
+                <div class="pricing-card">
+                    <div class="price-tag">Trial Version</div>
+                    <div class="price-amount">€0</div>
+                    <div class="price-note">First report analysis completely free!</div>
+                    <div class="price-note" style="margin-top: 20px;">Then only <strong>€9.99/month</strong> (Family Package)</div>
+                    
+                    <ul class="price-features">
+                        <li>Unlimited report analyses</li>
+                        <li>Valid for all your children</li>
+                        <li>Results in 30 seconds</li>
+                        <li>Hauptschule risk assessment</li>
+                        <li>Personalized action plan</li>
+                        <li>WhatsApp support</li>
+                        <li>Cancel anytime</li>
+                    </ul>
+
+                    <a href="https://wa.me/YOURNUMBER?text=Hello%20GradeAI!%20I%20want%20to%20understand%20my%20child's%20school%20report." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                        💬 Start Free Now
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💬 What Families Say</h2>
+                <div class="testimonials">
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "10 years in Germany and I never understood school reports. Thanks to GradeAI I learned my son was struggling in Math and at risk for Hauptschule. We took action immediately, now his grades are up. Thank you!"
+                        </div>
+                        <div class="testimonial-author">Ayşe K.</div>
+                        <div class="testimonial-location">Berlin, mother of 2</div>
+                    </div>
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "I was always afraid of teacher meetings. Now I prepare beforehand with GradeAI, I know what they'll ask. I'm confident now and teachers take me more seriously."
+                        </div>
+                        <div class="testimonial-author">Mehmet T.</div>
+                        <div class="testimonial-location">Hamburg, father of 3</div>
+                    </div>
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "My daughter was in 4th grade and I didn't know if she could go to Gymnasium. GradeAI gave me detailed analysis each semester, showed which grades we needed to improve. Result: Accepted to Gymnasium! 🎉"
+                        </div>
+                        <div class="testimonial-author">Fatma Y.</div>
+                        <div class="testimonial-location">München, mother of 1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">❓ Frequently Asked Questions</h2>
+                <div class="faq">
+                    <div class="faq-item">
+                        <div class="faq-question">Only report cards?</div>
+                        <div class="faq-answer">No! All homework, tests, teacher notes, parent letters - any school document.</div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">For how many children?</div>
+                        <div class="faq-answer">Family package valid for all your children unlimited. 1 child, 3 children, 5 children - doesn't matter, one price.</div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">Is it secure? Is our information shared?</div>
+                        <div class="faq-answer">Completely secure! Your child's information is encrypted and definitely not shared with anyone. Only you see it.</div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">What's the difference from Google Translate?</div>
+                        <div class="faq-answer">Google just translates word-for-word. We know the German education system: "Befriedigend" isn't just "satisfactory," it actually means a "middle" grade and in 4th grade a 3.0 average isn't enough for Gymnasium.</div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">Can I cancel?</div>
+                        <div class="faq-answer">Yes, you can cancel anytime. No contract, no commitment. Just write "Cancel" via WhatsApp.</div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">How is payment made?</div>
+                        <div class="faq-answer">You can pay by credit card, PayPal or bank transfer. We use secure payment infrastructure.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number">800K</div>
+                        <div class="stat-label">Turkish/Arab Families<br>in Germany</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">48%</div>
+                        <div class="stat-label">Turkish Children<br>in Hauptschule</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">30 sec</div>
+                        <div class="stat-label">Analysis<br>Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero" style="padding: 60px 20px;">
+            <div class="container">
+                <h2 style="font-size: 2em; margin-bottom: 20px;">Take Action Today<br>For Your Child's Future!</h2>
+                <p style="font-size: 1.2em; margin-bottom: 30px;">Completely free for first 10 families. Then only €9.99/month.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Hello%20GradeAI!%20I%20want%20to%20understand%20my%20child's%20school%20report." class="cta-btn">
+                    💬 Start Free Now
+                </a>
+                <p style="font-size: 0.9em; margin-top: 20px; opacity: 0.9;">⚡ Results in 30 seconds | 🔒 Secure & private | ❌ Cancel anytime</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="container">
+                <p><strong>GradeAI</strong> - For immigrant families in Germany</p>
+                <p style="margin: 15px 0;">
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
+                    Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
+                </p>
+                <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
+                    © 2026 GradeAI. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div><!-- TURKISH CONTENT -->
+    <div class="lang-content" id="content-tr">
         <div class="hero">
             <div class="container">
                 <h1>Çocuğunuzun Okul Raporunu<br>Artık Anlayın!</h1>
                 <p class="subtitle">Almanca okul raporlarını 30 saniyede Türkçe'ye çevirin ve tam olarak anlayın. Yapay zeka destekli analiz ile çocuğunuzun eğitim hayatında yanında olun.</p>
-                <a href="https://wa.me/4917657660617?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn">
+                <a href="https://wa.me/YOURNUMBER?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn">
                     💬 Ücretsiz Başlayın
                 </a>
             </div>
@@ -678,7 +796,7 @@
                         <li>İstediğiniz zaman iptal</li>
                     </ul>
 
-                    <a href="https://wa.me/4917657660617?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                    <a href="https://wa.me/YOURNUMBER?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
                         💬 Şimdi Ücretsiz Başla
                     </a>
                 </div>
@@ -769,7 +887,7 @@
             <div class="container">
                 <h2 style="font-size: 2em; margin-bottom: 20px;">Çocuğunuzun Geleceği İçin<br>Bugün Harekete Geçin!</h2>
                 <p style="font-size: 1.2em; margin-bottom: 30px;">İlk 10 aile için tamamen ücretsiz. Sonra sadece €9.99/ay.</p>
-                <a href="https://wa.me/4917657660617?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn">
+                <a href="https://wa.me/YOURNUMBER?text=Merhaba%20GradeAI!%20Çocuğumun%20okul%20raporunu%20anlamak%20istiyorum." class="cta-btn">
                     💬 Hemen Ücretsiz Başla
                 </a>
                 <p style="font-size: 0.9em; margin-top: 20px; opacity: 0.9;">⚡ 30 saniyede sonuç | 🔒 Güvenli ve gizli | ❌ İstediğiniz zaman iptal</p>
@@ -780,7 +898,7 @@
             <div class="container">
                 <p><strong>GradeAI</strong> - Almanya'daki göçmen aileler için</p>
                 <p style="margin: 15px 0;">
-                    WhatsApp: <a href="https://wa.me/4917657660617">+49 176 576 60617</a><br>
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
                     Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
                 </p>
                 <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
@@ -796,7 +914,7 @@
             <div class="container">
                 <h1>افهم تقرير مدرسة طفلك<br>الآن!</h1>
                 <p class="subtitle">ترجم وافهم تقارير المدرسة الألمانية إلى العربية في 30 ثانية. تحليل مدعوم بالذكاء الاصطناعي لدعم مستقبل طفلك التعليمي.</p>
-                <a href="https://wa.me/4917657660617?text=مرحباً%20GradeAI!%20أريد%20فهم%20تقرير%20مدرسة%20طفلي." class="cta-btn">
+                <a href="https://wa.me/YOURNUMBER?text=مرحباً%20GradeAI!%20أريد%20فهم%20تقرير%20مدرسة%20طفلي." class="cta-btn">
                     💬 ابدأ مجاناً
                 </a>
             </div>
@@ -924,7 +1042,7 @@
                         <li>إلغاء في أي وقت</li>
                     </ul>
 
-                    <a href="https://wa.me/4917657660617?text=مرحباً%20GradeAI!%20أريد%20فهم%20تقرير%20مدرسة%20طفلي." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                    <a href="https://wa.me/YOURNUMBER?text=مرحباً%20GradeAI!%20أريد%20فهم%20تقرير%20مدرسة%20طفلي." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
                         💬 ابدأ مجاناً الآن
                     </a>
                 </div>
@@ -960,73 +1078,11 @@
             </div>
         </div>
 
-        <div class="section section-gray">
-            <div class="container">
-                <h2 class="section-title">❓ أسئلة شائعة</h2>
-                <div class="faq">
-                    <div class="faq-item">
-                        <div class="faq-question">فقط بطاقات التقرير؟</div>
-                        <div class="faq-answer">لا! جميع الواجبات، الامتحانات، ملاحظات المعلم، رسائل الآباء - أي وثيقة مدرسية.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">لكم طفل صالح؟</div>
-                        <div class="faq-answer">الباقة العائلية صالحة لجميع أطفالك بدون حدود. طفل واحد، 3 أطفال، 5 أطفال - لا يهم، سعر واحد.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">هل هو آمن؟ هل تُشارك معلوماتنا؟</div>
-                        <div class="faq-answer">آمن تماماً! معلومات طفلك مشفرة وبالتأكيد لا نشاركها مع أحد. فقط أنت تراها.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">ما الفرق عن Google Translate؟</div>
-                        <div class="faq-answer">Google يترجم كلمة بكلمة فقط. نحن نعرف نظام التعليم الألماني: "Befriedigend" ليس فقط "مرضٍ"، بل يعني درجة "متوسطة" وفي الصف الرابع معدل 3 غير كافٍ لـ Gymnasium.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">هل يمكنني الإلغاء؟</div>
-                        <div class="faq-answer">نعم، يمكنك الإلغاء في أي وقت. لا يوجد عقد، لا التزام. فقط اكتب "إلغاء" عبر WhatsApp.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">كيف يتم الدفع؟</div>
-                        <div class="faq-answer">يمكنك الدفع ببطاقة الائتمان، PayPal أو التحويل المصرفي. نستخدم بنية دفع آمنة.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section section-white">
-            <div class="container">
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-number">800K</div>
-                        <div class="stat-label">عائلة تركية/عربية<br>في ألمانيا</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">48%</div>
-                        <div class="stat-label">الأطفال الأتراك<br>في Hauptschule</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">30 ث</div>
-                        <div class="stat-label">وقت<br>التحليل</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="hero" style="padding: 60px 20px;">
-            <div class="container">
-                <h2 style="font-size: 2em; margin-bottom: 20px;">اتخذ إجراءً اليوم<br>من أجل مستقبل طفلك!</h2>
-                <p style="font-size: 1.2em; margin-bottom: 30px;">مجاني تماماً لأول 10 عائلات. بعد ذلك فقط €9.99/شهر.</p>
-                <a href="https://wa.me/4917657660617?text=مرحباً%20GradeAI!%20أريد%20فهم%20تقرير%20مدرسة%20طفلي." class="cta-btn">
-                    💬 ابدأ مجاناً الآن
-                </a>
-                <p style="font-size: 0.9em; margin-top: 20px; opacity: 0.9;">⚡ نتيجة في 30 ثانية | 🔒 آمن وخاص | ❌ إلغاء في أي وقت</p>
-            </div>
-        </div>
-
         <div class="footer">
             <div class="container">
                 <p><strong>GradeAI</strong> - للعائلات المهاجرة في ألمانيا</p>
                 <p style="margin: 15px 0;">
-                    WhatsApp: <a href="https://wa.me/4917657660617" dir="ltr">+49 176 576 60617</a><br>
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER" dir="ltr">+49 XXX XXX XXXX</a><br>
                     Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
                 </p>
                 <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
@@ -1034,31 +1090,152 @@
                 </p>
             </div>
         </div>
-    </div>
-
-    <!-- Add German, Russian, Romanian, Polish content here following the same pattern -->
-    <!-- For brevity, I'll add just German. You can copy the pattern for the other 3 languages -->
-
-    <!-- GERMAN CONTENT -->
+    </div><!-- GERMAN CONTENT -->
     <div class="lang-content" id="content-de">
         <div class="hero">
             <div class="container">
-                <h1>Verstehen Sie das Schulzeugnis<br>Ihres Kindes!</h1>
-                <p class="subtitle">Übersetzen und verstehen Sie deutsche Schulzeugnisse in 30 Sekunden. KI-gestützte Analyse zur Unterstützung der Bildungszukunft Ihres Kindes.</p>
-                <a href="https://wa.me/4917657660617?text=Hallo%20GradeAI!%20Ich%20möchte%20das%20Zeugnis%20meines%20Kindes%20verstehen." class="cta-btn">
+                <h1>Verstehen Sie endlich<br>das Schulzeugnis Ihres Kindes!</h1>
+                <p class="subtitle">Übersetzen und analysieren Sie deutsche Schulzeugnisse in 30 Sekunden. KI-gestützte Einblicke zur Unterstützung der Bildungszukunft Ihres Kindes.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Hallo%20GradeAI!%20Ich%20möchte%20das%20Zeugnis%20meines%20Kindes%20verstehen." class="cta-btn">
                     💬 Kostenlos starten
                 </a>
             </div>
         </div>
 
-        <!-- Continue with German content following Turkish/Arabic pattern -->
-        <!-- Due to length limits, I'm showing the structure - you'll copy and translate the sections -->
+        <div class="section section-white">
+            <div class="container">
+                <div class="problem-box">
+                    <h3>😰 Kommen Ihnen diese Gefühle bekannt vor?</h3>
+                    <ul class="problem-list">
+                        <li><strong>Hilflosigkeit:</strong> Das Zeugnis Ihres Kindes liegt vor Ihnen, aber Sie wissen nicht, was es bedeutet</li>
+                        <li><strong>Verlegenheit:</strong> Beim Elterngespräch stellt der Lehrer Fragen und Sie verstehen nicht</li>
+                        <li><strong>Angst:</strong> Wird Ihr Kind auf die Hauptschule gehen? Was bedeutet das? Wie können Sie es verhindern?</li>
+                        <li><strong>Schuldgefühle:</strong> Sie möchten Ihrem Kind helfen, wissen aber nicht wie</li>
+                        <li><strong>Isolation:</strong> Deutsche Eltern verstehen das System, Sie fühlen sich ausgeschlossen</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h3>✨ Mit GradeAI ändert sich alles!</h3>
+                    <ul class="solution-list">
+                        <li><strong>Sie verstehen:</strong> Jede Note, jeder Kommentar klar in Ihrer Sprache erklärt</li>
+                        <li><strong>Sie sind selbstsicher:</strong> Sie gehen vorbereitet zu Elterngesprächen</li>
+                        <li><strong>Sie verhindern Probleme:</strong> Sie erkennen Hauptschule-Risiko früh und verhindern es</li>
+                        <li><strong>Sie helfen effektiv:</strong> Sie unterstützen Ihr Kind mit konkreten, umsetzbaren Ratschlägen</li>
+                        <li><strong>Sie sind ermächtigt:</strong> Jetzt verstehen Sie das System, Sie haben die Kontrolle</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">🚀 So funktioniert es</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Fotografieren Sie das Zeugnis</h3>
+                            <p>Senden Sie es uns per WhatsApp. Keine App-Installation nötig, WhatsApp genügt!</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Warten Sie 30 Sekunden</h3>
+                            <p>Unsere KI-Technologie analysiert das Zeugnis. Noten, Kommentare, Risikobewertung...</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Erhalten Sie detaillierte Analyse</h3>
+                            <p>Alles in klarer Sprache: Bedeutung der Noten, Lehrerkommentare, Stärken/Schwächen, Hauptschule-Risiko</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Setzen Sie Ihren Aktionsplan um</h3>
+                            <p>Personalisierte Empfehlungen: welche Fächer Fokus brauchen, welche Hilfe nötig ist, wie man mit Lehrern spricht</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💎 Warum GradeAI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Nicht nur Übersetzung</h3>
+                        <p>Google Translate übersetzt Wort für Wort. Wir verstehen das deutsche Bildungssystem und geben kontextgerechte Erklärungen.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Sofortige Ergebnisse</h3>
+                        <p>Vollständige Analyse in 30 Sekunden. Nicht tagelang auf Übersetzer-Termin warten.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                        <h3>Für die ganze Familie</h3>
+                        <p>3 Kinder? Ein Abonnement für alle. Unbegrenzte Zeugnisanalysen.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Bildungsexperte</h3>
+                        <p>Nicht nur Sprache, wir kennen auch das deutsche Bildungssystem. Wir verstehen den Hauptschule/Gymnasium-Unterschied.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Privat & Sicher</h3>
+                        <p>Die Informationen Ihres Kindes sind völlig vertraulich. Wir teilen sie nie, nur Sie sehen sie.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💪</div>
+                        <h3>Aktionsplan</h3>
+                        <p>Statt "Kind muss mehr lernen" sagen wir "2 Wochen auf Brüche in Mathe konzentrieren".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <div class="urgency">
+                    🔥 VÖLLIG KOSTENLOS FÜR DIE ERSTEN 10 FAMILIEN! 🔥
+                </div>
+
+                <div class="pricing-card">
+                    <div class="price-tag">Testversion</div>
+                    <div class="price-amount">€0</div>
+                    <div class="price-note">Erste Zeugnisanalyse völlig kostenlos!</div>
+                    <div class="price-note" style="margin-top: 20px;">Dann nur <strong>€9.99/Monat</strong> (Familienpaket)</div>
+                    
+                    <ul class="price-features">
+                        <li>Unbegrenzte Zeugnisanalysen</li>
+                        <li>Gültig für alle Ihre Kinder</li>
+                        <li>Ergebnisse in 30 Sekunden</li>
+                        <li>Hauptschule-Risikobewertung</li>
+                        <li>Personalisierter Aktionsplan</li>
+                        <li>WhatsApp-Support</li>
+                        <li>Jederzeit kündbar</li>
+                    </ul>
+
+                    <a href="https://wa.me/YOURNUMBER?text=Hallo%20GradeAI!%20Ich%20möchte%20das%20Zeugnis%20meines%20Kindes%20verstehen." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                        💬 Jetzt kostenlos starten
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <div class="footer">
             <div class="container">
                 <p><strong>GradeAI</strong> - Für Einwandererfamilien in Deutschland</p>
                 <p style="margin: 15px 0;">
-                    WhatsApp: <a href="https://wa.me/4917657660617">+49 176 576 60617</a><br>
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
                     Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
                 </p>
                 <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
@@ -1068,52 +1245,496 @@
         </div>
     </div>
 
-    <!-- RUSSIAN, ROMANIAN, POLISH content would follow here -->
-    <!-- I'll create them if you need, but due to length I'm showing the structure -->
+    <!-- RUSSIAN CONTENT -->
+    <div class="lang-content" id="content-ru">
+        <div class="hero">
+            <div class="container">
+                <h1>Наконец поймите<br>школьный табель вашего ребенка!</h1>
+                <p class="subtitle">Переведите и проанализируйте немецкие школьные табели за 30 секунд. Анализ на основе ИИ для поддержки образовательного будущего вашего ребенка.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Привет%20GradeAI!%20Я%20хочу%20понять%20школьный%20табель%20моего%20ребенка." class="cta-btn">
+                    💬 Начать бесплатно
+                </a>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <div class="problem-box">
+                    <h3>😰 Эти чувства вам знакомы?</h3>
+                    <ul class="problem-list">
+                        <li><strong>Беспомощность:</strong> Табель вашего ребенка у вас в руках, но вы не понимаете, что там написано</li>
+                        <li><strong>Смущение:</strong> На родительском собрании учитель задает вопросы, а вы не понимаете</li>
+                        <li><strong>Тревога:</strong> Пойдет ли ваш ребенок в Hauptschule? Что это значит? Как это предотвратить?</li>
+                        <li><strong>Вина:</strong> Вы хотите помочь ребенку, но не знаете как</li>
+                        <li><strong>Изоляция:</strong> Немецкие родители понимают систему, вы чувствуете себя чужим</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h3>✨ С GradeAI все меняется!</h3>
+                    <ul class="solution-list">
+                        <li><strong>Вы понимаете:</strong> Каждая оценка, каждый комментарий четко объяснены на вашем языке</li>
+                        <li><strong>Вы уверены:</strong> Вы идете на родительские собрания подготовленными</li>
+                        <li><strong>Вы предотвращаете проблемы:</strong> Вы видите риск Hauptschule рано и предотвращаете его</li>
+                        <li><strong>Вы помогаете эффективно:</strong> Вы поддерживаете ребенка конкретными, действенными советами</li>
+                        <li><strong>Вы контролируете:</strong> Теперь вы понимаете систему, вы управляете ситуацией</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">🚀 Как это работает</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Сфотографируйте табель</h3>
+                            <p>Отправьте нам через WhatsApp. Не нужно скачивать приложение, WhatsApp достаточно!</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Подождите 30 секунд</h3>
+                            <p>Наша ИИ-технология анализирует табель. Оценки, комментарии, оценка рисков...</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Получите подробный анализ</h3>
+                            <p>Все на понятном языке: значение оценок, комментарии учителя, сильные/слабые стороны, риск Hauptschule</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Реализуйте план действий</h3>
+                            <p>Персонализированные рекомендации: какие предметы требуют внимания, какая помощь нужна, как говорить с учителями</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💎 Почему GradeAI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Не просто перевод</h3>
+                        <p>Google Translate переводит слово в слово. Мы понимаем немецкую образовательную систему и даем контекстные объяснения.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Мгновенные результаты</h3>
+                        <p>Полный анализ за 30 секунд. Не ждите дни на запись к переводчику.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                        <h3>Для всей семьи</h3>
+                        <p>Есть 3 детей? Одна подписка для всех. Неограниченные анализы табелей.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Эксперт по образованию</h3>
+                        <p>Не только язык, мы знаем немецкую образовательную систему. Мы понимаем разницу Hauptschule/Gymnasium.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Конфиденциально и безопасно</h3>
+                        <p>Информация о вашем ребенке полностью конфиденциальна. Мы никогда не делимся ею, только вы ее видите.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💪</div>
+                        <h3>План действий</h3>
+                        <p>Вместо "ребенок должен больше учиться" мы говорим "сосредоточьтесь на дробях в математике на 2 недели".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <div class="urgency">
+                    🔥 СОВЕРШЕННО БЕСПЛАТНО ДЛЯ ПЕРВЫХ 10 СЕМЕЙ! 🔥
+                </div>
+
+                <div class="pricing-card">
+                    <div class="price-tag">Пробная версия</div>
+                    <div class="price-amount">€0</div>
+                    <div class="price-note">Первый анализ табеля совершенно бесплатно!</div>
+                    <div class="price-note" style="margin-top: 20px;">Затем только <strong>€9.99/месяц</strong> (Семейный пакет)</div>
+                    
+                    <ul class="price-features">
+                        <li>Неограниченные анализы табелей</li>
+                        <li>Действительно для всех ваших детей</li>
+                        <li>Результаты за 30 секунд</li>
+                        <li>Оценка риска Hauptschule</li>
+                        <li>Персональный план действий</li>
+                        <li>Поддержка WhatsApp</li>
+                        <li>Отмена в любое время</li>
+                    </ul>
+
+                    <a href="https://wa.me/YOURNUMBER?text=Привет%20GradeAI!%20Я%20хочу%20понять%20школьный%20табель%20моего%20ребенка." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                        💬 Начать бесплатно сейчас
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="container">
+                <p><strong>GradeAI</strong> - Для семей иммигрантов в Германии</p>
+                <p style="margin: 15px 0;">
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
+                    Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
+                </p>
+                <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
+                    © 2026 GradeAI. Все права защищены.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROMANIAN CONTENT -->
+    <div class="lang-content" id="content-ro">
+        <div class="hero">
+            <div class="container">
+                <h1>Înțelegeți în sfârșit<br>catalogul școlar al copilului!</h1>
+                <p class="subtitle">Traduceți și analizați cataloagele școlare germane în 30 de secunde. Analiză bazată pe AI pentru a sprijini viitorul educațional al copilului.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Bună%20GradeAI!%20Vreau%20să%20înțeleg%20catalogul%20școlar%20al%20copilului%20meu." class="cta-btn">
+                    💬 Începe gratuit
+                </a>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <div class="problem-box">
+                    <h3>😰 Vă sună cunoscute aceste sentimente?</h3>
+                    <ul class="problem-list">
+                        <li><strong>Neputință:</strong> Catalogul copilului este în mâinile dvs. dar nu știți ce scrie acolo</li>
+                        <li><strong>Jenă:</strong> La întâlnirea cu părinții, profesorul pune întrebări și nu înțelegeți</li>
+                        <li><strong>Anxietate:</strong> Va merge copilul la Hauptschule? Ce înseamnă asta? Cum puteți preveni?</li>
+                        <li><strong>Vinovăție:</strong> Vreți să ajutați copilul dar nu știți cum</li>
+                        <li><strong>Izolare:</strong> Părinții germani înțeleg sistemul, vă simțiți exclus</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h3>✨ Cu GradeAI totul se schimbă!</h3>
+                    <ul class="solution-list">
+                        <li><strong>Înțelegeți:</strong> Fiecare notă, fiecare comentariu explicat clar în limba dvs.</li>
+                        <li><strong>Aveți încredere:</strong> Mergeți pregătit la întâlnirile cu părinții</li>
+                        <li><strong>Preveniți probleme:</strong> Vedeți riscul Hauptschule devreme și îl preveniți</li>
+                        <li><strong>Ajutați eficient:</strong> Sprijiniți copilul cu sfaturi concrete și practice</li>
+                        <li><strong>Aveți controlul:</strong> Acum înțelegeți sistemul, aveți controlul</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">🚀 Cum funcționează</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Fotografiați catalogul</h3>
+                            <p>Trimiteți-l prin WhatsApp. Nu e nevoie să descărcați aplicație, WhatsApp este suficient!</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Așteptați 30 de secunde</h3>
+                            <p>Tehnologia noastră AI analizează catalogul. Note, comentarii, evaluare risc...</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Primiți analiză detaliată</h3>
+                            <p>Totul în limbaj clar: semnificația notelor, comentarii profesor, puncte forte/slabe, risc Hauptschule</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Implementați planul de acțiune</h3>
+                            <p>Recomandări personalizate: ce materii necesită atenție, ce ajutor este necesar, cum să vorbiți cu profesorii</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💎 De ce GradeAI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Nu doar traducere</h3>
+                        <p>Google Translate traduce cuvânt cu cuvânt. Noi înțelegem sistemul educațional german și oferim explicații contextuale.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Rezultate instant</h3>
+                        <p>Analiză completă în 30 de secunde. Nu așteptați zile pentru programare la traducător.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                        <h3>Pentru toată familia</h3>
+                        <p>Aveți 3 copii? Un abonament pentru toți. Analize nelimitate de cataloage.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Expert în educație</h3>
+                        <p>Nu doar limba, cunoaștem și sistemul educațional german. Înțelegem diferența Hauptschule/Gymnasium.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Privat și sigur</h3>
+                        <p>Informațiile copilului sunt complet confidențiale. Nu le împărtășim niciodată, doar dvs. le vedeți.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💪</div>
+                        <h3>Plan de acțiune</h3>
+                        <p>În loc de "copilul trebuie să studieze mai mult" spunem "concentrați-vă pe fracții la matematică 2 săptămâni".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <div class="urgency">
+                    🔥 COMPLET GRATUIT PENTRU PRIMELE 10 FAMILII! 🔥
+                </div>
+
+                <div class="pricing-card">
+                    <div class="price-tag">Versiune de probă</div>
+                    <div class="price-amount">€0</div>
+                    <div class="price-note">Prima analiză complet gratuită!</div>
+                    <div class="price-note" style="margin-top: 20px;">Apoi doar <strong>€9.99/lună</strong> (Pachet familial)</div>
+                    
+                    <ul class="price-features">
+                        <li>Analize nelimitate de cataloage</li>
+                        <li>Valid pentru toți copiii dvs.</li>
+                        <li>Rezultate în 30 de secunde</li>
+                        <li>Evaluare risc Hauptschule</li>
+                        <li>Plan de acțiune personalizat</li>
+                        <li>Suport WhatsApp</li>
+                        <li>Anulare oricând</li>
+                    </ul>
+
+                    <a href="https://wa.me/YOURNUMBER?text=Bună%20GradeAI!%20Vreau%20să%20înțeleg%20catalogul%20școlar%20al%20copilului%20meu." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                        💬 Începe gratuit acum
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="container">
+                <p><strong>GradeAI</strong> - Pentru familii de imigranți în Germania</p>
+                <p style="margin: 15px 0;">
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
+                    Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
+                </p>
+                <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
+                    © 2026 GradeAI. Toate drepturile rezervate.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- POLISH CONTENT -->
+    <div class="lang-content" id="content-pl">
+        <div class="hero">
+            <div class="container">
+                <h1>Wreszcie zrozum<br>świadectwo szkolne dziecka!</h1>
+                <p class="subtitle">Przetłumacz i przeanalizuj niemieckie świadectwa szkolne w 30 sekund. Analiza oparta na AI wspierająca edukacyjną przyszłość dziecka.</p>
+                <a href="https://wa.me/YOURNUMBER?text=Cześć%20GradeAI!%20Chcę%20zrozumieć%20świadectwo%20szkolne%20mojego%20dziecka." class="cta-btn">
+                    💬 Zacznij za darmo
+                </a>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <div class="problem-box">
+                    <h3>😰 Czy te uczucia brzmią znajomo?</h3>
+                    <ul class="problem-list">
+                        <li><strong>Bezradność:</strong> Świadectwo dziecka jest w twoich rękach, ale nie wiesz co tam jest napisane</li>
+                        <li><strong>Zażenowanie:</strong> Na zebraniu z rodzicami nauczyciel zadaje pytania i nie rozumiesz</li>
+                        <li><strong>Niepokój:</strong> Czy dziecko pójdzie do Hauptschule? Co to znaczy? Jak temu zapobiec?</li>
+                        <li><strong>Poczucie winy:</strong> Chcesz pomóc dziecku, ale nie wiesz jak</li>
+                        <li><strong>Izolacja:</strong> Niemieccy rodzice rozumieją system, czujesz się jak outsider</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h3>✨ Z GradeAI wszystko się zmienia!</h3>
+                    <ul class="solution-list">
+                        <li><strong>Rozumiesz:</strong> Każda ocena, każdy komentarz jasno wyjaśnione w twoim języku</li>
+                        <li><strong>Masz pewność siebie:</strong> Idziesz na zebrania przygotowany</li>
+                        <li><strong>Zapobiegasz problemom:</strong> Widzisz ryzyko Hauptschule wcześnie i mu zapobiegasz</li>
+                        <li><strong>Pomagasz skutecznie:</strong> Wspierasz dziecko konkretnymi, praktycznymi radami</li>
+                        <li><strong>Masz kontrolę:</strong> Teraz rozumiesz system, ty kontrolujesz sytuację</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <h2 class="section-title">🚀 Jak to działa</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Zrób zdjęcie świadectwa</h3>
+                            <p>Wyślij nam przez WhatsApp. Nie trzeba pobierać aplikacji, WhatsApp wystarczy!</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Poczekaj 30 sekund</h3>
+                            <p>Nasza technologia AI analizuje świadectwo. Oceny, komentarze, ocena ryzyka...</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Otrzymaj szczegółową analizę</h3>
+                            <p>Wszystko w jasnym języku: znaczenie ocen, komentarze nauczyciela, mocne/słabe strony, ryzyko Hauptschule</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Wdróż plan działania</h3>
+                            <p>Spersonalizowane rekomendacje: które przedmioty wymagają uwagi, jaka pomoc jest potrzebna, jak rozmawiać z nauczycielami</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-white">
+            <div class="container">
+                <h2 class="section-title">💎 Dlaczego GradeAI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Nie tylko tłumaczenie</h3>
+                        <p>Google Translate tłumaczy słowo w słowo. My rozumiemy niemiecki system edukacji i oferujemy kontekstowe wyjaśnienia.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Natychmiastowe wyniki</h3>
+                        <p>Pełna analiza w 30 sekund. Nie czekaj dni na wizytę u tłumacza.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                        <h3>Dla całej rodziny</h3>
+                        <p>Masz 3 dzieci? Jedna subskrypcja dla wszystkich. Nieograniczone analizy świadectw.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Ekspert edukacyjny</h3>
+                        <p>Nie tylko język, znamy też niemiecki system edukacji. Rozumiemy różnicę Hauptschule/Gymnasium.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Prywatne i bezpieczne</h3>
+                        <p>Informacje o dziecku są całkowicie poufne. Nigdy ich nie udostępniamy, tylko ty je widzisz.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💪</div>
+                        <h3>Plan działania</h3>
+                        <p>Zamiast "dziecko musi więcej się uczyć" mówimy "skup się na ułamkach w matematyce przez 2 tygodnie".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section section-gray">
+            <div class="container">
+                <div class="urgency">
+                    🔥 CAŁKOWICIE ZA DARMO DLA PIERWSZYCH 10 RODZIN! 🔥
+                </div>
+
+                <div class="pricing-card">
+                    <div class="price-tag">Wersja próbna</div>
+                    <div class="price-amount">€0</div>
+                    <div class="price-note">Pierwsza analiza całkowicie za darmo!</div>
+                    <div class="price-note" style="margin-top: 20px;">Potem tylko <strong>€9.99/miesiąc</strong> (Pakiet rodzinny)</div>
+                    
+                    <ul class="price-features">
+                        <li>Nieograniczone analizy świadectw</li>
+                        <li>Ważne dla wszystkich dzieci</li>
+                        <li>Wyniki w 30 sekund</li>
+                        <li>Ocena ryzyka Hauptschule</li>
+                        <li>Spersonalizowany plan działania</li>
+                        <li>Wsparcie WhatsApp</li>
+                        <li>Anuluj w każdej chwili</li>
+                    </ul>
+
+                    <a href="https://wa.me/YOURNUMBER?text=Cześć%20GradeAI!%20Chcę%20zrozumieć%20świadectwo%20szkolne%20mojego%20dziecka." class="cta-btn" style="background: white; color: #667eea; margin-top: 30px;">
+                        💬 Zacznij za darmo teraz
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="container">
+                <p><strong>GradeAI</strong> - Dla rodzin imigrantów w Niemczech</p>
+                <p style="margin: 15px 0;">
+                    WhatsApp: <a href="https://wa.me/YOURNUMBER">+49 XXX XXX XXXX</a><br>
+                    Email: <a href="mailto:info@gradeai.eu">info@gradeai.eu</a>
+                </p>
+                <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
+                    © 2026 GradeAI. Wszelkie prawa zastrzeżone.
+                </p>
+            </div>
+        </div>
+    </div>
 
     <script>
         function switchLanguage(lang) {
-            // Hide all content
             document.querySelectorAll('.lang-content').forEach(content => {
                 content.classList.remove('active');
             });
-            
-            // Remove active from all buttons
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
-            // Show selected content
             document.getElementById('content-' + lang).classList.add('active');
-            
-            // Add active to selected button
             document.querySelector('[data-lang="' + lang + '"]').classList.add('active');
-            
-            // Update page language attribute
             document.documentElement.lang = lang;
-            
-            // Store preference
             localStorage.setItem('preferredLanguage', lang);
-            
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
-        // Load preferred language on page load
         window.addEventListener('DOMContentLoaded', function() {
             const savedLang = localStorage.getItem('preferredLanguage');
-            
-            // Auto-detect browser language if no preference saved
             if (!savedLang) {
                 const browserLang = navigator.language.split('-')[0];
-                if (['tr', 'ar', 'de', 'ru', 'ro', 'pl'].includes(browserLang)) {
+                if (['en', 'tr', 'ar', 'de', 'ru', 'ro', 'pl'].includes(browserLang)) {
                     switchLanguage(browserLang);
                     return;
                 }
             }
-            
-            // Use saved preference
-            if (savedLang && ['tr', 'ar', 'de', 'ru', 'ro', 'pl'].includes(savedLang)) {
+            if (savedLang && ['en', 'tr', 'ar', 'de', 'ru', 'ro', 'pl'].includes(savedLang)) {
                 switchLanguage(savedLang);
             }
         });
