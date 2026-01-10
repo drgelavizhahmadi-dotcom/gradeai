@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String
+  phone              String?
+  language           String   @default("de")
+  hashedPassword     String
+  subscriptionStatus String   @default("free")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  children           Child[]
+  uploads            Upload[]
+
+  @@index([email])
+}
+
+model Child {
+  id         String   @id @default(cuid())
+  name       String
+  grade      Int      // 1-13
+  schoolType String
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploads    Upload[]
+
+  @@index([userId])
+}
+
+model Upload {
+  id             String    @id @default(cuid())
+  userId         String
+  childId        String
+  fileName       String
+  fileUrl        String
+  fileSize       Int
+  mimeType       String
+  subject        String?
+  grade          Float?
+  teacherComment String?   @db.Text
+  extractedText  String?   @db.Text
+  analysisStatus String    @default("pending")
+  analysis       Json?
+  errorMessage   String?
+  uploadedAt     DateTime  @default(now())
+  processedAt    DateTime?
+
+  // Relations
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  child          Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([childId])
+  @@index([analysisStatus])
+  @@index([uploadedAt])
+}
