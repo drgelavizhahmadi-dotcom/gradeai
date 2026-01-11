@@ -6,8 +6,9 @@ import UploadZone from "@/components/UploadZone";
 import { ArrowLeft } from "lucide-react";
 
 // Hardcoded child for now - will be replaced with real data later
+// Using the child ID from scripts/create-test-data.ts
 const HARDCODED_CHILD = {
-  id: "child_demo_001",
+  id: "cmk9xdtjc0001x8umrpadanuc",
   name: "Max Mustermann",
   grade: 7,
   schoolType: "Gymnasium",

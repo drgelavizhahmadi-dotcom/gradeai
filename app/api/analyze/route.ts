@@ -1,24 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 import fs from 'fs'
 import path from 'path'
 import { extractText, parseGermanTest } from '@/lib/ocr'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
 
-const prisma = new PrismaClient()
+// Create PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+// Create Prisma adapter
+const adapter = new PrismaPg(pool)
+
+const prisma = new PrismaClient({ adapter })
 
 interface AnalyzeRequestBody {
   uploadId: string
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[Analyze API] ========================================')
   console.log('[Analyze API] Received analyze request')
+  console.log('[Analyze API] Request URL:', request.url)
+  console.log('[Analyze API] Request method:', request.method)
+  console.log('[Analyze API] Content-Type:', request.headers.get('content-type'))
 
   let uploadId: string | undefined
 
   try {
     // Parse request body
+    console.log('[Analyze API] Attempting to parse request body...')
     const body: AnalyzeRequestBody = await request.json()
+    console.log('[Analyze API] Request body parsed successfully:', body)
     uploadId = body.uploadId
 
     if (!uploadId) {
@@ -143,20 +159,28 @@ export async function POST(request: NextRequest) {
 
     console.log('[Analyze API] Analysis completed successfully')
 
-    return NextResponse.json({
-      success: true,
-      uploadId: updatedUpload.id,
-      data: {
-        extractedText: extractedText,
-        parsed: {
-          grade: parsedData.grade,
-          gradeNumeric: gradeFloat,
-          subject: parsedData.subject,
-          teacherComment: parsedData.teacherComment,
+    return NextResponse.json(
+      {
+        success: true,
+        uploadId: updatedUpload.id,
+        data: {
+          extractedText: extractedText,
+          parsed: {
+            grade: parsedData.grade,
+            gradeNumeric: gradeFloat,
+            subject: parsedData.subject,
+            teacherComment: parsedData.teacherComment,
+          },
+          analysis: analysis,
         },
-        analysis: analysis,
       },
-    })
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
   } catch (error) {
     console.error('[Analyze API] Error during analysis:', error)
     console.error('[Analyze API] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
@@ -182,7 +206,12 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Analysis failed',
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     )
   } finally {
     await prisma.$disconnect()

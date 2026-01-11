@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
-const prisma = new PrismaClient()
+// Create PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+// Create Prisma adapter
+const adapter = new PrismaPg(pool)
+
+const prisma = new PrismaClient({ adapter })
 
 export async function GET(
   request: NextRequest,

@@ -117,13 +117,35 @@ export async function POST(request: NextRequest) {
 
     // Trigger analysis asynchronously (non-blocking)
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    fetch(`${baseUrl}/api/analyze`, {
+    const analyzeUrl = `${baseUrl}/api/analyze`;
+    const analyzePayload = { uploadId: upload.id };
+
+    console.log(`[Upload API] Triggering analysis...`);
+    console.log(`[Upload API] Analyze URL: ${analyzeUrl}`);
+    console.log(`[Upload API] Analyze payload:`, analyzePayload);
+
+    fetch(analyzeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uploadId: upload.id }),
-    }).catch(err => {
-      console.error('[Upload API] Analysis trigger failed:', err);
-    });
+      body: JSON.stringify(analyzePayload),
+    })
+      .then(async (res) => {
+        console.log(`[Upload API] Analyze response status: ${res.status}`);
+        const contentType = res.headers.get('content-type');
+        console.log(`[Upload API] Analyze response content-type: ${contentType}`);
+
+        if (!contentType?.includes('application/json')) {
+          const text = await res.text();
+          console.error(`[Upload API] Expected JSON but got: ${text.substring(0, 200)}`);
+        } else {
+          const data = await res.json();
+          console.log(`[Upload API] Analyze response:`, data);
+        }
+      })
+      .catch(err => {
+        console.error('[Upload API] Analysis trigger failed:', err);
+        console.error('[Upload API] Error details:', err.message, err.cause);
+      });
 
     console.log(`[Upload API] Analysis triggered for upload: ${upload.id}`);
 
