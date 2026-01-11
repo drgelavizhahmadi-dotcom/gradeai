@@ -1,3 +1,7 @@
+// Load environment variables first, before any other imports
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -6,6 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import { extractText, parseGermanTest } from '@/lib/ocr'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
+import { analyzeTest } from '@/lib/ai/claude'
 
 // Create PostgreSQL connection pool
 const pool = new Pool({
@@ -130,17 +135,49 @@ export async function POST(request: NextRequest) {
     const gradeFloat = convertGermanGrade(parsedData.grade)
     console.log(`[Analyze API] Grade conversion: ${parsedData.grade} -> ${gradeFloat}`)
 
-    // Prepare analysis JSON
+    // Analyze with Claude AI
+    console.log('[Analyze API] Starting AI analysis with Claude...')
+    let aiAnalysis = null
+    let aiError = null
+
+    try {
+      aiAnalysis = await analyzeTest({
+        subject: parsedData.subject,
+        grade: parsedData.grade,
+        teacherComment: parsedData.teacherComment,
+        extractedText: extractedText,
+        childName: upload.child.name,
+        studentGrade: upload.child.grade,
+        schoolType: upload.child.schoolType,
+      })
+
+      console.log('[Analyze API] AI analysis completed successfully')
+      console.log('[Analyze API] Grade severity:', aiAnalysis.gradeInterpretation.severity)
+      console.log('[Analyze API] Concern level:', aiAnalysis.gradeInterpretation.concernLevel)
+    } catch (error) {
+      console.error('[Analyze API] AI analysis failed:', error)
+      aiError = error instanceof Error ? error.message : 'AI analysis failed'
+
+      // Don't fail the entire analysis if AI fails
+      // We still have the OCR data which is valuable
+      console.warn('[Analyze API] Continuing without AI analysis...')
+    }
+
+    // Prepare comprehensive analysis JSON
     const analysis = {
       parsedAt: new Date().toISOString(),
-      confidence: 'medium', // Could be enhanced with actual confidence scores
+      confidence: 'medium',
       extractedData: {
         grade: parsedData.grade,
         gradeNumeric: gradeFloat,
         subject: parsedData.subject,
         teacherComment: parsedData.teacherComment,
       },
+      ai: aiAnalysis, // Include AI analysis if successful, null otherwise
+      aiError: aiError, // Include error message if AI failed
     }
+
+    console.log('[Analyze API] Complete analysis structure prepared')
 
     // Update database with extracted and parsed data
     console.log('[Analyze API] Updating database with results...')

@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 
 // Import pdf-parse as CommonJS module
-const pdfParse = require('pdf-parse')
+//const pdfParse = require('pdf-parse')
 
 // Get credentials file path from environment
 const rawCredentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS

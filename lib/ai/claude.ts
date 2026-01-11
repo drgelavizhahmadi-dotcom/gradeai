@@ -1,0 +1,196 @@
+/**
+ * Claude AI Integration
+ *
+ * This module handles communication with Claude AI (Anthropic)
+ * for analyzing German school test results.
+ */
+
+import Anthropic from '@anthropic-ai/sdk'
+import { TestAnalysis, ANALYSIS_PROMPT } from './prompts'
+
+/**
+ * Initialize Anthropic client
+ */
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+})
+
+/**
+ * Parameters for test analysis
+ */
+export interface AnalyzeTestParams {
+  subject: string | null
+  grade: string | null
+  teacherComment: string | null
+  extractedText: string
+  childName: string
+  studentGrade: number
+  schoolType: string
+}
+
+/**
+ * Analyzes a German school test using Claude AI
+ *
+ * @param params - Test information and student context
+ * @returns Structured analysis with insights and recommendations
+ * @throws Error if API call fails or response cannot be parsed
+ */
+export async function analyzeTest(params: AnalyzeTestParams): Promise<TestAnalysis> {
+  console.log('[Claude AI] Starting test analysis...')
+  console.log('[Claude AI] Subject:', params.subject || 'Unknown')
+  console.log('[Claude AI] Grade:', params.grade || 'Unknown')
+  console.log('[Claude AI] Student:', params.childName, `(Grade ${params.studentGrade}, ${params.schoolType})`)
+
+  // Validate required parameters
+  if (!params.extractedText || params.extractedText.trim().length === 0) {
+    throw new Error('Extracted text is required for analysis')
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not set')
+  }
+
+  try {
+    // Fill in the prompt template with actual values
+    const filledPrompt = ANALYSIS_PROMPT
+      .replace(/{subject}/g, params.subject || 'Unknown')
+      .replace(/{grade}/g, params.grade || 'No grade provided')
+      .replace(/{teacherComment}/g, params.teacherComment || 'No teacher comment provided')
+      .replace(/{extractedText}/g, params.extractedText)
+      .replace(/{childName}/g, params.childName)
+      .replace(/{studentGrade}/g, params.studentGrade.toString())
+      .replace(/{schoolType}/g, params.schoolType)
+
+    console.log('[Claude AI] Prompt prepared, calling API...')
+    console.log(`[Claude AI] Prompt length: ${filledPrompt.length} characters`)
+
+    // Call Claude API
+    const startTime = Date.now()
+    const message = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 4096,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: filledPrompt,
+        },
+      ],
+    })
+
+    const duration = Date.now() - startTime
+    console.log(`[Claude AI] API call completed in ${duration}ms`)
+    console.log('[Claude AI] Response received, parsing JSON...')
+
+    // Extract text content from response
+    const content = message.content[0]
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude API')
+    }
+
+    const responseText = content.text.trim()
+    console.log(`[Claude AI] Response length: ${responseText.length} characters`)
+
+    // Parse JSON response
+    let analysis: TestAnalysis
+    try {
+      // Remove potential markdown code blocks if present
+      const cleanedResponse = responseText
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim()
+
+      analysis = JSON.parse(cleanedResponse)
+      console.log('[Claude AI] JSON parsed successfully')
+    } catch (parseError) {
+      console.error('[Claude AI] Failed to parse JSON response:', parseError)
+      console.error('[Claude AI] Response text:', responseText.substring(0, 500))
+      throw new Error('Failed to parse AI response as JSON. The response may be malformed.')
+    }
+
+    // Validate the structure of the response
+    if (!analysis.gradeInterpretation || !analysis.teacherFeedback) {
+      console.error('[Claude AI] Response missing required fields')
+      console.error('[Claude AI] Received:', JSON.stringify(analysis, null, 2).substring(0, 500))
+      throw new Error('AI response is missing required fields')
+    }
+
+    console.log('[Claude AI] Analysis completed successfully')
+    console.log('[Claude AI] Grade severity:', analysis.gradeInterpretation.severity)
+    console.log('[Claude AI] Concern level:', analysis.gradeInterpretation.concernLevel)
+    console.log('[Claude AI] Strengths identified:', analysis.strengths.length)
+    console.log('[Claude AI] Weaknesses identified:', analysis.weaknesses.length)
+    console.log('[Claude AI] Free resources:', analysis.resources.free.length)
+    console.log('[Claude AI] Paid resources:', analysis.resources.paid.length)
+
+    return analysis
+  } catch (error) {
+    console.error('[Claude AI] Error during analysis:', error)
+
+    // Handle specific error types
+    if (error instanceof Anthropic.APIError) {
+      console.error('[Claude AI] Anthropic API Error:')
+      console.error('[Claude AI] Status:', error.status)
+      console.error('[Claude AI] Message:', error.message)
+
+      if (error.status === 401) {
+        throw new Error('Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY environment variable.')
+      } else if (error.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.')
+      } else if (error.status === 500) {
+        throw new Error('Anthropic API is experiencing issues. Please try again later.')
+      } else {
+        throw new Error(`Anthropic API error: ${error.message}`)
+      }
+    }
+
+    // Re-throw if it's already a formatted error
+    if (error instanceof Error) {
+      throw error
+    }
+
+    // Generic error
+    throw new Error('Failed to analyze test with Claude AI')
+  }
+}
+
+/**
+ * Test the Claude AI connection
+ * Useful for debugging and setup verification
+ *
+ * @returns True if connection is successful
+ * @throws Error if connection fails
+ */
+export async function testConnection(): Promise<boolean> {
+  console.log('[Claude AI] Testing API connection...')
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not set')
+  }
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 100,
+      messages: [
+        {
+          role: 'user',
+          content: 'Hello! Please respond with "OK" if you can hear me.',
+        },
+      ],
+    })
+
+    const content = message.content[0]
+    if (content.type === 'text') {
+      console.log('[Claude AI] Connection test successful')
+      console.log('[Claude AI] Response:', content.text)
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error('[Claude AI] Connection test failed:', error)
+    throw error
+  }
+}
