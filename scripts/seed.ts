@@ -1,3 +1,7 @@
+// Load environment variables from .env.local
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 

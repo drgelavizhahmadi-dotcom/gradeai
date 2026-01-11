@@ -14,10 +14,12 @@ interface AnalyzeRequestBody {
 export async function POST(request: NextRequest) {
   console.log('[Analyze API] Received analyze request')
 
+  let uploadId: string | undefined
+
   try {
     // Parse request body
     const body: AnalyzeRequestBody = await request.json()
-    const { uploadId } = body
+    uploadId = body.uploadId
 
     if (!uploadId) {
       console.error('[Analyze API] Missing uploadId in request')
@@ -157,22 +159,22 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Analyze API] Error during analysis:', error)
+    console.error('[Analyze API] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
 
-    // Try to update the upload status to failed
-    try {
-      const body: AnalyzeRequestBody = await request.json()
-      if (body.uploadId) {
+    // Try to update the upload status to failed (using uploadId from outer scope)
+    if (uploadId) {
+      try {
         await prisma.upload.update({
-          where: { id: body.uploadId },
+          where: { id: uploadId },
           data: {
             analysisStatus: 'failed',
             errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
           },
         })
         console.log('[Analyze API] Upload status set to failed')
+      } catch (updateError) {
+        console.error('[Analyze API] Failed to update upload status:', updateError)
       }
-    } catch (updateError) {
-      console.error('[Analyze API] Failed to update upload status:', updateError)
     }
 
     return NextResponse.json(

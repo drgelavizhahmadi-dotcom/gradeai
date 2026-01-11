@@ -1,3 +1,7 @@
+// Load environment variables from .env.local
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import fs from 'fs'
 import path from 'path'
 import { extractText, parseGermanTest } from '../lib/ocr'

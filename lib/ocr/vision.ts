@@ -1,3 +1,7 @@
+// Load environment variables from .env.local
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import vision from '@google-cloud/vision'
 import fs from 'fs'
 import path from 'path'
@@ -30,16 +34,27 @@ const client = new vision.ImageAnnotatorClient({
 console.log('[Vision Client] Client initialized successfully')
 
 /**
+ * Detects if buffer is a PDF file
+ * @param buffer - File buffer
+ * @returns True if PDF, false otherwise
+ */
+function isPDF(buffer: Buffer): boolean {
+  // PDF files start with "%PDF-"
+  return buffer.subarray(0, 5).toString() === '%PDF-'
+}
+
+
+/**
  * Extracts text from an image buffer using Google Cloud Vision API
  * @param imageBuffer - The image file buffer
  * @returns The extracted text content
  */
-export async function extractText(imageBuffer: Buffer): Promise<string> {
-  console.log('Starting text extraction...')
-  console.log(`Image buffer size: ${(imageBuffer.length / 1024).toFixed(2)} KB`)
+async function extractTextFromImageBuffer(imageBuffer: Buffer): Promise<string> {
+  console.log('[OCR] Starting Vision API text extraction...')
+  console.log(`[OCR] Buffer size: ${(imageBuffer.length / 1024).toFixed(2)} KB`)
 
   try {
-    console.log('Calling Google Cloud Vision API...')
+    console.log('[OCR] Calling Google Cloud Vision API...')
 
     const [result] = await client.textDetection({
       image: { content: imageBuffer },
@@ -48,22 +63,52 @@ export async function extractText(imageBuffer: Buffer): Promise<string> {
     const detections = result.textAnnotations
 
     if (!detections || detections.length === 0) {
-      console.log('No text detected in image')
+      console.log('[OCR] No text detected in image')
       return ''
     }
 
     // The first annotation contains the entire detected text
     const fullText = detections[0].description || ''
 
-    console.log(`Text extraction successful. Extracted ${fullText.length} characters`)
-    console.log('Preview:', fullText.substring(0, 100) + '...')
+    console.log(`[OCR] Text extraction successful. Extracted ${fullText.length} characters`)
+    console.log('[OCR] Preview:', fullText.substring(0, 100) + '...')
 
     return fullText
   } catch (error) {
-    console.error('Error extracting text from image:', error)
+    console.error('[OCR] Error extracting text from image:', error)
 
     if (error instanceof Error) {
       throw new Error(`Text extraction failed: ${error.message}`)
+    }
+
+    throw new Error('Text extraction failed: Unknown error')
+  }
+}
+
+/**
+ * Extracts text from an image buffer (JPG, PNG only)
+ * @param fileBuffer - The image file buffer
+ * @returns The extracted text content
+ */
+export async function extractText(fileBuffer: Buffer): Promise<string> {
+  console.log('[Extract] Starting text extraction...')
+  console.log(`[Extract] File buffer size: ${(fileBuffer.length / 1024).toFixed(2)} KB`)
+
+  try {
+    // Check if file is PDF and reject it
+    if (isPDF(fileBuffer)) {
+      console.log('[Extract] PDF file detected - not supported')
+      throw new Error('PDF files are not currently supported. Please upload JPG or PNG images of your test.')
+    }
+
+    // Process as image
+    console.log('[Extract] Detected image file')
+    return await extractTextFromImageBuffer(fileBuffer)
+  } catch (error) {
+    console.error('[Extract] Error during text extraction:', error)
+
+    if (error instanceof Error) {
+      throw error // Re-throw as-is to preserve the message
     }
 
     throw new Error('Text extraction failed: Unknown error')
