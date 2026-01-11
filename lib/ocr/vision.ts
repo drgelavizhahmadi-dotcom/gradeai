@@ -6,6 +6,9 @@ import vision from '@google-cloud/vision'
 import fs from 'fs'
 import path from 'path'
 
+// Import pdf-parse as CommonJS module
+const pdfParse = require('pdf-parse')
+
 // Get credentials file path from environment
 const rawCredentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 
@@ -86,8 +89,47 @@ async function extractTextFromImageBuffer(imageBuffer: Buffer): Promise<string> 
 }
 
 /**
- * Extracts text from an image buffer (JPG, PNG only)
- * @param fileBuffer - The image file buffer
+ * Extracts text from a PDF buffer
+ * @param pdfBuffer - The PDF file buffer
+ * @returns The extracted text content
+ */
+async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
+  console.log('[PDF] Starting PDF text extraction...')
+  console.log(`[PDF] Buffer size: ${(pdfBuffer.length / 1024).toFixed(2)} KB`)
+
+  try {
+    const data = await pdfParse(pdfBuffer)
+
+    console.log(`[PDF] PDF parsed successfully`)
+    console.log(`[PDF] Number of pages: ${data.numpages}`)
+    console.log(`[PDF] Extracted ${data.text.length} characters`)
+
+    if (!data.text || data.text.trim().length === 0) {
+      console.log('[PDF] No text found in PDF - may be scanned/image-based')
+      throw new Error('This PDF does not contain extractable text. Please upload a JPG or PNG image of the test instead.')
+    }
+
+    console.log('[PDF] Preview:', data.text.substring(0, 100) + '...')
+    return data.text
+  } catch (error) {
+    console.error('[PDF] Error extracting text from PDF:', error)
+
+    if (error instanceof Error) {
+      // If it's already our custom error, re-throw it
+      if (error.message.includes('does not contain extractable text')) {
+        throw error
+      }
+      throw new Error(`PDF text extraction failed: ${error.message}`)
+    }
+
+    throw new Error('PDF text extraction failed: Unknown error')
+  }
+}
+
+/**
+ * Extracts text from an image or PDF buffer
+ * Supports: JPG, PNG (via Google Cloud Vision OCR), PDF (via pdf-parse)
+ * @param fileBuffer - The image or PDF file buffer
  * @returns The extracted text content
  */
 export async function extractText(fileBuffer: Buffer): Promise<string> {
@@ -95,14 +137,14 @@ export async function extractText(fileBuffer: Buffer): Promise<string> {
   console.log(`[Extract] File buffer size: ${(fileBuffer.length / 1024).toFixed(2)} KB`)
 
   try {
-    // Check if file is PDF and reject it
+    // Check if file is PDF
     if (isPDF(fileBuffer)) {
-      console.log('[Extract] PDF file detected - not supported')
-      throw new Error('PDF files are not currently supported. Please upload JPG or PNG images of your test.')
+      console.log('[Extract] PDF file detected')
+      return await extractTextFromPDF(fileBuffer)
     }
 
     // Process as image
-    console.log('[Extract] Detected image file')
+    console.log('[Extract] Image file detected')
     return await extractTextFromImageBuffer(fileBuffer)
   } catch (error) {
     console.error('[Extract] Error during text extraction:', error)
