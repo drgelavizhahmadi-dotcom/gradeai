@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { success: false, error: error.errors[0].message },
+          { success: false, error: error.issues[0].message },
           { status: 400 }
         );
       }
@@ -99,22 +99,33 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Create file URL (relative path for now)
-    const fileUrl = `/tmp/${fileName}`;
-
     // Create Upload record in database
     const upload = await db.upload.create({
       data: {
         userId: child.userId,
         childId: childId,
         fileName: file.name,
-        fileUrl: fileUrl,
+        fileUrl: filePath, // Store absolute path instead of relative
         fileSize: file.size,
         mimeType: file.type,
         analysisStatus: "pending",
         uploadedAt: new Date(),
       },
     });
+
+    console.log(`[Upload API] Upload created successfully: ${upload.id}`);
+
+    // Trigger analysis asynchronously (non-blocking)
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uploadId: upload.id }),
+    }).catch(err => {
+      console.error('[Upload API] Analysis trigger failed:', err);
+    });
+
+    console.log(`[Upload API] Analysis triggered for upload: ${upload.id}`);
 
     // Return success response with upload ID
     return NextResponse.json({
