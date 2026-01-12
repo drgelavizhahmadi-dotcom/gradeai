@@ -114,10 +114,15 @@ export default function UploadDetailPage() {
   }
 
   const formatDate = (dateString: string): string => {
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(dateString))
+    // Using toLocaleString() for local timezone display
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
   }
 
   if (loading) {
