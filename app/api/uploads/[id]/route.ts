@@ -44,6 +44,10 @@ export async function GET(
     }
 
     console.log(`[Uploads API] Upload found: ${upload.fileName}, status: ${upload.analysisStatus}`)
+    console.log(`[Uploads API] Analysis field exists:`, !!upload.analysis)
+    if (upload.analysis) {
+      console.log(`[Uploads API] Analysis has AI data:`, !!(upload.analysis as any)?.ai)
+    }
 
     return NextResponse.json({
       success: true,
@@ -60,6 +64,7 @@ export async function GET(
         errorMessage: upload.errorMessage,
         uploadedAt: upload.uploadedAt.toISOString(),
         processedAt: upload.processedAt?.toISOString() || null,
+        analysis: upload.analysis, // Add the analysis field from database
         child: upload.child,
       },
     })

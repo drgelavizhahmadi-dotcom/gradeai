@@ -88,25 +88,54 @@ export async function analyzeTest(params: AnalyzeTestParams): Promise<TestAnalys
       throw new Error('Unexpected response type from Claude API')
     }
 
-    const responseText = content.text.trim()
+    let responseText = content.text
     console.log(`[Claude AI] Response length: ${responseText.length} characters`)
+    console.log('[Claude AI] Raw response preview:', responseText.substring(0, 200))
 
-    // Parse JSON response
+    // Parse JSON response with robust error handling
     let analysis: TestAnalysis
     try {
-      // Remove potential markdown code blocks if present
-      const cleanedResponse = responseText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/\s*```$/i, '')
+      // Strategy 1: Remove markdown code fences and trim
+      let cleanedResponse = responseText
+        .replace(/```json\n?/gi, '')  // Remove ```json
+        .replace(/```\n?/g, '')        // Remove ```
         .trim()
+
+      // Strategy 2: If response has explanatory text, try to extract JSON object
+      if (!cleanedResponse.startsWith('{')) {
+        console.log('[Claude AI] Response does not start with {, attempting to extract JSON...')
+        const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[0]
+          console.log('[Claude AI] Extracted JSON from response')
+        }
+      }
+
+      // Strategy 3: Remove any trailing text after the final }
+      const lastBrace = cleanedResponse.lastIndexOf('}')
+      if (lastBrace !== -1 && lastBrace < cleanedResponse.length - 1) {
+        cleanedResponse = cleanedResponse.substring(0, lastBrace + 1)
+        console.log('[Claude AI] Trimmed trailing text after JSON')
+      }
+
+      console.log('[Claude AI] Cleaned response preview:', cleanedResponse.substring(0, 200))
+      console.log('[Claude AI] Attempting to parse JSON...')
 
       analysis = JSON.parse(cleanedResponse)
       console.log('[Claude AI] JSON parsed successfully')
     } catch (parseError) {
-      console.error('[Claude AI] Failed to parse JSON response:', parseError)
-      console.error('[Claude AI] Response text:', responseText.substring(0, 500))
-      throw new Error('Failed to parse AI response as JSON. The response may be malformed.')
+      console.error('[Claude AI] Failed to parse JSON response')
+      console.error('[Claude AI] Parse error:', parseError)
+      console.error('[Claude AI] Full raw response:')
+      console.error(responseText)
+      console.error('[Claude AI] Response preview (first 1000 chars):', responseText.substring(0, 1000))
+
+      // Try to provide more specific error information
+      if (parseError instanceof SyntaxError) {
+        throw new Error(`Failed to parse AI response as JSON. Syntax error: ${parseError.message}`)
+      }
+
+      throw new Error('Failed to parse AI response as JSON. The response may be malformed or contain non-JSON text.')
     }
 
     // Validate the structure of the response

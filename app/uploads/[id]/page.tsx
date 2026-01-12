@@ -5,8 +5,10 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
-  BookOpen, GraduationCap, MessageSquare, ArrowLeft, Clock, AlertCircle
+  BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download
 } from 'lucide-react'
+import AnalysisDisplay from '@/components/AnalysisDisplay'
+import { TestAnalysis } from '@/lib/ai/prompts'
 
 interface Upload {
   id: string
@@ -21,6 +23,10 @@ interface Upload {
   errorMessage: string | null
   uploadedAt: string
   processedAt: string | null
+  analysis: {
+    ai: TestAnalysis | null
+    aiError: string | null
+  } | null
   child: {
     name: string
     grade: number
@@ -51,6 +57,11 @@ export default function UploadDetailPage() {
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch upload')
       }
+
+      console.log('[Upload Page] Fetched upload data:', data.upload)
+      console.log('[Upload Page] Analysis status:', data.upload.analysisStatus)
+      console.log('[Upload Page] Analysis data:', data.upload.analysis)
+      console.log('[Upload Page] AI analysis:', data.upload.analysis?.ai)
 
       setUpload(data.upload)
       setError(null)
@@ -313,71 +324,123 @@ export default function UploadDetailPage() {
           </div>
         )}
 
-        {/* Extracted Data - Only show if completed */}
+        {/* Test Overview - Only show if completed */}
         {upload.analysisStatus === 'completed' && (
-          <div className="mb-6 rounded-xl bg-white p-6 shadow-md">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Extracted Data
-            </h2>
-
-            <div className="space-y-4">
-              {/* Subject */}
+          <>
+            {/* Quick Summary Card */}
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
               {upload.subject && (
-                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <p className="text-sm text-blue-600 font-medium">Subject</p>
-                    <p className="text-lg text-blue-900 font-semibold">{upload.subject}</p>
+                <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    <p className="text-sm font-medium text-blue-600">Subject</p>
                   </div>
+                  <p className="text-xl font-bold text-blue-900">{upload.subject}</p>
                 </div>
               )}
 
-              {/* Grade */}
               {upload.grade !== null && (
-                <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg">
-                  <GraduationCap className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Grade</p>
-                    <p className="text-lg text-green-900 font-semibold">{upload.grade.toFixed(1)}</p>
+                <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <GraduationCap className="h-5 w-5 text-green-600" />
+                    <p className="text-sm font-medium text-green-600">Grade Received</p>
                   </div>
+                  <p className="text-xl font-bold text-green-900">{upload.grade.toFixed(1)}</p>
                 </div>
               )}
 
-              {/* Teacher Comment */}
-              {upload.teacherComment && (
-                <div className="flex items-start gap-3 p-4 bg-purple-50 rounded-lg">
-                  <MessageSquare className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <p className="text-sm text-purple-600 font-medium">Teacher Comment</p>
-                    <p className="text-gray-900 mt-1">{upload.teacherComment}</p>
-                  </div>
+              <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                  <p className="text-sm font-medium text-purple-600">Uploaded</p>
                 </div>
-              )}
-
-              {/* Extracted Text */}
-              {upload.extractedText && (
-                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                  <FileText className="w-6 h-6 text-gray-600 flex-shrink-0 mt-1" />
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600 font-medium mb-2">Full Extracted Text</p>
-                    <div className="max-h-64 overflow-y-auto bg-white p-3 rounded border border-gray-200">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{upload.extractedText}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <p className="text-sm font-semibold text-purple-900">
+                  {formatDate(upload.uploadedAt)}
+                </p>
+              </div>
             </div>
-          </div>
+
+            {/* AI Analysis Display */}
+            {(() => {
+              console.log('[Upload Page] Checking AI analysis render condition')
+              console.log('[Upload Page] upload.analysis exists?', !!upload.analysis)
+              console.log('[Upload Page] upload.analysis?.ai exists?', !!upload.analysis?.ai)
+              console.log('[Upload Page] upload.analysis?.ai type:', typeof upload.analysis?.ai)
+              if (upload.analysis?.ai) {
+                console.log('[Upload Page] AI analysis structure:', Object.keys(upload.analysis.ai))
+              }
+              return null
+            })()}
+            {upload.analysis?.ai && (
+              <div className="mb-6">
+                <AnalysisDisplay analysis={upload.analysis.ai} />
+              </div>
+            )}
+
+            {/* Show AI Error if present but analysis still completed */}
+            {upload.analysis?.aiError && !upload.analysis?.ai && (
+              <div className="mb-6 rounded-xl border-2 border-yellow-200 bg-yellow-50 p-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                      AI Analysis Unavailable
+                    </h3>
+                    <p className="text-yellow-800 mb-3">
+                      The text was extracted successfully, but AI analysis could not be completed.
+                    </p>
+                    <p className="text-sm text-yellow-700">
+                      Error: {upload.analysis.aiError}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Raw Extracted Text - Collapsible */}
+            {upload.extractedText && (
+              <details className="mb-6 rounded-xl bg-white p-6 shadow-md">
+                <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2 hover:text-blue-600">
+                  <FileText className="h-5 w-5" />
+                  View Raw Extracted Text
+                </summary>
+                <div className="mt-4 max-h-96 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                    {upload.extractedText}
+                  </p>
+                </div>
+              </details>
+            )}
+          </>
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back to Dashboard
+          </Link>
           <Link
             href="/upload"
-            className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Upload Another Test
           </Link>
+          {upload.analysisStatus === 'completed' && upload.analysis?.ai && (
+            <button
+              onClick={() => {
+                // TODO: Implement PDF report download
+                alert('Report download feature coming soon!')
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700"
+            >
+              <Download className="h-5 w-5" />
+              Download Report
+            </button>
+          )}
         </div>
       </div>
     </div>
