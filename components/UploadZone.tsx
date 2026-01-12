@@ -12,6 +12,8 @@ interface UploadZoneProps {
 interface UploadResponse {
   success: boolean;
   uploadId: string;
+  isDuplicate?: boolean;
+  message?: string;
   error?: string;
 }
 
@@ -151,7 +153,14 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       if (preview) {
         URL.revokeObjectURL(preview);
       }
-      router.push(`/uploads/${data.uploadId}`);
+
+      // If this is a duplicate, we'll redirect with a query parameter to show the message
+      if (data.isDuplicate && data.message) {
+        console.log(`[UploadZone] Duplicate detected: ${data.message}`);
+        router.push(`/uploads/${data.uploadId}?duplicate=true&message=${encodeURIComponent(data.message)}`);
+      } else {
+        router.push(`/uploads/${data.uploadId}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
       setIsUploading(false);

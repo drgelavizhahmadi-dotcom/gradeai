@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
-  BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download
+  BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info
 } from 'lucide-react'
 import AnalysisDisplay from '@/components/AnalysisDisplay'
 import { TestAnalysis } from '@/lib/ai/prompts'
@@ -37,12 +37,18 @@ interface Upload {
 export default function UploadDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const uploadId = params?.id as string
 
   const [upload, setUpload] = useState<Upload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retrying, setRetrying] = useState(false)
+
+  // Check for duplicate detection message
+  const isDuplicate = searchParams.get('duplicate') === 'true'
+  const duplicateMessage = searchParams.get('message') || 'This test was already uploaded. Showing existing analysis.'
+  const [showDuplicateMessage, setShowDuplicateMessage] = useState(isDuplicate)
 
   const fetchUpload = async () => {
     try {
@@ -236,6 +242,30 @@ export default function UploadDetailPage() {
             View details and analysis for this test
           </p>
         </div>
+
+        {/* Duplicate Detection Message */}
+        {showDuplicateMessage && (
+          <div className="mb-6 rounded-xl bg-blue-50 border-2 border-blue-200 p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                  Duplicate Upload Detected
+                </h3>
+                <p className="text-sm text-blue-800">
+                  {duplicateMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDuplicateMessage(false)}
+                className="text-blue-600 hover:text-blue-800 transition-colors"
+                aria-label="Dismiss message"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Progress Indicator for pending/processing */}
         {(upload.analysisStatus === 'pending' || upload.analysisStatus === 'processing') && (

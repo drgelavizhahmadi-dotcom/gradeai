@@ -11,6 +11,7 @@ import path from 'path'
 import { extractText, parseGermanTest } from '@/lib/ocr'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
 import { analyzeTest } from '@/lib/ai/claude'
+import { requireAuth } from '@/lib/auth'
 
 // Create PostgreSQL connection pool
 const pool = new Pool({
@@ -27,15 +28,26 @@ interface AnalyzeRequestBody {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('[Analyze API] ========================================')
-  console.log('[Analyze API] Received analyze request')
-  console.log('[Analyze API] Request URL:', request.url)
-  console.log('[Analyze API] Request method:', request.method)
-  console.log('[Analyze API] Content-Type:', request.headers.get('content-type'))
+  console.log('='.repeat(80))
+  console.log('=== ANALYZE API CALLED ===')
+  console.log('Request URL:', request.url)
+  console.log('Request method:', request.method)
+  console.log('Content-Type:', request.headers.get('content-type'))
+  console.log('User-Agent:', request.headers.get('user-agent'))
+  console.log('Origin:', request.headers.get('origin'))
+  console.log('Referer:', request.headers.get('referer'))
+  console.log('='.repeat(80))
 
   let uploadId: string | undefined
 
   try {
+    // Check authentication
+    console.log('=== CHECKING AUTHENTICATION ===')
+    const session = await requireAuth()
+    const authenticatedUserId = session.user.id
+    console.log('Authentication successful! User ID:', authenticatedUserId)
+    console.log('='.repeat(80))
+
     // Parse request body
     console.log('[Analyze API] Attempting to parse request body...')
     const body: AnalyzeRequestBody = await request.json()
@@ -76,6 +88,15 @@ export async function POST(request: NextRequest) {
       childName: upload.child.name,
       userName: upload.user.name,
     })
+
+    // Verify the upload belongs to the authenticated user
+    if (upload.userId !== authenticatedUserId) {
+      console.error(`[Analyze API] Unauthorized access attempt by user ${authenticatedUserId} to upload ${uploadId} owned by ${upload.userId}`)
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: You can only analyze your own uploads' },
+        { status: 403 }
+      )
+    }
 
     // Update status to processing
     await prisma.upload.update({
@@ -219,8 +240,25 @@ export async function POST(request: NextRequest) {
       }
     )
   } catch (error) {
-    console.error('[Analyze API] Error during analysis:', error)
-    console.error('[Analyze API] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('='.repeat(80))
+    console.error('=== ANALYZE API ERROR ===')
+    console.error('Error:', error)
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Upload ID:', uploadId || 'NOT SET')
+    console.error('='.repeat(80))
+
+    // Handle authentication errors
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      console.error('=== AUTHENTICATION FAILED ===')
+      console.error('This is likely because the request came from server-to-server (no session cookies)')
+      console.error('='.repeat(80))
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 401 },
+      )
+    }
 
     // Try to update the upload status to failed (using uploadId from outer scope)
     if (uploadId) {

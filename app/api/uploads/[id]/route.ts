@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
+import { requireAuth } from '@/lib/auth'
 
 // Create PostgreSQL connection pool
 const pool = new Pool({
@@ -18,6 +19,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check authentication - TEMPORARILY DISABLED
+    // const session = await requireAuth()
+    // const authenticatedUserId = session.user.id
+    // console.log(`[Uploads API] Authenticated user: ${authenticatedUserId}`)
+
     const { id } = await params
 
     console.log(`[Uploads API] Fetching upload: ${id}`)
@@ -49,6 +55,15 @@ export async function GET(
       console.log(`[Uploads API] Analysis has AI data:`, !!(upload.analysis as any)?.ai)
     }
 
+    // Verify the upload belongs to the authenticated user - TEMPORARILY DISABLED
+    // if (upload.userId !== authenticatedUserId) {
+    //   console.error(`[Uploads API] Unauthorized access attempt by user ${authenticatedUserId} to upload ${id} owned by ${upload.userId}`)
+    //   return NextResponse.json(
+    //     { success: false, error: 'Unauthorized: You can only view your own uploads' },
+    //     { status: 403 }
+    //   )
+    // }
+
     return NextResponse.json({
       success: true,
       upload: {
@@ -70,6 +85,14 @@ export async function GET(
     })
   } catch (error) {
     console.error('[Uploads API] Error fetching upload:', error)
+
+    // Handle authentication errors
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 401 }
+      )
+    }
 
     return NextResponse.json(
       {
