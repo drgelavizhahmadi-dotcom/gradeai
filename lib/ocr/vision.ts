@@ -6,8 +6,8 @@ import vision from '@google-cloud/vision'
 import fs from 'fs'
 import path from 'path'
 
-// Import pdf-parse as CommonJS module
-//const pdfParse = require('pdf-parse')
+// PDF support temporarily disabled due to Node.js compatibility issues
+// pdf-parse requires Canvas/DOMMatrix which don't work in serverless environments
 
 // Get credentials file path from environment
 const rawCredentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -90,45 +90,27 @@ async function extractTextFromImageBuffer(imageBuffer: Buffer): Promise<string> 
 
 /**
  * Extracts text from a PDF buffer
+ * Currently disabled due to Node.js compatibility issues
  * @param pdfBuffer - The PDF file buffer
  * @returns The extracted text content
  */
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
-  console.log('[PDF] Starting PDF text extraction...')
+  console.log('[PDF] PDF upload detected')
   console.log(`[PDF] Buffer size: ${(pdfBuffer.length / 1024).toFixed(2)} KB`)
 
-  try {
-    const data = await pdfParse(pdfBuffer)
-
-    console.log(`[PDF] PDF parsed successfully`)
-    console.log(`[PDF] Number of pages: ${data.numpages}`)
-    console.log(`[PDF] Extracted ${data.text.length} characters`)
-
-    if (!data.text || data.text.trim().length === 0) {
-      console.log('[PDF] No text found in PDF - may be scanned/image-based')
-      throw new Error('This PDF does not contain extractable text. Please upload a JPG or PNG image of the test instead.')
-    }
-
-    console.log('[PDF] Preview:', data.text.substring(0, 100) + '...')
-    return data.text
-  } catch (error) {
-    console.error('[PDF] Error extracting text from PDF:', error)
-
-    if (error instanceof Error) {
-      // If it's already our custom error, re-throw it
-      if (error.message.includes('does not contain extractable text')) {
-        throw error
-      }
-      throw new Error(`PDF text extraction failed: ${error.message}`)
-    }
-
-    throw new Error('PDF text extraction failed: Unknown error')
-  }
+  // PDF support temporarily disabled due to Node.js compatibility issues
+  // pdf-parse requires Canvas/DOMMatrix which don't work in serverless environments
+  throw new Error(
+    'PDF files are not currently supported. ' +
+    'Please convert your PDF to JPG or PNG and upload again. ' +
+    'You can use a free tool like https://pdf2jpg.net'
+  )
 }
 
 /**
  * Extracts text from an image or PDF buffer
- * Supports: JPG, PNG (via Google Cloud Vision OCR), PDF (via pdf-parse)
+ * Supports: JPG, PNG (via Google Cloud Vision OCR)
+ * Note: PDF support temporarily disabled due to Node.js compatibility
  * @param fileBuffer - The image or PDF file buffer
  * @returns The extracted text content
  */

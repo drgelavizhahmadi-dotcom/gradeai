@@ -193,4 +193,40 @@ Respond with a JSON object matching this exact structure:
 - Be encouraging but honest about the situation
 - Validate parents' concerns while providing constructive guidance
 
-Return ONLY the JSON object, no additional text or explanation.`
+**CRITICAL JSON FORMATTING REQUIREMENTS:**
+1. Return ONLY valid JSON. No markdown, no code fences, no explanations.
+2. Start with { and end with }
+3. All strings must be properly quoted with double quotes
+4. No trailing commas after the last item in objects or arrays
+5. Escape special characters in strings (quotes, newlines, backslashes)
+6. All property names must be in double quotes
+7. Use null for missing optional values (like "url")
+
+Example of CORRECT JSON formatting:
+{
+  "gradeInterpretation": {
+    "meaning": "This is a string with \"escaped quotes\"",
+    "severity": "good",
+    "concernLevel": 3
+  },
+  "strengths": ["Strength 1", "Strength 2"]
+}
+
+**CRITICAL: Your response must be ONLY valid JSON with no additional text.**
+
+Rules for proper escaping:
+- Escape all quotes inside strings using \"
+- Use \\n for line breaks in strings, not actual newlines
+- Escape backslashes as \\\\
+- No trailing commas after the last item
+- No comments (// or /* */)
+- Test that your response would pass JSON.parse()
+
+Examples of proper escaping:
+{
+  "decoded": "Teacher wrote \"sehr gut\" meaning very good",
+  "action": "Practice daily\\nReview grammar rules\\nComplete homework",
+  "rationale": "This is important because it's the foundation"
+}
+
+Return ONLY the JSON object. Nothing before it, nothing after it.`

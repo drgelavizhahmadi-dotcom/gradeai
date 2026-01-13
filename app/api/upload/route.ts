@@ -4,6 +4,7 @@ import { join } from "path";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { analyzeUpload } from "@/lib/analysis";
 
 // Validation schema for file uploads
 const uploadSchema = z.object({
@@ -175,61 +176,43 @@ export async function POST(request: NextRequest) {
     console.log(`[Upload API] Upload created successfully: ${upload.id}`);
 
     // ============================================
-    // === TRIGGERING ANALYSIS ===
+    // === TRIGGERING ANALYSIS (NEW APPROACH) ===
     // ============================================
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const analyzeUrl = `${baseUrl}/api/analyze`;
-    const analyzePayload = { uploadId: upload.id };
-
+    // Call analysis function DIRECTLY instead of using HTTP fetch
+    // This eliminates auth issues and ensures analysis always runs
     console.log('='.repeat(60));
     console.log('=== TRIGGERING ANALYSIS ===');
     console.log('Upload ID:', upload.id);
-    console.log('Analyze URL:', analyzeUrl);
-    console.log('Analyze Payload:', JSON.stringify(analyzePayload));
     console.log('File Path:', filePath);
-    console.log('Base URL (NEXTAUTH_URL):', process.env.NEXTAUTH_URL || 'NOT SET (using localhost:3000)');
+    console.log('Method: Direct function call (no HTTP)');
     console.log('='.repeat(60));
 
-    // IMPORTANT: This fetch call happens BEFORE the response is returned to the client
-    // This is intentional - we want the upload to return immediately while analysis runs in background
-    fetch(analyzeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(analyzePayload),
-    })
-      .then(async (res) => {
-        console.log('='.repeat(60));
-        console.log('=== ANALYZE RESPONSE RECEIVED ===');
-        console.log('Status:', res.status);
-        console.log('Status Text:', res.statusText);
-        const contentType = res.headers.get('content-type');
-        console.log('Content-Type:', contentType);
-        console.log('='.repeat(60));
+    // Start analysis in background (don't await - let it run async)
+    analyzeUpload(upload.id).catch(async (error) => {
+      console.error('='.repeat(60));
+      console.error('=== ANALYSIS FAILED ===');
+      console.error('Upload ID:', upload.id);
+      console.error('Error:', error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('='.repeat(60));
 
-        if (!contentType?.includes('application/json')) {
-          const text = await res.text();
-          console.error('=== ERROR: Expected JSON but got text ===');
-          console.error('Response text (first 500 chars):', text.substring(0, 500));
-          console.error('='.repeat(60));
-        } else {
-          const data = await res.json();
-          console.log('=== ANALYZE SUCCESS ===');
-          console.log('Response data:', JSON.stringify(data, null, 2));
-          console.log('='.repeat(60));
-        }
-      })
-      .catch(err => {
-        console.error('='.repeat(60));
-        console.error('=== ANALYSIS TRIGGER FAILED ===');
-        console.error('Error:', err);
-        console.error('Error message:', err.message);
-        console.error('Error stack:', err.stack);
-        console.error('Error cause:', err.cause);
-        console.error('='.repeat(60));
-      });
+      // Try to update database with failed status
+      try {
+        await db.upload.update({
+          where: { id: upload.id },
+          data: {
+            analysisStatus: 'failed',
+            errorMessage: error instanceof Error ? error.message : 'Analysis failed: Unknown error',
+          },
+        });
+        console.log('[Upload API] Database updated with failed status');
+      } catch (updateError) {
+        console.error('[Upload API] Failed to update database with error status:', updateError);
+      }
+    });
 
-    console.log('=== Analysis fetch() called - running in background ===');
-    console.log('=== Returning response to client immediately ===');
+    console.log('[Upload API] Analysis started in background');
+    console.log('[Upload API] Returning response to client immediately');
 
     // Return success response with upload ID
     return NextResponse.json({

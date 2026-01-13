@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileImage, Loader2, AlertCircle } from "lucide-react";
+import { Upload, X, FileImage, FileText, Loader2, AlertCircle } from "lucide-react";
 import { z } from "zod";
 
 interface UploadZoneProps {
@@ -19,10 +19,9 @@ interface UploadResponse {
 
 const fileSchema = z.object({
   size: z.number().max(10485760, "File must be less than 10MB"),
-  type: z.enum(
-    ["image/jpeg", "image/png", "application/pdf"],
-    { errorMap: () => ({ message: "Only JPG, PNG, and PDF files are allowed" }) }
-  ),
+  type: z.enum(["image/jpeg", "image/png", "application/pdf"], {
+    message: "Only JPG, PNG, and PDF files are allowed"
+  }),
 });
 
 const formatFileSize = (bytes: number): string => {
@@ -58,7 +57,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
-        setError(err.errors[0].message);
+        setError(err.issues[0].message);
       }
       return false;
     }
@@ -224,8 +223,8 @@ export default function UploadZone({ childId }: UploadZoneProps) {
                   className="h-24 w-24 rounded-lg object-cover"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100">
-                  <FileImage className="h-10 w-10 text-gray-400" />
+                <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-red-50">
+                  <FileText className="h-10 w-10 text-red-600" />
                 </div>
               )}
             </div>
