@@ -54,6 +54,39 @@ function isLikelySchoolTest(text: string): boolean {
 }
 
 /**
+ * Checks if text is from an actual graded test (not blank/instructions)
+ * @param text - The extracted text to check
+ * @returns True if text appears to be a graded test with student work
+ */
+function isActualGradedTest(text: string): boolean {
+  const textLower = text.toLowerCase()
+
+  // Check for grade indicators - evidence that the test has been graded
+  const hasGrade = (
+    /note:\s*[1-6]/.test(textLower) ||           // "Note: 2.5"
+    /punkte:\s*\d+/.test(textLower) ||           // "Punkte: 15"
+    /\d+\s*\/\s*\d+\s*punkte/.test(textLower) || // "15/20 Punkte"
+    /sehr gut|gut|befriedigend|ausreichend|mangelhaft|ungenügend/.test(textLower) ||
+    /note\s*[1-6]/.test(textLower) ||            // "Note 2.5"
+    /\b[1-6][+-]?\b/.test(textLower)             // "2+", "3-", etc.
+  )
+
+  // Check if it's just instructions or blank test (no actual student work/grading)
+  const isInstructions = (
+    textLower.includes('instructions') ||
+    textLower.includes('anweisungen') ||
+    textLower.includes('aufgabenstellung') && !hasGrade ||
+    (textLower.includes('mediation') && !textLower.includes('name:')) ||
+    (textLower.includes('read the') && textLower.includes('write') && !hasGrade) ||
+    (textLower.includes('bearbeite') && !hasGrade) ||
+    (textLower.includes('löse') && !hasGrade)
+  )
+
+  // Must have grade indicators AND not be just instructions
+  return hasGrade && !isInstructions
+}
+
+/**
  * Checks if text contains technical/non-educational content
  * @param text - The extracted text to check
  * @returns True if text appears to be technical content
@@ -199,6 +232,33 @@ export async function analyzeUpload(uploadId: string): Promise<void> {
         '• Test questions and answers\n' +
         '• Grade or teacher comments\n' +
         '• Subject name'
+
+      await prisma.upload.update({
+        where: { id: uploadId },
+        data: {
+          analysisStatus: 'failed',
+          errorMessage: errorMessage,
+          extractedText: extractedText,
+        },
+      })
+
+      throw new Error(errorMessage)
+    }
+
+    // Third check: Is this an actual GRADED test (not blank/instructions)?
+    const isGraded = isActualGradedTest(extractedText)
+
+    if (!isGraded) {
+      console.error('[Analysis] ✗ Image appears to be exam instructions or blank test paper')
+      console.error('[Analysis] No grade indicators found')
+
+      const errorMessage = 'This appears to be exam instructions or a blank test paper, not a graded test result.\n\n' +
+        'Please upload the COMPLETED and GRADED test that shows:\n' +
+        '• Student\'s name\n' +
+        '• Written answers (student\'s work)\n' +
+        '• Grade or score (like "2.5" or "15/20 Punkte")\n' +
+        '• Teacher\'s corrections and comments\n\n' +
+        'We need the test AFTER it has been graded by the teacher, not the blank exam paper or instruction sheet.'
 
       await prisma.upload.update({
         where: { id: uploadId },
