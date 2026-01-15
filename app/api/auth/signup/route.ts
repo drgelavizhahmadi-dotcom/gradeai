@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { Pool } from 'pg'
+import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
-
-// Create PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-
-// Create Prisma adapter
-const adapter = new PrismaPg(pool)
-const prisma = new PrismaClient({ adapter })
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email },
     })
 
@@ -58,8 +47,8 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const hashedPassword = await hashPassword(password)
 
-    // Create the user
-    const user = await prisma.user.create({
+    // Create the user using db instead of prisma
+    const user = await db.user.create({
       data: {
         name,
         email,
@@ -93,7 +82,6 @@ export async function POST(request: NextRequest) {
       { error: 'An error occurred while creating your account' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
+  // Removed prisma.$disconnect() - not needed with db export
 }
