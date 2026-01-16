@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "prisma db push --skip-generate",
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
