@@ -1,107 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { Pool } from 'pg'
+import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
-
-// Create PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-
-// Create Prisma adapter
-const adapter = new PrismaPg(pool)
-
-const prisma = new PrismaClient({ adapter })
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }  // ← Changed to Promise
 ) {
   try {
-    // Check authentication - TEMPORARILY DISABLED
-    // const session = await requireAuth()
-    // const authenticatedUserId = session.user.id
-    // console.log(`[Uploads API] Authenticated user: ${authenticatedUserId}`)
+    const session = await requireAuth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const { id } = await params
+    // Await the params
+    const { id } = await params  // ← Added await
 
-    console.log(`[Uploads API] Fetching upload: ${id}`)
-
-    const upload = await prisma.upload.findUnique({
-      where: { id },
-      include: {
-        child: {
-          select: {
-            name: true,
-            grade: true,
-            schoolType: true,
-          },
-        },
+    const upload = await db.upload.findUnique({
+      where: { 
+        id: id,  // ← Use the awaited id
+        userId: session.user.id 
       },
+      include: { child: true }
     })
 
     if (!upload) {
-      console.log(`[Uploads API] Upload not found: ${id}`)
-      return NextResponse.json(
-        { success: false, error: 'Upload not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Upload not found' }, { status: 404 })
     }
 
-    console.log(`[Uploads API] Upload found: ${upload.fileName}, status: ${upload.analysisStatus}`)
-    console.log(`[Uploads API] Analysis field exists:`, !!upload.analysis)
-    if (upload.analysis) {
-      console.log(`[Uploads API] Analysis has AI data:`, !!(upload.analysis as any)?.ai)
-    }
-
-    // Verify the upload belongs to the authenticated user - TEMPORARILY DISABLED
-    // if (upload.userId !== authenticatedUserId) {
-    //   console.error(`[Uploads API] Unauthorized access attempt by user ${authenticatedUserId} to upload ${id} owned by ${upload.userId}`)
-    //   return NextResponse.json(
-    //     { success: false, error: 'Unauthorized: You can only view your own uploads' },
-    //     { status: 403 }
-    //   )
-    // }
-
-    return NextResponse.json({
-      success: true,
-      upload: {
-        id: upload.id,
-        fileName: upload.fileName,
-        fileSize: upload.fileSize,
-        mimeType: upload.mimeType,
-        analysisStatus: upload.analysisStatus,
-        subject: upload.subject,
-        grade: upload.grade,
-        teacherComment: upload.teacherComment,
-        extractedText: upload.extractedText,
-        errorMessage: upload.errorMessage,
-        uploadedAt: upload.uploadedAt.toISOString(),
-        processedAt: upload.processedAt?.toISOString() || null,
-        analysis: upload.analysis, // Add the analysis field from database
-        child: upload.child,
-      },
-    })
+    return NextResponse.json({ upload })
   } catch (error) {
-    console.error('[Uploads API] Error fetching upload:', error)
-
-    // Handle authentication errors
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 401 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch upload',
-      },
-      { status: 500 }
-    )
-  } finally {
-    await prisma.$disconnect()
+    console.error('[Uploads API] Error:', error)
+    return NextResponse.json({ error: 'Failed to fetch upload' }, { status: 500 })
   }
 }
