@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }  // ← Changed to Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireAuth()
@@ -12,12 +12,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Await the params
-    const { id } = await params  // ← Added await
+    const { id } = await params
 
     const upload = await db.upload.findUnique({
       where: { 
-        id: id,  // ← Use the awaited id
+        id: id,
         userId: session.user.id 
       },
       include: { child: true }
