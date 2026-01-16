@@ -45,7 +45,7 @@ export default function NewChildPage() {
 
       const data = await response.json()
 
-      if (data.success) {
+      if (response.ok) {
         router.push(`/children/${data.child.id}`)
       } else {
         setError(data.error || 'Failed to add child')

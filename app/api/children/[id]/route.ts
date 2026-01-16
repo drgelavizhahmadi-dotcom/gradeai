@@ -25,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'Child not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ child })
+    return NextResponse.json({ success: true, child })
   } catch (error) {
     console.error('[Children API] Error:', error)
     return NextResponse.json({ error: 'Failed to fetch child' }, { status: 500 })
@@ -54,7 +54,7 @@ export async function PUT(
       data: { name, grade, schoolType }
     })
 
-    return NextResponse.json({ child })
+    return NextResponse.json({ success: true, child })
   } catch (error) {
     console.error('[Children API] Error:', error)
     return NextResponse.json({ error: 'Failed to update child' }, { status: 500 })

@@ -33,20 +33,15 @@ export default function UploadPage() {
 
       const data = await response.json();
 
-      if (data.success && data.children) {
-        // Sort by createdAt DESC (newest first)
-        const sortedChildren = data.children.sort((a: any, b: any) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+      const sortedChildren = data.children.sort((a: any, b: any) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
 
-        setChildren(sortedChildren);
+      setChildren(sortedChildren);
 
-        // Pre-select the first child (most recently added)
-        if (sortedChildren.length > 0) {
-          setSelectedChildId(sortedChildren[0].id);
-        }
-      } else {
-        throw new Error(data.error || "Failed to load children");
+      // Pre-select the first child (most recently added)
+      if (sortedChildren.length > 0) {
+        setSelectedChildId(sortedChildren[0].id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load children");
@@ -92,82 +87,57 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Child Selection Card */}
-        <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Select Child
-          </h2>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">Loading children...</span>
+        {/* Loading State */}
+        {loading && (
+          <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
+            <div className="flex items-center justify-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <p className="text-gray-600">Loading children...</p>
             </div>
-          ) : children.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">
-                No children added yet. Please add a child first.
-              </p>
-              <Link
-                href="/children"
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
-                Add Child
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {children.map((child) => (
-                <div key={child.id} className="flex items-center gap-4">
-                  <input
-                    type="radio"
-                    id={child.id}
-                    name="child"
-                    value={child.id}
-                    checked={selectedChildId === child.id}
-                    onChange={(e) => setSelectedChildId(e.target.value)}
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor={child.id}
-                    className="flex-1 cursor-pointer rounded-lg hover:bg-gray-50 p-3 -m-3 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {child.name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Grade {child.grade} • {child.schoolType}
-                        </p>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Upload Zone - Only show if child is selected */}
-        {selectedChildId && (
-          <div className="mb-8">
-            <UploadZone childId={selectedChildId} />
           </div>
         )}
 
-        {/* Help Text */}
-        <div className="rounded-lg bg-blue-50 p-4">
-          <h3 className="mb-2 font-semibold text-blue-900">
-            Tips for best results:
-          </h3>
-          <ul className="space-y-1 text-sm text-blue-800">
-            <li>• Ensure the test is well-lit and all text is clearly visible</li>
-            <li>• Take the photo straight-on, not at an angle</li>
-            <li>• Include all pages if the test has multiple pages</li>
-            <li>• Supported formats: JPG, PNG, PDF (max 10MB)</li>
-          </ul>
-        </div>
+        {/* Child Selection Card */}
+        {!loading && !error && children.length > 0 && (
+          <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Select Child
+            </h2>
+
+            <select
+              value={selectedChildId}
+              onChange={(e) => setSelectedChildId(e.target.value)}
+              className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="">Select a child...</option>
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name} - Grade {child.grade}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Upload Zone */}
+        {!loading && !error && selectedChildId && (
+          <UploadZone childId={selectedChildId} />
+        )}
+
+        {/* No Children State */}
+        {!loading && !error && children.length === 0 && (
+          <div className="rounded-xl bg-white p-8 text-center shadow-md">
+            <p className="mb-4 text-gray-600">
+              You haven't added any children yet.
+            </p>
+            <Link
+              href="/children/new"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              Add Your First Child
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
