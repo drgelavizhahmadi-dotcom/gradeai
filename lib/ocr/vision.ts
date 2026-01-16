@@ -6,8 +6,6 @@ let client: vision.ImageAnnotatorClient | null = null
 function initializeVisionClient() {
   if (client) return client
 
-  let credentials: any
-
   const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS
 
   if (!credentialsJson) {
@@ -15,16 +13,10 @@ function initializeVisionClient() {
   }
 
   try {
-    // Try to parse as JSON string first (for Vercel)
-    if (credentialsJson.startsWith('{')) {
-      credentials = JSON.parse(credentialsJson)
-    } else {
-      // Otherwise treat as file path (for local development)
-      const fs = require('fs')
-      const path = require('path')
-      const resolvedPath = path.resolve(credentialsJson.trim())
-      credentials = JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'))
-    }
+    // Parse credentials from JSON string
+    const credentials = typeof credentialsJson === 'string' 
+      ? JSON.parse(credentialsJson) 
+      : credentialsJson
 
     console.log('[Vision Client] Initializing Google Cloud Vision client...')
     console.log('[Vision Client] Client email:', credentials.client_email)
@@ -44,9 +36,6 @@ export function getVisionClient() {
   return initializeVisionClient()
 }
 
-/**
- * Extracts text from images or PDFs
- */
 export async function extractText(fileBuffer: Buffer): Promise<string> {
   const isPdf = fileBuffer.toString('utf8', 0, 4) === '%PDF'
 
@@ -57,9 +46,6 @@ export async function extractText(fileBuffer: Buffer): Promise<string> {
   }
 }
 
-/**
- * Extracts text from an image using Google Cloud Vision API
- */
 async function extractTextFromImage(imageBuffer: Buffer): Promise<string> {
   const client = getVisionClient()
 
@@ -79,9 +65,6 @@ async function extractTextFromImage(imageBuffer: Buffer): Promise<string> {
   return detections[0].description || ''
 }
 
-/**
- * Extracts text from a PDF
- */
 async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
   try {
     console.warn('[OCR] PDF support requires text-based PDFs. Image-based PDFs are not supported in production.')
@@ -92,9 +75,6 @@ async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
   }
 }
 
-/**
- * Parses German test/assignment text to extract structured information
- */
 export function parseGermanTest(text: string): ParsedTestData {
   const gradePattern = /(?:Note|Grade|Benotung)[\s:]*([1-6][\s+\-]?\.?[5]?)/i
   const subjectPattern = /(?:Fach|Subject)[\s:]*([A-Za-z]+)/i
