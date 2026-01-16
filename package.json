@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
-    "test-ocr": "tsx scripts/test-ocr.ts"
+    "test-ocr": "tsx scripts/test-ocr.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.9",
