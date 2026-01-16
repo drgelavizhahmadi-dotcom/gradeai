@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { analyzeUpload } from "@/lib/analysis";
+import { analyzeUploadBuffer } from "@/lib/analysis";
+import { uploadFileToStorage } from "@/lib/storage";
 
 // Validation schema for file uploads
 const uploadSchema = z.object({
@@ -88,13 +87,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure the child belongs to the authenticated user - TEMPORARILY DISABLED
-    // if (child.userId !== authenticatedUserId) {
-    //   return NextResponse.json(
-    //     { success: false, error: "Unauthorized: You can only upload tests for your own children" },
-    //     { status: 403 }
-    //   );
-    // }
+    // Ensure the child belongs to the authenticated user
+    if (child.userId !== authenticatedUserId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: You can only upload tests for your own children" },
+        { status: 403 }
+      );
+    }
 
     // ===== DUPLICATE DETECTION =====
     // Check if this file was already uploaded for this child
@@ -135,37 +134,21 @@ export async function POST(request: NextRequest) {
       }
 
       // If the existing upload failed, allow re-upload by continuing
-      // We'll create a new upload record and let the user try again
       console.log(`[Upload API] Previous upload failed. Allowing re-upload.`);
     }
     // ===== END DUPLICATE DETECTION =====
 
-    // Create unique filename with timestamp
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const fileName = `${timestamp}-${originalName}`;
-
-    // Ensure tmp directory exists
-    const tmpDir = join(process.cwd(), "tmp");
-    try {
-      await mkdir(tmpDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist, that's fine
-    }
-
-    // Save file to tmp directory
-    const filePath = join(tmpDir, fileName);
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
 
-    // Create Upload record in database
+    // Create Upload record in database FIRST (without fileUrl)
     const upload = await db.upload.create({
       data: {
         userId: child.userId,
         childId: childId,
         fileName: file.name,
-        fileUrl: filePath, // Store absolute path instead of relative
+        fileUrl: "", // Will be updated after upload to storage
         fileSize: file.size,
         mimeType: file.type,
         analysisStatus: "pending",
@@ -173,22 +156,53 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`[Upload API] Upload created successfully: ${upload.id}`);
+    console.log(`[Upload API] Upload record created: ${upload.id}`);
+
+    // Upload file to Google Cloud Storage
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const storageFileName = `uploads/${upload.id}/${timestamp}-${sanitizedName}`;
+    
+    try {
+      const fileUrl = await uploadFileToStorage(storageFileName, buffer, file.type);
+      
+      // Update upload record with storage URL
+      await db.upload.update({
+        where: { id: upload.id },
+        data: { fileUrl }
+      });
+
+      console.log(`[Upload API] File uploaded to storage: ${fileUrl}`);
+    } catch (storageError) {
+      console.error('[Upload API] Storage upload failed:', storageError);
+      
+      // Mark upload as failed
+      await db.upload.update({
+        where: { id: upload.id },
+        data: {
+          analysisStatus: 'failed',
+          errorMessage: 'Failed to upload file to storage'
+        }
+      });
+
+      return NextResponse.json(
+        { success: false, error: "Failed to upload file to storage" },
+        { status: 500 }
+      );
+    }
 
     // ============================================
-    // === TRIGGERING ANALYSIS (NEW APPROACH) ===
+    // === TRIGGERING ANALYSIS ===
     // ============================================
-    // Call analysis function DIRECTLY instead of using HTTP fetch
-    // This eliminates auth issues and ensures analysis always runs
     console.log('='.repeat(60));
     console.log('=== TRIGGERING ANALYSIS ===');
     console.log('Upload ID:', upload.id);
-    console.log('File Path:', filePath);
-    console.log('Method: Direct function call (no HTTP)');
+    console.log('File Size:', buffer.length, 'bytes');
+    console.log('Method: Buffer processing (serverless compatible)');
     console.log('='.repeat(60));
 
     // Start analysis in background (don't await - let it run async)
-    analyzeUpload(upload.id).catch(async (error) => {
+    analyzeUploadBuffer(upload.id, buffer).catch(async (error) => {
       console.error('='.repeat(60));
       console.error('=== ANALYSIS FAILED ===');
       console.error('Upload ID:', upload.id);
@@ -228,16 +242,6 @@ export async function POST(request: NextRequest) {
         { success: false, error: error.message },
         { status: 401 }
       );
-    }
-
-    // Handle Prisma errors
-    if (error && typeof error === "object" && "code" in error) {
-      if (error.code === "P2002") {
-        return NextResponse.json(
-          { success: false, error: "Duplicate upload detected" },
-          { status: 409 }
-        );
-      }
     }
 
     // Generic error response

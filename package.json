@@ -15,6 +15,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.9",
     "@anthropic-ai/sdk": "^0.71.2",
+    "@google-cloud/storage": "^7.18.0",
     "@google-cloud/vision": "^5.3.4",
     "@next-auth/prisma-adapter": "^1.0.0",
     "@prisma/adapter-pg": "^7.2.0",

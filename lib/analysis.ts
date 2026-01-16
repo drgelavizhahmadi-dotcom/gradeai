@@ -4,18 +4,17 @@
  */
 
 import { db } from '@/lib/db'
-import fs from 'fs'
 import { extractText, parseGermanTest } from '@/lib/ocr/vision'
 import { analyzeTest } from '@/lib/ai/claude'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
 
 /**
- * Main analysis function that processes an upload from start to finish
- * Eliminates HTTP-based analysis to prevent reliability issues
+ * Analysis function that processes file buffer directly (Vercel serverless compatible)
  */
-export async function analyzeUpload(uploadId: string): Promise<void> {
+export async function analyzeUploadBuffer(uploadId: string, fileBuffer: Buffer): Promise<void> {
   console.log('='.repeat(80));
-  console.log('[Analysis] Starting analysis for upload:', uploadId);
+  console.log('[Analysis] Starting buffer-based analysis for upload:', uploadId);
+  console.log('[Analysis] Buffer size:', fileBuffer.length, 'bytes');
   console.log('='.repeat(80));
 
   try {
@@ -42,21 +41,16 @@ export async function analyzeUpload(uploadId: string): Promise<void> {
     });
     console.log('[Analysis] ✓ Status updated to processing');
 
-    // Step 3: Read file from disk
-    console.log('[Analysis] Step 3: Reading file from disk...');
-    const fileBuffer = fs.readFileSync(upload.fileUrl);
-    console.log('[Analysis] ✓ File read successfully:', fileBuffer.length, 'bytes');
-
-    // Step 4: Extract text with OCR
-    console.log('[Analysis] Step 4: Extracting text with OCR...');
+    // Step 3: Extract text with OCR
+    console.log('[Analysis] Step 3: Extracting text with OCR...');
     const extractedText = await extractText(fileBuffer);
     console.log('[Analysis] ✓ Text extracted:', extractedText.length, 'characters');
     if (extractedText.length < 10) {
       throw new Error('Insufficient text extracted from image');
     }
 
-    // Step 5: Three-stage validation
-    console.log('[Analysis] Step 5: Running three-stage validation...');
+    // Step 4: Three-stage validation
+    console.log('[Analysis] Step 4: Running three-stage validation...');
     
     // Stage 1: Reject technical content
     if (containsTechnicalContent(extractedText)) {
@@ -76,8 +70,8 @@ export async function analyzeUpload(uploadId: string): Promise<void> {
     }
     console.log('[Analysis] ✓ Stage 3: Actual graded test');
 
-    // Step 6: Parse German test data
-    console.log('[Analysis] Step 6: Parsing German test data...');
+    // Step 5: Parse German test data
+    console.log('[Analysis] Step 5: Parsing German test data...');
     const parsedData = parseGermanTest(extractedText);
     console.log('[Analysis] ✓ Parsed data:', {
       subject: parsedData.subject,
@@ -88,8 +82,8 @@ export async function analyzeUpload(uploadId: string): Promise<void> {
     // Convert grade to float
     const gradeFloat = parsedData.grade ? convertGermanGrade(parsedData.grade) : null;
 
-    // Step 7: AI Analysis with Claude
-    console.log('[Analysis] Step 7: Running AI analysis...');
+    // Step 6: AI Analysis with Claude
+    console.log('[Analysis] Step 6: Running AI analysis...');
     const aiAnalysis = await analyzeTest({
       subject: parsedData.subject,
       grade: parsedData.grade,
@@ -101,8 +95,8 @@ export async function analyzeUpload(uploadId: string): Promise<void> {
     });
     console.log('[Analysis] ✓ AI analysis completed');
 
-    // Step 8: Update database with results
-    console.log('[Analysis] Step 8: Updating database with results...');
+    // Step 7: Update database with results
+    console.log('[Analysis] Step 7: Updating database with results...');
     const analysisData = {
       parsedAt: new Date().toISOString(),
       confidence: 'medium',
