@@ -1,5 +1,4 @@
-// Source - https://stackoverflow.com/a
-// Posted by JoyShaheb
-// Retrieved 2026-01-16, License - CC BY-SA 4.0
-
-{ "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
+{
+  "buildCommand": "next build",
+  "outputDirectory": ".next"
+}
