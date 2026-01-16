@@ -1,18 +1,12 @@
+import NextAuth, { getServerSession } from 'next-auth'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { db } from '@/lib/db'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { db as database } from '@/lib/db'
+import type { NextAuthOptions } from 'next-auth'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-
-const adapter = new PrismaPg(pool)
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(database),
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(db),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -25,15 +19,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
-        const user = await database.user.findUnique({
+        const user = await db.user.findUnique({
           where: { email: credentials.email }
         })
 
-        if (!user || !user.password) {
+        if (!user || !user.hashedPassword) {
           return null
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
+        const isValid = await bcrypt.compare(credentials.password, user.hashedPassword)
 
         if (!isValid) {
           return null
@@ -48,7 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -63,5 +57,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session
     }
+  },
+  pages: {
+    signIn: '/login',
   }
-})
+}
+
+export const auth = () => getServerSession(authOptions)
+
+export async function requireAuth() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized: User must be authenticated')
+  }
+  return session
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10)
+  return bcrypt.hash(password, salt)
+}
+
+export default NextAuth(authOptions)

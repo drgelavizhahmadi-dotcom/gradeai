@@ -83,5 +83,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-  // Removed prisma.$disconnect() - not needed with db export
 }
