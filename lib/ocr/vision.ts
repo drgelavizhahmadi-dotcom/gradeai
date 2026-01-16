@@ -1,6 +1,5 @@
 import vision from '@google-cloud/vision'
-import { pdf } from 'pdf-parse'
-import { convert } from 'pdf-to-png-converter'
+import pdfParse from 'pdf-parse'
 import type { ParsedTestData } from './types'
 
 let client: vision.ImageAnnotatorClient | null = null
@@ -76,50 +75,28 @@ async function extractTextFromImage(imageBuffer: Buffer): Promise<string> {
 }
 
 /**
- * Extracts text from a PDF
+ * Extracts text from a PDF using pdf-parse
+ * Note: pdf-to-png-converter doesn't work in serverless, so we only support text PDFs
  */
 async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
   try {
-    // Try direct PDF text extraction first
-    const pdfData = await pdf(pdfBuffer)
+    // Parse PDF and extract text
+    const pdfData = await pdfParse(pdfBuffer)
     const extractedText = pdfData.text
 
-    // If we got substantial text, return it
-    if (extractedText && extractedText.trim().length > 100) {
+    // If we got text, return it
+    if (extractedText && extractedText.trim().length > 0) {
       return extractedText
     }
 
-    // Otherwise, fall back to OCR (image-based PDF)
-    console.log('[OCR] PDF text extraction yielded minimal text, falling back to OCR...')
-    return extractTextFromPdfWithOcr(pdfBuffer)
+    // For image-based PDFs in serverless, we can't process them
+    // Log a warning and return empty string
+    console.warn('[OCR] PDF appears to be image-based. Image-based PDFs are not supported in production.')
+    return ''
   } catch (error) {
-    console.log('[OCR] PDF parsing failed, attempting OCR approach:', error)
-    return extractTextFromPdfWithOcr(pdfBuffer)
+    console.error('[OCR] PDF parsing failed:', error)
+    return ''
   }
-}
-
-/**
- * Extracts text from a PDF by converting pages to images and running OCR
- */
-async function extractTextFromPdfWithOcr(pdfBuffer: Buffer): Promise<string> {
-  const pages = await convert({
-    fileBuffer: pdfBuffer,
-    pagesToProcess: [],
-    outputType: 'image/png',
-  })
-
-  let combinedText = ''
-
-  for (let i = 0; i < pages.length; i++) {
-    const pageImage = pages[i]
-    const pageText = await extractTextFromImage(pageImage.png)
-    combinedText += pageText
-    if (i < pages.length - 1) {
-      combinedText += '\n--- Page Break ---\n'
-    }
-  }
-
-  return combinedText
 }
 
 /**
