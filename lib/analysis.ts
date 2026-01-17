@@ -6,31 +6,53 @@
 import { db } from '@/lib/db'
 import { extractText, parseGermanTest } from '@/lib/ocr/vision'
 import { analyzeTest as analyzeWithGroq } from '@/lib/ai/groq'
+import { analyzeTest as analyzeWithGemini } from '@/lib/ai/gemini'
+import { analyzeTest as analyzeWithDeepSeek } from '@/lib/ai/deepseek'
 import { analyzeTest as analyzeWithClaude } from '@/lib/ai/claude'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
 
 /**
  * Smart AI provider selector with fallback logic
- * Priority: Groq (free) → Claude (paid fallback)
+ * Priority: Groq (free, fast) → Gemini (free) → DeepSeek (cheap) → Claude (paid fallback)
  */
 async function analyzeTest(params: Parameters<typeof analyzeWithGroq>[0]) {
-  // Try Groq first (free and fast)
+  // Try Groq first (free and fastest)
   if (process.env.GROQ_API_KEY) {
     try {
       console.log('[AI Provider] Using Groq as primary provider')
       return await analyzeWithGroq(params)
     } catch (error) {
-      console.warn('[AI Provider] Groq failed, falling back to Claude:', error instanceof Error ? error.message : 'Unknown error')
+      console.warn('[AI Provider] Groq failed:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
-  // Fallback to Claude
+  // Try Gemini second (free with generous limits)
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      console.log('[AI Provider] Using Gemini as fallback provider')
+      return await analyzeWithGemini(params)
+    } catch (error) {
+      console.warn('[AI Provider] Gemini failed:', error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
+
+  // Try DeepSeek third (very cheap)
+  if (process.env.DEEPSEEK_API_KEY) {
+    try {
+      console.log('[AI Provider] Using DeepSeek as fallback provider')
+      return await analyzeWithDeepSeek(params)
+    } catch (error) {
+      console.warn('[AI Provider] DeepSeek failed:', error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
+
+  // Final fallback to Claude
   if (process.env.ANTHROPIC_API_KEY) {
-    console.log('[AI Provider] Using Claude as fallback provider')
+    console.log('[AI Provider] Using Claude as final fallback provider')
     return await analyzeWithClaude(params)
   }
 
-  throw new Error('No AI provider available - set GROQ_API_KEY or ANTHROPIC_API_KEY')
+  throw new Error('No AI provider available - set at least one: GROQ_API_KEY, GEMINI_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY')
 }
 
 /**
