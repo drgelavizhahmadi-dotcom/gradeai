@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
             id: true,
             uploadedAt: true,
             fileName: true,
-            overallGrade: true,
-            status: true
+            grade: true,
+            analysisStatus: true
           }
         }
       }

@@ -32,11 +32,11 @@ interface Upload {
   id: string
   fileName: string
   uploadedAt: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  analysisStatus: 'pending' | 'processing' | 'completed' | 'failed'
   child: {
     name: string
   }
-  overallGrade: number | null
+  grade: number | null
 }
 
 interface Stats {
@@ -67,8 +67,8 @@ export default function DashboardPage() {
         // Calculate stats for each child
         const childrenWithStats = childrenData.children.map((child: any) => {
           const uploads = child.uploads || []
-          const completedUploads = uploads.filter((u: any) => u.status === 'completed')
-          const grades = completedUploads.map((u: any) => u.overallGrade).filter((g: any) => g !== null)
+          const completedUploads = uploads.filter((u: any) => u.analysisStatus === 'completed')
+          const grades = completedUploads.map((u: any) => u.grade).filter((g: any) => g !== null)
           
           return {
             id: child.id,
@@ -100,10 +100,10 @@ export default function DashboardPage() {
         // Calculate overall stats
         const totalTests = allUploads.length
         const pendingTests = allUploads.filter((u: any) => 
-          u.status === 'pending' || u.status === 'processing'
+          u.analysisStatus === 'pending' || u.analysisStatus === 'processing'
         ).length
-        const completedTests = allUploads.filter((u: any) => u.status === 'completed')
-        const allGrades = completedTests.map((u: any) => u.overallGrade).filter((g: any) => g !== null)
+        const completedTests = allUploads.filter((u: any) => u.analysisStatus === 'completed')
+        const allGrades = completedTests.map((u: any) => u.grade).filter((g: any) => g !== null)
         
         setStats({
           totalTests,
@@ -366,11 +366,11 @@ export default function DashboardPage() {
                         <p className="font-semibold text-gray-900 truncate">{upload.fileName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-sm text-gray-600">{upload.child.name}</span>
-                          {upload.overallGrade && (
+                          {upload.grade && (
                             <>
                               <span className="text-gray-400">•</span>
-                              <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.overallGrade)}`}>
-                                {upload.overallGrade.toFixed(1)}
+                              <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.grade)}`}>
+                                {upload.grade.toFixed(1)}
                               </span>
                             </>
                           )}
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                       <div className="text-right hidden sm:block">
                         <p className="text-xs text-gray-500">{formatDate(upload.uploadedAt)}</p>
                       </div>
-                      {getStatusBadge(upload.status)}
+                      {getStatusBadge(upload.analysisStatus)}
                     </div>
                   </div>
                 </Link>
