@@ -107,15 +107,15 @@ export async function analyzeTest(params: AnalyzeTestParams): Promise<TestAnalys
     }
 
     // Validate response structure
-    if (!analysis.summary || !analysis.strengths || !analysis.weaknesses || !analysis.recommendations) {
+    if (!analysis.gradeInterpretation || !analysis.strengths || !analysis.weaknesses || !analysis.actionPlan) {
       throw new Error('Invalid analysis structure from Groq AI - missing required fields')
     }
 
     console.log('[Groq AI] ✓ Analysis complete')
-    console.log('[Groq AI]   Summary:', analysis.summary.substring(0, 100) + '...')
+    console.log('[Groq AI]   Grade interpretation:', analysis.gradeInterpretation.meaning.substring(0, 100) + '...')
     console.log('[Groq AI]   Strengths:', analysis.strengths.length)
     console.log('[Groq AI]   Weaknesses:', analysis.weaknesses.length)
-    console.log('[Groq AI]   Recommendations:', analysis.recommendations.length)
+    console.log('[Groq AI]   Action plan priorities:', Object.keys(analysis.actionPlan).length)
 
     return analysis
 
