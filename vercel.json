@@ -1,6 +1,4 @@
 {
-  "buildCommand": "prisma generate && next build",
-  "outputDirectory": ".next",
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 60,
