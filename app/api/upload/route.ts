@@ -27,13 +27,13 @@ export async function POST(request: NextRequest) {
 
     // Parse form data
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const files = formData.getAll("files") as File[];
     const childId = formData.get("childId") as string | null;
 
     // Validate required fields
-    if (!file) {
+    if (!files || files.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No file provided" },
+        { success: false, error: "No files provided" },
         { status: 400 }
       );
     }
@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    console.log(`[Upload API] Received ${files.length} file(s) for one test`)
 
     // Validate childId format
     try {
@@ -57,26 +59,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate file type
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid file type. Only JPG, PNG, and PDF files are allowed",
-        },
-        { status: 400 }
-      );
-    }
+    // Validate all files
+    for (const file of files) {
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Invalid file type for ${file.name}. Only JPG, PNG, and PDF files are allowed`,
+          },
+          { status: 400 }
+        );
+      }
 
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "File size exceeds 10MB limit",
-        },
-        { status: 400 }
-      );
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `File ${file.name} exceeds 10MB limit`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Verify child exists and belongs to authenticated user
@@ -99,98 +102,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ===== DUPLICATE DETECTION =====
-    // Check if this file was already uploaded for this child
-    const existingUpload = await db.upload.findFirst({
-      where: {
-        childId: childId,
-        fileName: file.name,
-      },
-      orderBy: {
-        uploadedAt: 'desc'
-      }
-    });
+    // ===== MULTI-FILE UPLOAD FOR ONE TEST =====
+    // Convert all files to buffers and upload to storage
+    const fileBuffers: Buffer[] = [];
+    const uploadedFileUrls: string[] = [];
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
-    if (existingUpload) {
-      console.log(`[Upload API] Duplicate file detected: ${file.name} for child ${childId}`);
-      console.log(`[Upload API] Existing upload ID: ${existingUpload.id}, status: ${existingUpload.analysisStatus}`);
+    // Create a single Upload record for all pages of this test
+    const fileName = files.length === 1 
+      ? files[0].name 
+      : `${files[0].name.split('.')[0]}_${files.length}_pages`;
 
-      // If the existing upload has completed analysis, redirect to it
-      if (existingUpload.analysisStatus === 'completed' && existingUpload.analysis) {
-        console.log(`[Upload API] Redirecting to existing upload with completed analysis`);
-        return NextResponse.json({
-          success: true,
-          uploadId: existingUpload.id,
-          isDuplicate: true,
-          message: "This test was already uploaded. Showing existing analysis.",
-        });
-      }
-
-      // If the existing upload is still processing, redirect to it
-      if (existingUpload.analysisStatus === 'processing' || existingUpload.analysisStatus === 'pending') {
-        console.log(`[Upload API] Redirecting to existing upload that is ${existingUpload.analysisStatus}`);
-        return NextResponse.json({
-          success: true,
-          uploadId: existingUpload.id,
-          isDuplicate: true,
-          message: "This test is already being processed. Showing progress...",
-        });
-      }
-
-      // If the existing upload failed, allow re-upload by continuing
-      console.log(`[Upload API] Previous upload failed. Allowing re-upload.`);
-    }
-    // ===== END DUPLICATE DETECTION =====
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Create Upload record in database FIRST (without fileUrl)
     const upload = await db.upload.create({
       data: {
         userId: child.userId,
         childId: childId,
-        fileName: file.name,
-        fileUrl: "", // Will be updated after upload to storage
-        fileSize: file.size,
-        mimeType: file.type,
+        fileName: fileName,
+        fileUrl: "", // Will be updated with first file URL
+        fileSize: totalSize,
+        mimeType: files[0].type,
         analysisStatus: "pending",
         uploadedAt: new Date(),
       },
     });
 
-    console.log(`[Upload API] Upload record created: ${upload.id}`);
+    console.log(`[Upload API] Upload record created: ${upload.id} for ${files.length} file(s)`);
 
-    // Upload file to Google Cloud Storage
-    const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const storageFileName = `uploads/${upload.id}/${timestamp}-${sanitizedName}`;
-    
+    // Upload all files to storage and collect buffers
     try {
-      const fileUrl = await uploadFileToStorage(storageFileName, buffer, file.type);
-      
-      // Update upload record with storage URL
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        fileBuffers.push(buffer);
+
+        const timestamp = Date.now();
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const storageFileName = `uploads/${upload.id}/page_${i + 1}_${timestamp}-${sanitizedName}`;
+        
+        const fileUrl = await uploadFileToStorage(storageFileName, buffer, file.type);
+        uploadedFileUrls.push(fileUrl);
+        console.log(`[Upload API] File ${i + 1}/${files.length} uploaded: ${fileUrl}`);
+      }
+
+      // Update upload record with first file URL (for reference)
       await db.upload.update({
         where: { id: upload.id },
-        data: { fileUrl }
+        data: { fileUrl: uploadedFileUrls[0] }
       });
 
-      console.log(`[Upload API] File uploaded to storage: ${fileUrl}`);
+      console.log(`[Upload API] All ${files.length} files uploaded successfully`);
     } catch (storageError) {
       console.error('[Upload API] Storage upload failed:', storageError);
       
-      // Mark upload as failed
       await db.upload.update({
         where: { id: upload.id },
         data: {
           analysisStatus: 'failed',
-          errorMessage: 'Failed to upload file to storage'
+          errorMessage: 'Failed to upload files to storage'
         }
       });
 
       return NextResponse.json(
-        { success: false, error: "Failed to upload file to storage" },
+        { success: false, error: "Failed to upload files to storage" },
         { status: 500 }
       );
     }
@@ -201,12 +175,13 @@ export async function POST(request: NextRequest) {
     console.log('='.repeat(60));
     console.log('=== TRIGGERING ANALYSIS ===');
     console.log('Upload ID:', upload.id);
-    console.log('File Size:', buffer.length, 'bytes');
-    console.log('Method: Buffer processing (serverless compatible)');
+    console.log('Total Files:', files.length);
+    console.log('Total Size:', totalSize, 'bytes');
+    console.log('Method: Multi-buffer processing (serverless compatible)');
     console.log('='.repeat(60));
 
-    // Start analysis in background (don't await - let it run async)
-    analyzeUploadBuffer(upload.id, buffer).catch(async (error) => {
+    // Start analysis in background with ALL file buffers (combined OCR)
+    analyzeUploadBuffer(upload.id, fileBuffers).catch(async (error) => {
       console.error('='.repeat(60));
       console.error('=== ANALYSIS FAILED ===');
       console.error('Upload ID:', upload.id);
@@ -229,7 +204,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('[Upload API] Analysis started in background');
+    console.log(`[Upload API] Analysis started in background for ${files.length} file(s)`);
     console.log('[Upload API] Returning response to client immediately');
 
     // Return success response with upload ID

@@ -56,12 +56,18 @@ async function analyzeTest(params: Parameters<typeof analyzeWithGroq>[0]) {
 }
 
 /**
- * Analysis function that processes file buffer directly (Vercel serverless compatible)
+ * Analysis function that processes file buffer(s) directly (Vercel serverless compatible)
+ * Supports multiple buffers for multi-page tests
  */
-export async function analyzeUploadBuffer(uploadId: string, fileBuffer: Buffer): Promise<void> {
+export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer | Buffer[]): Promise<void> {
+  // Convert single buffer to array for consistent handling
+  const buffers = Array.isArray(fileBuffers) ? fileBuffers : [fileBuffers];
+  const totalSize = buffers.reduce((sum, buf) => sum + buf.length, 0);
+
   console.log('='.repeat(80));
   console.log('[Analysis] Starting buffer-based analysis for upload:', uploadId);
-  console.log('[Analysis] Buffer size:', fileBuffer.length, 'bytes');
+  console.log('[Analysis] Number of files/pages:', buffers.length);
+  console.log('[Analysis] Total buffer size:', totalSize, 'bytes');
   console.log('='.repeat(80));
 
   try {
@@ -88,12 +94,26 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffer: Buffer):
     });
     console.log('[Analysis] ✓ Status updated to processing');
 
-    // Step 3: Extract text with OCR
-    console.log('[Analysis] Step 3: Extracting text with OCR...');
-    const extractedText = await extractText(fileBuffer);
-    console.log('[Analysis] ✓ Text extracted:', extractedText.length, 'characters');
+    // Step 3: Extract text with OCR from ALL pages
+    console.log('[Analysis] Step 3: Extracting text with OCR from all pages...');
+    let combinedExtractedText = '';
+    
+    for (let i = 0; i < buffers.length; i++) {
+      console.log(`[Analysis]   Processing page ${i + 1}/${buffers.length}...`);
+      const pageText = await extractText(buffers[i]);
+      console.log(`[Analysis]   ✓ Page ${i + 1} extracted: ${pageText.length} characters`);
+      
+      if (buffers.length > 1) {
+        combinedExtractedText += `\n\n--- PAGE ${i + 1} ---\n\n${pageText}`;
+      } else {
+        combinedExtractedText = pageText;
+      }
+    }
+
+    const extractedText = combinedExtractedText;
+    console.log('[Analysis] ✓ Total text extracted:', extractedText.length, 'characters');
     if (extractedText.length < 10) {
-      throw new Error('Insufficient text extracted from image');
+      throw new Error('Insufficient text extracted from images');
     }
 
     // Step 4: Three-stage validation

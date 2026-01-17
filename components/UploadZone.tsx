@@ -140,42 +140,37 @@ export default function UploadZone({ childId }: UploadZoneProps) {
     setError(null);
 
     try {
-      const uploadIds: string[] = [];
+      console.log(`[UploadZone] Uploading ${files.length} file(s) as ONE test`);
 
-      // Upload files sequentially
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("childId", childId);
+      const formData = new FormData();
+      
+      // Add all files with the key "files"
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+      formData.append("childId", childId);
 
-        console.log(`[UploadZone] Uploading file ${i + 1}/${files.length}: ${file.name}`);
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("[UploadZone] Non-JSON response:", text);
+        throw new Error(
+          text.includes("Request Entity Too Large") || text.includes("413")
+            ? "Files are too large. Please use smaller files (max 10MB each)."
+            : "Server error. Please try again later."
+        );
+      }
 
-        // Check if response is JSON
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          // Response is not JSON - likely an error from server/proxy
-          const text = await response.text();
-          console.error("[UploadZone] Non-JSON response:", text);
-          throw new Error(
-            text.includes("Request Entity Too Large") || text.includes("413")
-              ? "File is too large. Please use a smaller file (max 10MB)."
-              : "Server error. Please try again later."
-          );
-        }
+      const data: UploadResponse = await response.json();
 
-        const data: UploadResponse = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || "Upload failed");
-        }
-
-        uploadIds.push(data.uploadId);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Upload failed");
       }
 
       // Clean up previews
@@ -183,13 +178,9 @@ export default function UploadZone({ childId }: UploadZoneProps) {
         if (preview) URL.revokeObjectURL(preview);
       });
 
-      // Redirect based on number of uploads
-      if (uploadIds.length === 1) {
-        router.push(`/uploads/${uploadIds[0]}`);
-      } else {
-        // Multiple uploads - redirect to dashboard/children page
-        router.push(`/children/${childId}`);
-      }
+      // Always redirect to the single upload result page
+      console.log(`[UploadZone] Upload successful, redirecting to /uploads/${data.uploadId}`);
+      router.push(`/uploads/${data.uploadId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
       setIsUploading(false);
@@ -225,13 +216,13 @@ export default function UploadZone({ childId }: UploadZoneProps) {
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="mb-2 text-lg font-semibold text-gray-900">
-            Upload Test Images or PDFs
+            Upload Test Pages
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            Drag and drop your files here, or click to browse
+            Upload all pages of ONE test together (drag multiple files or click to browse)
           </p>
           <p className="text-xs text-gray-500">
-            Accepts JPG, PNG, PDF • Max 10MB per file • Multiple files supported
+            Accepts JPG, PNG, PDF • Max 10MB per file • All pages will be analyzed as one test
           </p>
           <input
             ref={fileInputRef}
@@ -291,7 +282,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
               className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-100"
             >
               <Upload className="h-4 w-4" />
-              Add More Files
+              Add More Pages
             </button>
           )}
 
@@ -304,12 +295,12 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             {isUploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading {files.length} {files.length === 1 ? 'file' : 'files'}...
+                Uploading {files.length} {files.length === 1 ? 'page' : 'pages'}...
               </>
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                Upload {files.length} {files.length === 1 ? 'file' : 'files'}
+                Analyze {files.length} {files.length === 1 ? 'page' : 'pages'}
               </>
             )}
           </button>
