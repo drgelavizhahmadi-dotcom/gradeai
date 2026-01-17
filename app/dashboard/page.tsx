@@ -184,7 +184,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link
-          href="/children"
+          href="/dashboard"
           className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-purple-500 hover:bg-purple-50 transition-all group"
         >
           <div className="mx-auto w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">

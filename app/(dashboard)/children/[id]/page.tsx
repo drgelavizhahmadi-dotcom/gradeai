@@ -174,10 +174,10 @@ export default function ChildProfilePage() {
           description="The child profile you're looking for doesn't exist or may have been deleted."
           action={
             <Link
-              href="/children"
+              href="/dashboard"
               className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
             >
-              Back to Children
+              Back to Dashboard
             </Link>
           }
         />

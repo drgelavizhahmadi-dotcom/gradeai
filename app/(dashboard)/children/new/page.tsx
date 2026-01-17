@@ -162,7 +162,7 @@ export default function NewChildPage() {
           {/* Submit Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Link
-              href="/children"
+              href="/dashboard"
               className="flex-1 flex items-center justify-center rounded-lg bg-gray-100 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
             >
               Cancel
