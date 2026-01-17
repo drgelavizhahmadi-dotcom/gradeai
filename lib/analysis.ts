@@ -13,26 +13,26 @@ import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
 
 /**
  * Smart AI provider selector with fallback logic
- * Priority: Groq (free, fast) → Gemini (free) → DeepSeek (cheap) → Claude (paid fallback)
+ * Priority: Gemini (free, best) → Groq (free, fast) → DeepSeek (cheap) → Claude (paid fallback)
  */
 async function analyzeTest(params: Parameters<typeof analyzeWithGroq>[0]) {
-  // Try Groq first (free and fastest)
-  if (process.env.GROQ_API_KEY) {
-    try {
-      console.log('[AI Provider] Using Groq as primary provider')
-      return await analyzeWithGroq(params)
-    } catch (error) {
-      console.warn('[AI Provider] Groq failed:', error instanceof Error ? error.message : 'Unknown error')
-    }
-  }
-
-  // Try Gemini second (free with generous limits)
+  // Try Gemini first (free with generous limits, best quality)
   if (process.env.GEMINI_API_KEY) {
     try {
-      console.log('[AI Provider] Using Gemini as fallback provider')
+      console.log('[AI Provider] Using Gemini as primary provider')
       return await analyzeWithGemini(params)
     } catch (error) {
       console.warn('[AI Provider] Gemini failed:', error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
+
+  // Try Groq second (free and fastest)
+  if (process.env.GROQ_API_KEY) {
+    try {
+      console.log('[AI Provider] Using Groq as fallback provider')
+      return await analyzeWithGroq(params)
+    } catch (error) {
+      console.warn('[AI Provider] Groq failed:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -52,7 +52,7 @@ async function analyzeTest(params: Parameters<typeof analyzeWithGroq>[0]) {
     return await analyzeWithClaude(params)
   }
 
-  throw new Error('No AI provider available - set at least one: GROQ_API_KEY, GEMINI_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY')
+  throw new Error('No AI provider available - set at least one: GEMINI_API_KEY, GROQ_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY')
 }
 
 /**
