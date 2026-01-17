@@ -131,7 +131,7 @@ export default function UploadPage() {
               You haven't added any children yet.
             </p>
             <Link
-              href="/children/new"
+              href="/dashboard/children/new"
               className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
             >
               Add Your First Child
