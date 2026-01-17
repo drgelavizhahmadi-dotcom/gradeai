@@ -15,7 +15,8 @@ const uploadSchema = z.object({
 });
 
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total for all files
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,6 +60,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Calculate total size
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    
+    // Validate total size
+    if (totalSize > MAX_TOTAL_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Total file size (${(totalSize / 1024 / 1024).toFixed(1)}MB) exceeds 50MB limit. Please reduce image quality or number of pages.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Validate all files
     for (const file of files) {
       if (!ALLOWED_FILE_TYPES.includes(file.type)) {
@@ -75,7 +90,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `File ${file.name} exceeds 10MB limit`,
+            error: `File ${file.name} exceeds 15MB limit. Please compress the image.`,
           },
           { status: 400 }
         );
@@ -106,7 +121,6 @@ export async function POST(request: NextRequest) {
     // Convert all files to buffers and upload to storage
     const fileBuffers: Buffer[] = [];
     const uploadedFileUrls: string[] = [];
-    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
     // Create a single Upload record for all pages of this test
     const fileName = files.length === 1 

@@ -18,11 +18,13 @@ interface UploadResponse {
 }
 
 const fileSchema = z.object({
-  size: z.number().max(10485760, "File must be less than 10MB"),
+  size: z.number().max(15728640, "File must be less than 15MB"),
   type: z.enum(["image/jpeg", "image/png", "application/pdf"], {
     message: "Only JPG, PNG, and PDF files are allowed"
   }),
 });
+
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
 
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + " B";
@@ -136,6 +138,13 @@ export default function UploadZone({ childId }: UploadZoneProps) {
   const handleUpload = async () => {
     if (files.length === 0) return;
 
+    // Check total size
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalSize > MAX_TOTAL_SIZE) {
+      setError(`Total file size (${(totalSize / 1024 / 1024).toFixed(1)}MB) exceeds 50MB limit. Please reduce image quality or number of pages.`);
+      return;
+    }
+
     setIsUploading(true);
     setError(null);
 
@@ -222,7 +231,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             Upload all pages of ONE test together (drag multiple files or click to browse)
           </p>
           <p className="text-xs text-gray-500">
-            Accepts JPG, PNG, PDF • Max 10MB per file • All pages will be analyzed as one test
+            Accepts JPG, PNG, PDF • Max 15MB per file • 50MB total • All pages analyzed as one test
           </p>
           <input
             ref={fileInputRef}

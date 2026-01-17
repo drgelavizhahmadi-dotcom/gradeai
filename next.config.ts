@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
-    // Increase body size limit to 15MB (larger than our 10MB limit for safety)
+    // Increase body size limit to 50MB to support multi-page test uploads
     serverActions: {
-      bodySizeLimit: '15mb',
+      bodySizeLimit: '50mb',
     },
   },
 };
