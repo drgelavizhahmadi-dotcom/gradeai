@@ -39,6 +39,8 @@ export default function Breadcrumbs() {
       // Handle specific routes
       if (segment === 'children') {
         label = 'Children'
+        // Children list is shown on dashboard, don't make it a link
+        currentPath = '/dashboard'
       } else if (segment === 'new') {
         label = 'Add New'
       } else if (segment === 'upload') {
