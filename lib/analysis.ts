@@ -5,8 +5,33 @@
 
 import { db } from '@/lib/db'
 import { extractText, parseGermanTest } from '@/lib/ocr/vision'
-import { analyzeTest } from '@/lib/ai/claude'
+import { analyzeTest as analyzeWithGroq } from '@/lib/ai/groq'
+import { analyzeTest as analyzeWithClaude } from '@/lib/ai/claude'
 import { convertGermanGrade } from '@/lib/ocr/gradeConverter'
+
+/**
+ * Smart AI provider selector with fallback logic
+ * Priority: Groq (free) → Claude (paid fallback)
+ */
+async function analyzeTest(params: Parameters<typeof analyzeWithGroq>[0]) {
+  // Try Groq first (free and fast)
+  if (process.env.GROQ_API_KEY) {
+    try {
+      console.log('[AI Provider] Using Groq as primary provider')
+      return await analyzeWithGroq(params)
+    } catch (error) {
+      console.warn('[AI Provider] Groq failed, falling back to Claude:', error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
+
+  // Fallback to Claude
+  if (process.env.ANTHROPIC_API_KEY) {
+    console.log('[AI Provider] Using Claude as fallback provider')
+    return await analyzeWithClaude(params)
+  }
+
+  throw new Error('No AI provider available - set GROQ_API_KEY or ANTHROPIC_API_KEY')
+}
 
 /**
  * Analysis function that processes file buffer directly (Vercel serverless compatible)
