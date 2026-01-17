@@ -6,17 +6,29 @@ let client: vision.ImageAnnotatorClient | null = null
 function initializeVisionClient() {
   if (client) return client
 
-  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS
+  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+  const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON
 
-  if (!credentialsJson) {
-    throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set')
+  if (!credentialsPath && !credentialsJson) {
+    throw new Error('Google Cloud credentials not configured. Set GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CREDENTIALS_JSON')
   }
 
   try {
-    // Parse credentials from JSON string
-    const credentials = typeof credentialsJson === 'string' 
-      ? JSON.parse(credentialsJson) 
-      : credentialsJson
+    let credentials
+    if (credentialsJson) {
+      // Vercel: Use JSON string from environment variable
+      credentials = JSON.parse(credentialsJson)
+    } else if (credentialsPath) {
+      // Local: Use file path
+      const fs = require('fs')
+      const credentialsContent = fs.readFileSync(credentialsPath, 'utf8')
+      credentials = JSON.parse(credentialsContent)
+    }
+
+    // Ensure private_key has proper newlines (fix \n literals)
+    if (credentials.private_key && typeof credentials.private_key === 'string') {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n')
+    }
 
     console.log('[Vision Client] Initializing Google Cloud Vision client...')
     console.log('[Vision Client] Client email:', credentials.client_email)

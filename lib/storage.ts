@@ -14,9 +14,16 @@ export function getStorageClient(): Storage {
       credentials = JSON.parse(credentialsJson)
     } else if (credentialsPath) {
       // Local: Use file path
-      credentials = require(credentialsPath)
+      const fs = require('fs')
+      const credentialsContent = fs.readFileSync(credentialsPath, 'utf8')
+      credentials = JSON.parse(credentialsContent)
     } else {
       throw new Error('Google Cloud credentials not configured')
+    }
+
+    // Ensure private_key has proper newlines (fix \n literals)
+    if (credentials.private_key && typeof credentials.private_key === 'string') {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n')
     }
 
     storageClient = new Storage({
