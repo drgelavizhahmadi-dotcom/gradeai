@@ -1,4 +1,10 @@
 {
   "buildCommand": "next build && npx prisma db push --accept-data-loss",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
 }

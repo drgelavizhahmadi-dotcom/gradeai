@@ -5,6 +5,10 @@ import { requireAuth } from "@/lib/auth";
 import { analyzeUploadBuffer } from "@/lib/analysis";
 import { uploadFileToStorage } from "@/lib/storage";
 
+// Route segment config for increased body size limit
+export const runtime = 'nodejs'; // Use Node.js runtime for better file handling
+export const maxDuration = 60; // Maximum execution time in seconds
+
 // Validation schema for file uploads
 const uploadSchema = z.object({
   childId: z.string().min(1, "Child ID is required"),

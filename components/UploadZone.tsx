@@ -142,6 +142,19 @@ export default function UploadZone({ childId }: UploadZoneProps) {
         body: formData,
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        // Response is not JSON - likely an error from server/proxy
+        const text = await response.text();
+        console.error("[UploadZone] Non-JSON response:", text);
+        throw new Error(
+          text.includes("Request Entity Too Large") || text.includes("413")
+            ? "File is too large. Please use a smaller file (max 10MB)."
+            : "Server error. Please try again later."
+        );
+      }
+
       const data: UploadResponse = await response.json();
 
       if (!response.ok || !data.success) {
