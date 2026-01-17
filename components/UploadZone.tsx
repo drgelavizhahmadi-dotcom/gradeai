@@ -31,20 +31,20 @@ const formatFileSize = (bytes: number): string => {
 };
 
 export default function UploadZone({ childId }: UploadZoneProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Clean up preview URL on unmount
+  // Clean up preview URLs on unmount
   useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview);
+      previews.forEach(preview => URL.revokeObjectURL(preview));
     };
-  }, [preview]);
+  }, [previews]);
 
   const validateFile = (selectedFile: File): boolean => {
     setError(null);
@@ -63,20 +63,37 @@ export default function UploadZone({ childId }: UploadZoneProps) {
     }
   };
 
-  const handleFileSelect = (selectedFile: File) => {
-    if (!validateFile(selectedFile)) {
-      return;
+  const handleFileSelect = (selectedFiles: File[]) => {
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const selectedFile of selectedFiles) {
+      if (!validateFile(selectedFile)) {
+        continue;
+      }
+
+      validFiles.push(selectedFile);
+
+      // Generate preview for images
+      if (selectedFile.type.startsWith("image/")) {
+        const previewUrl = URL.createObjectURL(selectedFile);
+        newPreviews.push(previewUrl);
+      } else {
+        newPreviews.push('');
+      }
     }
 
-    setFile(selectedFile);
+    setFiles(prev => [...prev, ...validFiles]);
+    setPreviews(prev => [...prev, ...newPreviews]);
+  };
 
-    // Generate preview for images
-    if (selectedFile.type.startsWith("image/")) {
-      const previewUrl = URL.createObjectURL(selectedFile);
-      setPreview(previewUrl);
-    } else {
-      setPreview(null);
-    }
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => {
+      const preview = prev[index];
+      if (preview) URL.revokeObjectURL(preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -101,77 +118,77 @@ export default function UploadZone({ childId }: UploadZoneProps) {
     e.stopPropagation();
     setIsDragging(false);
 
-    const droppedFiles = e.dataTransfer.files;
+    const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length > 0) {
-      handleFileSelect(droppedFiles[0]);
+      handleFileSelect(droppedFiles);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles && selectedFiles.length > 0) {
-      handleFileSelect(selectedFiles[0]);
+      handleFileSelect(Array.from(selectedFiles));
     }
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
-    if (preview) {
-      URL.revokeObjectURL(preview);
-      setPreview(null);
-    }
-    setError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("childId", childId);
+      const uploadIds: string[] = [];
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      // Upload files sequentially
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("childId", childId);
+
+        console.log(`[UploadZone] Uploading file ${i + 1}/${files.length}: ${file.name}`);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          // Response is not JSON - likely an error from server/proxy
+          const text = await response.text();
+          console.error("[UploadZone] Non-JSON response:", text);
+          throw new Error(
+            text.includes("Request Entity Too Large") || text.includes("413")
+              ? "File is too large. Please use a smaller file (max 10MB)."
+              : "Server error. Please try again later."
+          );
+        }
+
+        const data: UploadResponse = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Upload failed");
+        }
+
+        uploadIds.push(data.uploadId);
+      }
+
+      // Clean up previews
+      previews.forEach(preview => {
+        if (preview) URL.revokeObjectURL(preview);
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        // Response is not JSON - likely an error from server/proxy
-        const text = await response.text();
-        console.error("[UploadZone] Non-JSON response:", text);
-        throw new Error(
-          text.includes("Request Entity Too Large") || text.includes("413")
-            ? "File is too large. Please use a smaller file (max 10MB)."
-            : "Server error. Please try again later."
-        );
-      }
-
-      const data: UploadResponse = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Upload failed");
-      }
-
-      // Clean up and redirect
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-
-      // If this is a duplicate, we'll redirect with a query parameter to show the message
-      if (data.isDuplicate && data.message) {
-        console.log(`[UploadZone] Duplicate detected: ${data.message}`);
-        router.push(`/uploads/${data.uploadId}?duplicate=true&message=${encodeURIComponent(data.message)}`);
+      // Redirect based on number of uploads
+      if (uploadIds.length === 1) {
+        router.push(`/uploads/${uploadIds[0]}`);
       } else {
-        router.push(`/uploads/${data.uploadId}`);
+        // Multiple uploads - redirect to dashboard/children page
+        router.push(`/children/${childId}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
@@ -190,7 +207,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       )}
 
       {/* Upload Zone or File Preview */}
-      {!file ? (
+      {files.length === 0 ? (
         <div
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
@@ -208,76 +225,91 @@ export default function UploadZone({ childId }: UploadZoneProps) {
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="mb-2 text-lg font-semibold text-gray-900">
-            Upload Test Image or PDF
+            Upload Test Images or PDFs
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            Drag and drop your file here, or click to browse
+            Drag and drop your files here, or click to browse
           </p>
           <p className="text-xs text-gray-500">
-            Accepts JPG, PNG, PDF • Max 10MB
+            Accepts JPG, PNG, PDF • Max 10MB per file • Multiple files supported
           </p>
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,application/pdf"
             onChange={handleFileInputChange}
+            multiple
             className="hidden"
           />
         </div>
       ) : (
-        <div className="rounded-xl bg-white p-6 shadow-md">
-          <div className="flex items-start gap-4">
-            {/* Preview */}
-            <div className="flex-shrink-0">
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="h-24 w-24 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-red-50">
-                  <FileText className="h-10 w-10 text-red-600" />
-                </div>
-              )}
-            </div>
+        <div className="rounded-xl bg-white p-6 shadow-md space-y-4">
+          {/* File List */}
+          {files.map((file, index) => (
+            <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+              {/* Preview */}
+              <div className="flex-shrink-0">
+                {previews[index] ? (
+                  <img
+                    src={previews[index]}
+                    alt="Preview"
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-red-50">
+                    <FileText className="h-8 w-8 text-red-600" />
+                  </div>
+                )}
+              </div>
 
-            {/* File Info */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-lg font-semibold text-gray-900 truncate">
-                {file.name}
-              </h4>
-              <p className="text-sm text-gray-600">
-                {formatFileSize(file.size)}
-              </p>
-            </div>
+              {/* File Info */}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-base font-semibold text-gray-900 truncate">
+                  {file.name}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {formatFileSize(file.size)}
+                </p>
+              </div>
 
-            {/* Remove Button */}
+              {/* Remove Button */}
+              <button
+                onClick={() => removeFile(index)}
+                disabled={isUploading}
+                className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 disabled:opacity-50"
+                aria-label="Remove file"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+
+          {/* Add More Button */}
+          {!isUploading && (
             <button
-              onClick={handleRemoveFile}
-              disabled={isUploading}
-              className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-              aria-label="Remove file"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-100"
             >
-              <X className="h-5 w-5" />
+              <Upload className="h-4 w-4" />
+              Add More Files
             </button>
-          </div>
+          )}
 
           {/* Upload Button */}
           <button
             onClick={handleUpload}
             disabled={isUploading}
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isUploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading {files.length} {files.length === 1 ? 'file' : 'files'}...
               </>
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                Upload & Analyze
+                Upload {files.length} {files.length === 1 ? 'file' : 'files'}
               </>
             )}
           </button>

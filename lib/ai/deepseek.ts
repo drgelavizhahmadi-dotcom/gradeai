@@ -19,6 +19,7 @@ export interface AnalyzeTestParams {
   childName: string
   studentGrade: number
   schoolType: string
+  previousTests?: string
 }
 
 /**
@@ -57,6 +58,7 @@ export async function analyzeTest(params: AnalyzeTestParams): Promise<TestAnalys
       .replace(/{teacherComment}/g, params.teacherComment || 'No teacher comment provided')
       .replace(/{extractedText}/g, params.extractedText)
       .replace(/{childName}/g, params.childName)
+      .replace(/{previousTests}/g, params.previousTests || '')
       .replace(/{studentGrade}/g, params.studentGrade.toString())
       .replace(/{schoolType}/g, params.schoolType)
 

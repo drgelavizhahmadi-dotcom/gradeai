@@ -129,8 +129,46 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffer: Buffer):
     // Convert grade to float
     const gradeFloat = parsedData.grade ? convertGermanGrade(parsedData.grade) : null;
 
-    // Step 6: AI Analysis with Claude
-    console.log('[Analysis] Step 6: Running AI analysis...');
+    // Step 5.5: Fetch previous tests for comprehensive assessment
+    console.log('[Analysis] Step 5.5: Fetching previous tests for pattern analysis...');
+    const previousUploads = await db.upload.findMany({
+      where: {
+        childId: upload.childId,
+        id: { not: uploadId },
+        analysisStatus: 'completed',
+        subject: parsedData.subject || undefined, // Same subject if detected
+      },
+      orderBy: { uploadedAt: 'desc' },
+      take: 5, // Last 5 tests
+      select: {
+        grade: true,
+        subject: true,
+        teacherComment: true,
+        uploadedAt: true,
+        analysis: true,
+      }
+    });
+
+    let previousTestsContext = '';
+    if (previousUploads.length > 0) {
+      console.log(`[Analysis] ✓ Found ${previousUploads.length} previous test(s) in ${parsedData.subject || 'this subject'}`);
+      previousTestsContext = `\n**Previous Test History (for pattern analysis):**\n`;
+      previousUploads.forEach((prev, idx) => {
+        previousTestsContext += `\nTest ${idx + 1} (${new Date(prev.uploadedAt).toLocaleDateString('de-DE')}):\n`;
+        previousTestsContext += `- Grade: ${prev.grade || 'Unknown'}\n`;
+        previousTestsContext += `- Subject: ${prev.subject || 'Unknown'}\n`;
+        if (prev.teacherComment) {
+          previousTestsContext += `- Teacher Comment: ${prev.teacherComment}\n`;
+        }
+      });
+      previousTestsContext += `\nPlease identify patterns across these tests and the current test to provide a comprehensive assessment of the student's academic trajectory.\n`;
+    } else {
+      console.log('[Analysis] No previous tests found');
+      previousTestsContext = '\n**Previous Test History:** No previous tests available for pattern analysis.\n';
+    }
+
+    // Step 6: AI Analysis with previous test context
+    console.log('[Analysis] Step 6: Running AI analysis with historical context...');
     const aiAnalysis = await analyzeTest({
       subject: parsedData.subject,
       grade: parsedData.grade,
@@ -138,7 +176,8 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffer: Buffer):
       extractedText: extractedText,
       childName: upload.child.name,
       studentGrade: upload.child.grade,
-      schoolType: upload.child.schoolType
+      schoolType: upload.child.schoolType,
+      previousTests: previousTestsContext
     });
     console.log('[Analysis] ✓ AI analysis completed');
 

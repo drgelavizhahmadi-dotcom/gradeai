@@ -56,10 +56,14 @@ export interface TestAnalysis {
     confidence: 'low' | 'medium' | 'high'
     reasoning: string
   }
+  patterns?: {
+    acrossTests: string // Patterns observed across multiple tests (if applicable)
+    trendDirection: 'improving' | 'stable' | 'declining' | 'insufficient-data'
+  }
 }
 
 /**
- * Analysis Prompt for Claude AI
+ * Analysis Prompt for AI
  *
  * Placeholders:
  * - {subject}: The school subject (e.g., "Mathematik", "Deutsch")
@@ -69,6 +73,7 @@ export interface TestAnalysis {
  * - {childName}: Student's name
  * - {studentGrade}: Grade level (e.g., "7", "10")
  * - {schoolType}: Type of school (e.g., "Gymnasium", "Realschule")
+ * - {previousTests}: Summary of previous test results (optional)
  */
 export const ANALYSIS_PROMPT = `You are an expert educational consultant specializing in the German school system. You are helping immigrant parents who may not fully understand German grading, educational terminology, or the school system's expectations.
 
@@ -79,15 +84,17 @@ export const ANALYSIS_PROMPT = `You are an expert educational consultant special
 - Subject: {subject}
 - Grade Received: {grade}
 
-**Test Information:**
+**Current Test Information:**
 Teacher's Comment:
 {teacherComment}
 
 Full Test Content (OCR extracted):
 {extractedText}
 
+{previousTests}
+
 **Your Task:**
-Analyze this test result and provide comprehensive, empathetic guidance to the parents. Remember that:
+Analyze this test result and provide comprehensive, empathetic guidance to the parents. If previous test data is provided, identify patterns and trends across all tests to give a holistic assessment. Remember that:
 
 1. **Cultural Sensitivity**: The parents may be unfamiliar with German educational standards and terminology. Explain everything clearly without assuming prior knowledge.
 
@@ -179,6 +186,10 @@ Respond with a JSON object matching this exact structure:
     "endOfSemester": "Predicted semester grade or academic outcome if current performance continues",
     "confidence": "low|medium|high",
     "reasoning": "Explanation of prediction basis and factors that could change the outcome"
+  },
+  "patterns": {
+    "acrossTests": "If multiple tests provided: comprehensive analysis of patterns, recurring strengths/weaknesses, and overall trajectory. If single test: 'Insufficient data - single test analyzed'",
+    "trendDirection": "improving|stable|declining|insufficient-data"
   }
 }
 
