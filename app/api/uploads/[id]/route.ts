@@ -23,12 +23,12 @@ export async function GET(
     })
 
     if (!upload) {
-      return NextResponse.json({ error: 'Upload not found' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Upload not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ upload })
+    return NextResponse.json({ success: true, upload })
   } catch (error) {
     console.error('[Uploads API] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch upload' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to fetch upload' }, { status: 500 })
   }
 }
