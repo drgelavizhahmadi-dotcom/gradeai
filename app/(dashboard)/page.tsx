@@ -255,7 +255,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Your Children</h2>
           <Link
-            href="/children/add"
+            href="/children/new"
             className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -407,7 +407,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link
-          href="/children/add"
+          href="/children/new"
           className="group rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-purple-500 hover:bg-purple-50 transition-all"
         >
           <div className="mx-auto w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
