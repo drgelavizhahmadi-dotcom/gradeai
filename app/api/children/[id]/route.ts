@@ -18,6 +18,20 @@ export async function GET(
       where: { 
         id: id,
         userId: session.user.id 
+      },
+      include: {
+        uploads: {
+          orderBy: { uploadedAt: 'desc' },
+          select: {
+            id: true,
+            fileName: true,
+            uploadedAt: true,
+            analysisStatus: true,
+            subject: true,
+            grade: true,
+            analysis: true,
+          }
+        }
       }
     })
 

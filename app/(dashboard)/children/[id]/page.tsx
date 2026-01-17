@@ -31,9 +31,8 @@ interface Upload {
   id: string
   fileName: string
   uploadedAt: string
-  analysisStatus: string
-  subject: string | null
-  grade: number | null
+  status: string
+  overallGrade: number | null
 }
 
 interface Stats {
@@ -81,14 +80,14 @@ export default function ChildProfilePage() {
 
         // Calculate stats from uploads
         const uploads = childData.child.uploads || []
-        const completed = uploads.filter((u: Upload) => u.analysisStatus === 'completed')
-        const gradesArray = completed.map((u: Upload) => u.grade).filter((g: number | null) => g !== null)
+        const completed = uploads.filter((u: Upload) => u.status === 'completed')
+        const gradesArray = completed.map((u: Upload) => u.overallGrade).filter((g: number | null) => g !== null)
 
         setStats({
           totalTests: uploads.length,
           averageGrade: gradesArray.length > 0 ? gradesArray.reduce((a: number, b: number) => a + b, 0) / gradesArray.length : null,
           completedTests: completed.length,
-          pendingTests: uploads.filter((u: Upload) => u.analysisStatus === 'pending' || u.analysisStatus === 'processing').length,
+          pendingTests: uploads.filter((u: Upload) => u.status === 'pending' || u.status === 'processing').length,
         })
 
         setUploads(uploads)
@@ -310,14 +309,14 @@ export default function ChildProfilePage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{upload.fileName}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        {upload.subject && (
-                          <span className="text-sm text-gray-600">{upload.subject}</span>
-                        )}
-                        {upload.grade && (
+                        <span className="text-sm text-gray-600">
+                          {new Date(upload.uploadedAt).toLocaleDateString()}
+                        </span>
+                        {upload.overallGrade && (
                           <>
-                            {upload.subject && <span className="text-gray-400">•</span>}
-                            <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.grade)}`}>
-                              {upload.grade.toFixed(1)}
+                            <span className="text-gray-400">•</span>
+                            <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.overallGrade)}`}>
+                              {upload.overallGrade.toFixed(1)}
                             </span>
                           </>
                         )}
@@ -326,9 +325,9 @@ export default function ChildProfilePage() {
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <span className="text-xs text-gray-500 hidden sm:block">
-                      {new Date(upload.uploadedAt).toLocaleDateString()}
+                      {new Date(upload.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    {getStatusBadge(upload.analysisStatus)}
+                    {getStatusBadge(upload.status)}
                   </div>
                 </div>
               </Link>

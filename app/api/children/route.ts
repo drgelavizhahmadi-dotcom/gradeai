@@ -11,7 +11,19 @@ export async function GET(request: NextRequest) {
 
     const children = await db.child.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        uploads: {
+          orderBy: { uploadedAt: 'desc' },
+          select: {
+            id: true,
+            uploadedAt: true,
+            fileName: true,
+            overallGrade: true,
+            status: true
+          }
+        }
+      }
     })
 
     return NextResponse.json({ children })

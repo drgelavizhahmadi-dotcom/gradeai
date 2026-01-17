@@ -32,12 +32,11 @@ interface Upload {
   id: string
   fileName: string
   uploadedAt: string
-  analysisStatus: 'pending' | 'processing' | 'completed' | 'failed'
+  status: 'pending' | 'processing' | 'completed' | 'failed'
   child: {
     name: string
   }
-  grade: number | null
-  subject: string | null
+  overallGrade: number | null
 }
 
 interface Stats {
@@ -53,65 +52,71 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // TODO: Replace with real API calls in Week 4
-    // For now, using hardcoded data with Max Mustermann
-
-    const mockChildren: Child[] = [
-      {
-        id: 'child-1',
-        name: 'Max Mustermann',
-        grade: 7,
-        schoolType: 'Gymnasium',
-        totalTests: 12,
-        averageGrade: 2.3,
-        lastTestDate: new Date().toISOString(),
-      }
-    ]
-
-    const mockUploads: Upload[] = [
-      {
-        id: 'upload-1',
-        fileName: 'Mathe-Test-Dezember.pdf',
-        uploadedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        analysisStatus: 'completed',
-        child: { name: 'Max Mustermann' },
-        grade: 2.0,
-        subject: 'Mathematik',
-      },
-      {
-        id: 'upload-2',
-        fileName: 'Deutsch-Aufsatz.pdf',
-        uploadedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        analysisStatus: 'completed',
-        child: { name: 'Max Mustermann' },
-        grade: 2.5,
-        subject: 'Deutsch',
-      },
-      {
-        id: 'upload-3',
-        fileName: 'Englisch-Vokabeltest.jpg',
-        uploadedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        analysisStatus: 'processing',
-        child: { name: 'Max Mustermann' },
-        grade: null,
-        subject: 'Englisch',
-      },
-    ]
-
-    const mockStats: Stats = {
-      totalTests: 12,
-      pendingTests: 1,
-      averageGrade: 2.3,
-    }
-
-    // Simulate loading
-    setTimeout(() => {
-      setChildren(mockChildren)
-      setRecentUploads(mockUploads)
-      setStats(mockStats)
-      setLoading(false)
-    }, 500)
+    fetchDashboardData()
   }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch children with their stats
+      const childrenResponse = await fetch('/api/children')
+      const childrenData = await childrenResponse.json()
+
+      if (childrenData.children) {
+        // Calculate stats for each child
+        const childrenWithStats = childrenData.children.map((child: any) => {
+          const uploads = child.uploads || []
+          const completedUploads = uploads.filter((u: any) => u.status === 'completed')
+          const grades = completedUploads.map((u: any) => u.overallGrade).filter((g: any) => g !== null)
+          
+          return {
+            id: child.id,
+            name: child.name,
+            grade: child.grade,
+            schoolType: child.schoolType,
+            totalTests: uploads.length,
+            averageGrade: grades.length > 0 ? grades.reduce((a: number, b: number) => a + b, 0) / grades.length : null,
+            lastTestDate: uploads.length > 0 ? uploads[0].uploadedAt : null,
+          }
+        })
+
+        setChildren(childrenWithStats)
+
+        // Flatten all uploads for recent activity
+        const allUploads = childrenData.children.flatMap((child: any) => 
+          (child.uploads || []).map((upload: any) => ({
+            ...upload,
+            child: { name: child.name }
+          }))
+        )
+
+        // Sort by date and take the 5 most recent
+        const sortedUploads = allUploads.sort((a: any, b: any) => 
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+        )
+        setRecentUploads(sortedUploads.slice(0, 5))
+
+        // Calculate overall stats
+        const totalTests = allUploads.length
+        const pendingTests = allUploads.filter((u: any) => 
+          u.status === 'pending' || u.status === 'processing'
+        ).length
+        const completedTests = allUploads.filter((u: any) => u.status === 'completed')
+        const allGrades = completedTests.map((u: any) => u.overallGrade).filter((g: any) => g !== null)
+        
+        setStats({
+          totalTests,
+          pendingTests,
+          averageGrade: allGrades.length > 0 ? allGrades.reduce((a: number, b: number) => a + b, 0) / allGrades.length : null,
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -361,17 +366,11 @@ export default function DashboardPage() {
                         <p className="font-semibold text-gray-900 truncate">{upload.fileName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-sm text-gray-600">{upload.child.name}</span>
-                          {upload.subject && (
+                          {upload.overallGrade && (
                             <>
                               <span className="text-gray-400">•</span>
-                              <span className="text-sm text-gray-600">{upload.subject}</span>
-                            </>
-                          )}
-                          {upload.grade && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.grade)}`}>
-                                {upload.grade.toFixed(1)}
+                              <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.overallGrade)}`}>
+                                {upload.overallGrade.toFixed(1)}
                               </span>
                             </>
                           )}
@@ -382,7 +381,7 @@ export default function DashboardPage() {
                       <div className="text-right hidden sm:block">
                         <p className="text-xs text-gray-500">{formatDate(upload.uploadedAt)}</p>
                       </div>
-                      {getStatusBadge(upload.analysisStatus)}
+                      {getStatusBadge(upload.status)}
                     </div>
                   </div>
                 </Link>
