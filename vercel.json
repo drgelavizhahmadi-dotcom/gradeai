@@ -1,4 +1,5 @@
 {
+  "version": 16,
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 60,
