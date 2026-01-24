@@ -1,3 +1,21 @@
+
+// Vercel Google credentials workaround
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  // Use dynamic import for fs and path to avoid issues in edge runtimes
+  // Only run in Node.js
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const path = require('path');
+    const credsPath = path.join('/tmp', 'google-credentials.json');
+    fs.writeFileSync(credsPath, process.env.GOOGLE_CREDENTIALS_JSON);
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
+  } catch (e) {
+    // Ignore if not in Node.js
+  }
+}
+
 // Import DOMMatrix polyfill FIRST - must be before pdfjs-dist
 import './dommatrix-polyfill';
 
