@@ -42,6 +42,7 @@
     "react-dom": "19.2.3",
     "sharp": "^0.34.5",
     "tesseract.js": "^7.0.0",
+    "tesseract.js-node": "^0.1.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
