@@ -24,7 +24,7 @@ export function getStorageClient(): Storage {
         throw new Error('Google Cloud credentials not configured')
       }
     } catch (err) {
-      console.error('[storage] failed to parse Google credentials:', (err && err.message) || err)
+      console.error('[storage] failed to parse Google credentials:', ((err as any)?.message) || err)
       throw err
     }
 
@@ -43,7 +43,7 @@ export function getStorageClient(): Storage {
         credentials,
       })
     } catch (err) {
-      console.error('[storage] failed to create Storage client:', (err && err.message) || err)
+      console.error('[storage] failed to create Storage client:', ((err as any)?.message) || err)
       throw err
     }
   }
