@@ -9,7 +9,26 @@
  * UPDATED: Tesseract fallback is now ENABLED
  */
 
-import { createWorker, Worker } from 'tesseract.js'
+// Dynamically resolve Tesseract worker implementation depending on runtime.
+// On Node.js prefer `tesseract.js-node` which provides the correct worker entrypoint
+// for server environments. Fall back to `tesseract.js` if not available.
+let createWorker: any
+try {
+  if (typeof window === 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const tn = require('tesseract.js-node')
+    createWorker = tn.createWorker
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const tb = require('tesseract.js')
+    createWorker = tb.createWorker
+  }
+} catch (e) {
+  // graceful fallback to the regular package if node-specific package not installed
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const tb = require('tesseract.js')
+  createWorker = tb.createWorker
+}
 import { extractTextFromImage } from './vision'
 
 export interface OcrResult {
@@ -36,7 +55,7 @@ const TESSERACT_TIMEOUT_MS = 20000 // tighten to 20s for faster failure
  */
 async function runTesseractOcr(imageBuffer: Buffer): Promise<OcrResult> {
   const startTime = Date.now()
-  let worker: Worker | null = null
+  let worker: any | null = null
 
   console.log('[Tesseract] Starting OCR...')
   console.log('[Tesseract] Image size:', (imageBuffer.length / 1024).toFixed(2), 'KB')
