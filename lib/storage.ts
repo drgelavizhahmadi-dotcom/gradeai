@@ -38,6 +38,10 @@ export function getStorageClient(): Storage {
     }
 
     try {
+      // Log minimal masked info for diagnostics (do NOT log the private key)
+      console.info('[storage] credential client_email:', credentials.client_email)
+      const pk = credentials.private_key || ''
+      console.info('[storage] private_key preview:', pk.slice(0, 30).replace(/\n/g, '\\n'), '...len=' + pk.length, 'endsWithEND:', pk.trim().endsWith('-----END PRIVATE KEY-----'))
       storageClient = new Storage({
         projectId: credentials.project_id,
         credentials,
