@@ -2,6 +2,9 @@
   "name": "gradeai",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider next dev",
     "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider next build",
