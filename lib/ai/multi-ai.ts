@@ -317,17 +317,20 @@ export async function analyzeWithMultiAi(
   console.log('================================================================================');
 
   // ============================================================================
-  // IMPORTANT: Using ONLY Mistral (all other providers disabled)
-  // To re-enable other providers later, modify the flags below
+  // AI PROVIDER CONFIGURATION (Optimized for Quality + Speed)
+  // Primary: Mistral Large 2 (best balance of quality and speed)
+  // Secondary: Gemini 1.5 Pro (enabled if API key available - improves consensus)
   // ============================================================================
-  console.log('[AI] ========== USING MISTRAL AS PRIMARY ==========')
+  console.log('[AI] ========== OPTIMIZED AI CONFIGURATION ==========')
 
-  // ALL PROVIDERS DISABLED except Mistral
-  const useDeepSeek = false  // DISABLED
-  const useMistral = !!process.env.MISTRAL_API_KEY  // ONLY Mistral is active
-  const useGemini = false    // DISABLED
+  // Mistral is PRIMARY (required)
+  const useMistral = !!process.env.MISTRAL_API_KEY
+  // Gemini is OPTIONAL secondary for quality consensus
+  const useGemini = !!process.env.GEMINI_API_KEY && process.env.ENABLE_GEMINI_CONSENSUS === 'true'
+  // Other providers disabled for speed
+  const useDeepSeek = false  // DISABLED (slower)
   const useGroq = false      // DISABLED
-  const useClaude = false    // DISABLED
+  const useClaude = false    // DISABLED (expensive)
 
   // Log which providers are enabled
   const enabledProviders = []
@@ -337,9 +340,11 @@ export async function analyzeWithMultiAi(
   if (useClaude) enabledProviders.push('Claude')
 
   console.log('[Multi-AI] ========================================')
-  console.log('[Multi-AI] ACTIVE PROVIDER: Mistral ONLY')
+  console.log('[Multi-AI] PRIMARY: Mistral Large 2')
   console.log('[Multi-AI] MISTRAL_API_KEY configured:', !!process.env.MISTRAL_API_KEY)
-  console.log(`[Multi-AI] Enabled providers: ${enabledProviders.join(', ') || 'NONE'}`)
+  console.log('[Multi-AI] GEMINI_API_KEY configured:', !!process.env.GEMINI_API_KEY)
+  console.log('[Multi-AI] Gemini consensus enabled:', useGemini)
+  console.log(`[Multi-AI] Active providers: ${enabledProviders.join(', ') || 'NONE'}`)
   console.log('[Multi-AI] ========================================')
 
   const AI_TIMEOUT_MS = Number(process.env.ANALYSIS_AI_TIMEOUT_MS || 18000) // 18s timeout per provider (fits within 20s wrapper)

@@ -182,14 +182,14 @@ export async function analyzeWithMistral(
       messages: [
         {
           role: 'system',
-          content: 'You are an educational assessment expert. Reason in English for accuracy, but return all user-facing JSON string fields in the requested output language. Return ONLY valid JSON, nothing else.'
+          content: 'You are an expert educational assessment analyst specializing in German school tests. Your analysis must be thorough, accurate, and actionable for parents. Reason in English for accuracy, but return all user-facing JSON string fields in the requested output language. Return ONLY valid JSON, nothing else.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      temperature: 0.3,
+      temperature: 0.2, // Lower temperature for more consistent, accurate output
       max_tokens: 8000,
       response_format: { type: 'json_object' }
     })

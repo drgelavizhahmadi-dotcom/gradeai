@@ -223,12 +223,27 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
       }
     }
 
-    // Google succeeded but confidence is low - will try Tesseract too
-    if (result.confidence < CONFIDENCE_THRESHOLD) {
-      console.log(`[Multi-OCR] ⚠ Google Vision confidence below ${CONFIDENCE_THRESHOLD}%, will try Tesseract fallback`)
+    // OPTIMIZATION: Skip Tesseract if Google Vision returned meaningful text
+    // Google Vision is almost always better than Tesseract for document OCR
+    // Only fallback to Tesseract if Google Vision completely failed or returned very little text
+    const MIN_TEXT_FOR_SKIP_TESSERACT = 100 // chars - if we got this much, trust Google Vision
+
+    if (result.text.length >= MIN_TEXT_FOR_SKIP_TESSERACT) {
+      console.log(`[Multi-OCR] ✓ Google Vision returned ${result.text.length} chars - skipping Tesseract (fast path)`)
+      console.log('================================================================================')
+
+      return {
+        text: result.text,
+        confidence: result.confidence,
+        primaryProvider: result.provider,
+        fallbackUsed: false,
+        allResults,
+      }
     }
-    if (result.text.length === 0) {
-      console.log('[Multi-OCR] ⚠ Google Vision returned empty text, will try Tesseract fallback')
+
+    // Google succeeded but returned very little text - will try Tesseract
+    if (result.text.length < MIN_TEXT_FOR_SKIP_TESSERACT) {
+      console.log(`[Multi-OCR] ⚠ Google Vision returned only ${result.text.length} chars, will try Tesseract fallback`)
     }
   } catch (error) {
     console.error('[Multi-OCR] ✗ Google Vision failed:', error instanceof Error ? error.message : String(error))
@@ -237,10 +252,13 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
 
   const fastMode = process.env.ANALYSIS_FAST === '1' || process.env.ANALYSIS_FAST === 'true'
 
-  // Step 2: Try Tesseract OCR as fallback unless fast mode
-  if (!fastMode) {
+  // Step 2: Try Tesseract OCR as fallback only if Google Vision failed or returned very little text
+  // OPTIMIZATION: Skip Tesseract in fast mode OR if we already have good Google results
+  const hasGoodGoogleResult = allResults.length > 0 && allResults[0].text.length >= 50
+
+  if (!fastMode && !hasGoodGoogleResult) {
     try {
-      console.log('[Multi-OCR] Step 2: Running Tesseract OCR (Fallback)...')
+      console.log('[Multi-OCR] Step 2: Running Tesseract OCR (Fallback - Google Vision insufficient)...')
       const tesseractResult = await runTesseractOcr(imageBuffer)
       allResults.push(tesseractResult)
       fallbackUsed = true
@@ -256,6 +274,8 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
       }
       // Otherwise, we still have Google results (even if low confidence)
     }
+  } else if (hasGoodGoogleResult) {
+    console.log('[Multi-OCR] Skipping Tesseract - Google Vision already returned sufficient text')
   } else {
     console.log('[Multi-OCR] Fast mode enabled: skipping Tesseract fallback')
   }
