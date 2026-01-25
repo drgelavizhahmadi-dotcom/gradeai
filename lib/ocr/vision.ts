@@ -1,18 +1,43 @@
 
 // Vercel Google credentials workaround
-if (process.env.GOOGLE_CREDENTIALS_JSON) {
-  // Use dynamic import for fs and path to avoid issues in edge runtimes
-  // Only run in Node.js
+// Support multiple environment variable names and base64-encoded values.
+// Prefer raw JSON env vars but accept base64 one-liners as well.
+const rawJsonEnv = process.env.GOOGLE_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+const b64Env = process.env.GOOGLE_CREDENTIALS_B64 || process.env.GOOGLE_APPLICATION_CREDENTIALS_B64;
+if (rawJsonEnv || b64Env) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const fs = require('fs');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const path = require('path');
-    const credsPath = path.join('/tmp', 'google-credentials.json');
-    fs.writeFileSync(credsPath, process.env.GOOGLE_CREDENTIALS_JSON);
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
+
+    let jsonText: string | null = null;
+
+    if (rawJsonEnv) {
+      jsonText = rawJsonEnv;
+    } else if (b64Env) {
+      try {
+        jsonText = Buffer.from(b64Env, 'base64').toString('utf8');
+      } catch (err) {
+        // If decoding fails, leave jsonText null and let validation below handle it
+        jsonText = null;
+      }
+    }
+
+    // Validate JSON before writing
+    if (jsonText) {
+      try {
+        JSON.parse(jsonText);
+        const credsPath = path.join('/tmp', 'google-credentials.json');
+        fs.writeFileSync(credsPath, jsonText, { encoding: 'utf8', mode: 0o600 });
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
+      } catch (err) {
+        // Invalid JSON - do not write credentials or expose secret
+        // Let the caller handle missing credentials
+      }
+    }
   } catch (e) {
-    // Ignore if not in Node.js
+    // Ignore if not in Node.js or other runtime issues
   }
 }
 
