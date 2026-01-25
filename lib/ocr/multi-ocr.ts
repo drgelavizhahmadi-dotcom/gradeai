@@ -63,7 +63,7 @@ async function runTesseractOcr(imageBuffer: Buffer): Promise<OcrResult> {
   try {
     // Create worker with timeout wrapper
     const workerPromise = createWorker(['deu', 'eng'], 1, {
-      logger: (m) => {
+      logger: (m: { status?: string; progress?: number }) => {
         // Only log progress updates, not every message
         if (m.status === 'recognizing text' && m.progress) {
           const percent = (m.progress * 100).toFixed(0)
