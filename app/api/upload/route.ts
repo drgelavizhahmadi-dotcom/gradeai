@@ -200,31 +200,9 @@ export async function POST(request: NextRequest) {
     console.log('Method: Multi-buffer processing (serverless compatible)');
     console.log('='.repeat(60));
 
-    // Start analysis in background with ALL file buffers (combined OCR)
-    analyzeUploadBuffer(upload.id, fileBuffers).catch(async (error) => {
-      console.error('='.repeat(60));
-      console.error('=== ANALYSIS FAILED ===');
-      console.error('Upload ID:', upload.id);
-      console.error('Error:', error);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      console.error('='.repeat(60));
-
-      // Try to update database with failed status
-      try {
-        await db.upload.update({
-          where: { id: upload.id },
-          data: {
-            analysisStatus: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Analysis failed: Unknown error',
-          },
-        });
-        console.log('[Upload API] Database updated with failed status');
-      } catch (updateError) {
-        console.error('[Upload API] Failed to update database with error status:', updateError);
-      }
-    });
-
-    console.log(`[Upload API] Analysis started in background for ${files.length} file(s)`);
+    // Queue analysis for background worker (avoid long-running serverless work)
+    await db.upload.update({ where: { id: upload.id }, data: { analysisStatus: 'queued' } });
+    console.log(`[Upload API] Analysis queued for upload ${upload.id} (${files.length} file(s))`);
     console.log('[Upload API] Returning response to client immediately');
 
     // Return success response with upload ID
