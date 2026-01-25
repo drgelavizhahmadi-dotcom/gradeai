@@ -6,14 +6,31 @@ export function getStorageClient(): Storage {
   if (!storageClient) {
     // Handle both file path (local) and JSON string (Vercel) credentials
     const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-    const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON
+    const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+    const credentialsB64 = process.env.GOOGLE_CREDENTIALS_B64 || process.env.GOOGLE_APPLICATION_CREDENTIALS_B64
 
     let credentials
     try {
       if (credentialsJson) {
-        // Vercel: Use JSON string from environment variable
-        credentials = JSON.parse(credentialsJson)
-        console.info('[storage] using credentials from GOOGLE_CREDENTIALS_JSON env')
+        // Vercel: Try to parse JSON string from environment variable
+        try {
+          credentials = JSON.parse(credentialsJson)
+          console.info('[storage] using credentials from GOOGLE_CREDENTIALS_JSON env')
+        } catch (e) {
+          // If parsing fails, try treating it as base64
+          try {
+            const decoded = Buffer.from(credentialsJson, 'base64').toString('utf8')
+            credentials = JSON.parse(decoded)
+            console.info('[storage] using credentials from GOOGLE_CREDENTIALS_JSON env (detected base64, decoded)')
+          } catch (err) {
+            throw err
+          }
+        }
+      } else if (credentialsB64) {
+        // Accept dedicated B64 env var
+        const decoded = Buffer.from(credentialsB64, 'base64').toString('utf8')
+        credentials = JSON.parse(decoded)
+        console.info('[storage] using credentials from GOOGLE_CREDENTIALS_B64 env (decoded)')
       } else if (credentialsPath) {
         // Local: Use file path
         const fs = require('fs')
