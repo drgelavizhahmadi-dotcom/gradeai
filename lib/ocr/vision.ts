@@ -1,9 +1,15 @@
+console.log('[Vision] Module loading...');
 
 // Vercel Google credentials workaround
 // Support multiple environment variable names and base64-encoded values.
 // Prefer raw JSON env vars but accept base64 one-liners as well.
 const rawJsonEnv = process.env.GOOGLE_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 const b64Env = process.env.GOOGLE_CREDENTIALS_B64 || process.env.GOOGLE_APPLICATION_CREDENTIALS_B64;
+console.log('[Vision] Credentials env check:', {
+  hasRawJson: !!rawJsonEnv,
+  hasB64: !!b64Env,
+  rawJsonLength: rawJsonEnv?.length || 0,
+});
 if (rawJsonEnv || b64Env) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -15,10 +21,13 @@ if (rawJsonEnv || b64Env) {
 
     if (rawJsonEnv) {
       jsonText = rawJsonEnv;
+      console.log('[Vision] Using raw JSON credentials');
     } else if (b64Env) {
       try {
         jsonText = Buffer.from(b64Env, 'base64').toString('utf8');
+        console.log('[Vision] Decoded base64 credentials');
       } catch (err) {
+        console.warn('[Vision] Failed to decode base64 credentials:', err);
         // If decoding fails, leave jsonText null and let validation below handle it
         jsonText = null;
       }
@@ -27,18 +36,24 @@ if (rawJsonEnv || b64Env) {
     // Validate JSON before writing
     if (jsonText) {
       try {
-        JSON.parse(jsonText);
+        const parsed = JSON.parse(jsonText);
+        console.log('[Vision] Credentials JSON valid, project_id:', parsed.project_id);
         const credsPath = path.join('/tmp', 'google-credentials.json');
         fs.writeFileSync(credsPath, jsonText, { encoding: 'utf8', mode: 0o600 });
         process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
+        console.log('[Vision] Wrote credentials to:', credsPath);
       } catch (err) {
+        console.error('[Vision] Invalid credentials JSON:', err);
         // Invalid JSON - do not write credentials or expose secret
         // Let the caller handle missing credentials
       }
     }
   } catch (e) {
+    console.warn('[Vision] Credential setup error:', e);
     // Ignore if not in Node.js or other runtime issues
   }
+} else {
+  console.log('[Vision] No credentials env vars found, relying on GOOGLE_APPLICATION_CREDENTIALS file');
 }
 
 // Import DOMMatrix polyfill FIRST - must be before pdfjs-dist
@@ -51,7 +66,10 @@ import type { ParsedTestData } from './types';
 
 const VISION_TIMEOUT_MS = 15000; // 15 second timeout for Vision API calls
 
+console.log('[Vision] Creating ImageAnnotatorClient...');
+const clientStartTime = Date.now();
 const client = new vision.ImageAnnotatorClient();
+console.log(`[Vision] ImageAnnotatorClient created in ${Date.now() - clientStartTime}ms`);
 
 /**
  * Extracts text from an image buffer using Google Cloud Vision API.

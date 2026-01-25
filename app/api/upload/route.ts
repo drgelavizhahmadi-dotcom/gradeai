@@ -197,11 +197,15 @@ export async function POST(request: NextRequest) {
     console.log('Upload ID:', upload.id);
     console.log('Total Files:', files.length);
     console.log('Total Size:', totalSize, 'bytes');
-    console.log('Method: Multi-buffer processing (serverless compatible)');
+    console.log('Method: Inline analysis (Vercel serverless compatible)');
     console.log('='.repeat(60));
 
-    // Start analysis in background with ALL file buffers (combined OCR)
-    analyzeUploadBuffer(upload.id, fileBuffers).catch(async (error) => {
+    // Run analysis INLINE (awaited) - required for Vercel serverless
+    // Fire-and-forget doesn't work on Vercel because the function terminates after response
+    try {
+      await analyzeUploadBuffer(upload.id, fileBuffers);
+      console.log('[Upload API] Analysis completed successfully');
+    } catch (error) {
       console.error('='.repeat(60));
       console.error('=== ANALYSIS FAILED ===');
       console.error('Upload ID:', upload.id);
@@ -209,7 +213,7 @@ export async function POST(request: NextRequest) {
       console.error('Error message:', error instanceof Error ? error.message : String(error));
       console.error('='.repeat(60));
 
-      // Try to update database with failed status
+      // Update database with failed status (analyzeUploadBuffer should already do this, but ensure it)
       try {
         await db.upload.update({
           where: { id: upload.id },
@@ -222,10 +226,16 @@ export async function POST(request: NextRequest) {
       } catch (updateError) {
         console.error('[Upload API] Failed to update database with error status:', updateError);
       }
-    });
 
-    console.log(`[Upload API] Analysis started in background for ${files.length} file(s)`);
-    console.log('[Upload API] Returning response to client immediately');
+      // Don't throw - return error response instead
+      return NextResponse.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Analysis failed',
+        uploadId: upload.id,
+      }, { status: 500 });
+    }
+
+    console.log(`[Upload API] Analysis completed for ${files.length} file(s)`);
 
     // Return success response with upload ID
     return NextResponse.json({
