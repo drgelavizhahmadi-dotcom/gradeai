@@ -188,7 +188,14 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
     const startTime = Date.now()
     console.log('[Multi-OCR] Step 1: Running Google Cloud Vision (Primary)...')
 
-    const googleResult = await extractTextFromImage(imageBuffer)
+    // Add backup timeout wrapper in case Vision client timeout fails
+    const visionTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Google Vision timeout (backup) after 15s')), 15000)
+    })
+    const googleResult = await Promise.race([
+      extractTextFromImage(imageBuffer),
+      visionTimeout,
+    ])
     const processingTime = Date.now() - startTime
 
     const result: OcrResult = {

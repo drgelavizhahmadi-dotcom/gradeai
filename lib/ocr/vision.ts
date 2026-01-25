@@ -49,6 +49,8 @@ import vision from '@google-cloud/vision';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { ParsedTestData } from './types';
 
+const VISION_TIMEOUT_MS = 15000; // 15 second timeout for Vision API calls
+
 const client = new vision.ImageAnnotatorClient();
 
 /**
@@ -57,17 +59,35 @@ const client = new vision.ImageAnnotatorClient();
  * @returns A promise resolving to an object containing the extracted text and confidence score.
  */
 export async function extractTextFromImage(imageBuffer: Buffer): Promise<{ text: string; confidence: number }> {
+  // Wrap the Vision API call with a proper timeout to prevent hanging
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Google Vision API timeout after ${VISION_TIMEOUT_MS}ms`)), VISION_TIMEOUT_MS);
+  });
+
   try {
-    const [result] = await client.textDetection(imageBuffer);
+    console.log('[Vision] Starting text detection...');
+    const startTime = Date.now();
+
+    const [result] = await Promise.race([
+      client.textDetection(imageBuffer),
+      timeoutPromise,
+    ]);
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[Vision] Text detection completed in ${elapsed}ms`);
+
     const detections = result.textAnnotations;
 
     if (!detections || detections.length === 0) {
+      console.log('[Vision] No text detected in image');
       return { text: '', confidence: 0 };
     }
 
+    console.log(`[Vision] Detected ${detections.length} text annotations, ${detections[0].description?.length || 0} chars`);
     return { text: detections[0].description || '', confidence: detections[0].score || 0 };
   } catch (error) {
-    console.error('Error extracting text from image:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('[Vision] Error extracting text:', errorMsg);
     throw error;
   }
 }
