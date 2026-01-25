@@ -97,9 +97,16 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     console.log('[Analysis] Step 3: Extracting text with Multi-OCR strategy...');
     const primaryBuffer = buffers[0];
 
-    // Use Multi-OCR with cascading fallback
+    // Use Multi-OCR with cascading fallback (add timeout to avoid hanging)
     const { extractTextMultiOcr } = await import('@/lib/ocr/multi-ocr');
-    const multiOcrResult = await extractTextMultiOcr(primaryBuffer);
+    const withTimeout = <T>(p: Promise<T>, ms: number, name?: string): Promise<T> => {
+      return Promise.race([
+        p,
+        new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`Timeout after ${ms}ms${name ? ' during ' + name : ''}`)), ms)),
+      ]) as Promise<T>
+    }
+
+    const multiOcrResult = await withTimeout(extractTextMultiOcr(primaryBuffer), 20000, 'extractTextMultiOcr');
     
     console.log('[Analysis] ✓ Multi-OCR extraction complete');
     console.log(`[Analysis]   - Primary provider: ${multiOcrResult.primaryProvider}`);
@@ -113,7 +120,7 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     
     // Build Visual Evidence Package from image to reduce OCR noise and enrich AI context
     console.log('[Analysis] Step 3b: Building Visual Evidence Package (color + region heuristics)...');
-    const evidence = await buildVisualEvidencePackage(primaryBuffer);
+    const evidence = await withTimeout(buildVisualEvidencePackage(primaryBuffer), 10000, 'buildVisualEvidencePackage');
     console.log('[Analysis] ✓ Visual evidence built');
     console.log(`[Analysis]   - Grade detected: ${evidence.grade_detected ?? 'N/A'}`);
     console.log(`[Analysis]   - Points: ${evidence.points ?? 'N/A'}`);
@@ -157,7 +164,12 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     console.log(combinedText.substring(combinedText.length - 500));
     console.log('[Analysis] Calling AI provider...');
     console.log('================================================================================');
-    const multiAiResult = await analyzeWithMultiAi(combinedText, upload.child, ocrResult.confidence, targetLanguage);
+    // AI calls can be slow — enforce a timeout so the serverless request doesn't hang indefinitely
+    const multiAiResult = await withTimeout(
+      analyzeWithMultiAi(combinedText, upload.child, ocrResult.confidence, targetLanguage),
+      25000,
+      'analyzeWithMultiAi'
+    );
     
     console.log('================================================================================');
     console.log('========== AI RESPONSE ==========');
