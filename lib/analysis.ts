@@ -55,6 +55,9 @@ function getEndOfSemesterPrediction(grade: number): string {
   return 'Requires immediate intervention to avoid failing (4-5 range)';
 }
 
+// Global timeout for entire analysis - must complete before Vercel kills the function
+const ANALYSIS_GLOBAL_TIMEOUT_MS = 55000 // 55 seconds (under Vercel's 60s limit)
+
 /**
  * Analysis function using Triple Gemini Flash Vision AI
  * Color separation + parallel expert analysis + synthesis
@@ -67,7 +70,25 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
   console.log('[Analysis] Starting Multi-Expert Vision AI analysis for upload:', uploadId);
   console.log('[Analysis] Number of files/pages:', buffers.length);
   console.log('[Analysis] Total buffer size:', totalSize, 'bytes');
+  console.log('[Analysis] Global timeout:', ANALYSIS_GLOBAL_TIMEOUT_MS, 'ms');
   console.log('='.repeat(80));
+
+  // Global timeout to ensure we update status before Vercel kills the function
+  const globalTimeout = setTimeout(async () => {
+    console.error('[Analysis] ⚠️ Global timeout reached! Marking as failed...');
+    try {
+      await db.upload.update({
+        where: { id: uploadId },
+        data: {
+          analysisStatus: 'failed',
+          errorMessage: 'Analysis timeout - please try again with a clearer image'
+        }
+      });
+      console.log('[Analysis] ✓ Status updated to failed (timeout)');
+    } catch (e) {
+      console.error('[Analysis] Failed to update timeout status:', e);
+    }
+  }, ANALYSIS_GLOBAL_TIMEOUT_MS);
 
   try {
     // Step 1: Fetch upload from database
@@ -106,7 +127,7 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
       ]) as Promise<T>
     }
 
-    const multiOcrResult = await withTimeout(extractTextMultiOcr(primaryBuffer), 20000, 'extractTextMultiOcr');
+    const multiOcrResult = await withTimeout(extractTextMultiOcr(primaryBuffer), 15000, 'extractTextMultiOcr');
     
     console.log('[Analysis] ✓ Multi-OCR extraction complete');
     console.log(`[Analysis]   - Primary provider: ${multiOcrResult.primaryProvider}`);
@@ -120,7 +141,7 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     
     // Build Visual Evidence Package from image to reduce OCR noise and enrich AI context
     console.log('[Analysis] Step 3b: Building Visual Evidence Package (color + region heuristics)...');
-    const evidence = await withTimeout(buildVisualEvidencePackage(primaryBuffer), 10000, 'buildVisualEvidencePackage');
+    const evidence = await withTimeout(buildVisualEvidencePackage(primaryBuffer), 8000, 'buildVisualEvidencePackage');
     console.log('[Analysis] ✓ Visual evidence built');
     console.log(`[Analysis]   - Grade detected: ${evidence.grade_detected ?? 'N/A'}`);
     console.log(`[Analysis]   - Points: ${evidence.points ?? 'N/A'}`);
@@ -167,7 +188,7 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     // AI calls can be slow — enforce a timeout so the serverless request doesn't hang indefinitely
     const multiAiResult = await withTimeout(
       analyzeWithMultiAi(combinedText, upload.child, ocrResult.confidence, targetLanguage),
-      25000,
+      20000,
       'analyzeWithMultiAi'
     );
     
@@ -234,14 +255,20 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
 
     console.log('[Analysis] ✓ Analysis saved successfully');
     console.log('='.repeat(80));
+
+    // Clear the global timeout since we completed successfully
+    clearTimeout(globalTimeout);
   } catch (error) {
+    // Clear the global timeout since we're handling the error
+    clearTimeout(globalTimeout);
+
     console.error('[Analysis] ✗ Analysis failed:', error);
-    
+
     await db.upload.update({
       where: { id: uploadId },
       data: {
         analysisStatus: 'failed',
-        analysis: error instanceof Error ? error.message : 'Unknown error occurred'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
       }
     });
 

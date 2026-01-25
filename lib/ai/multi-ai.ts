@@ -342,7 +342,7 @@ export async function analyzeWithMultiAi(
   console.log(`[Multi-AI] Enabled providers: ${enabledProviders.join(', ') || 'NONE'}`)
   console.log('[Multi-AI] ========================================')
 
-  const AI_TIMEOUT_MS = Number(process.env.ANALYSIS_AI_TIMEOUT_MS || 60000) // 60s timeout per provider
+  const AI_TIMEOUT_MS = Number(process.env.ANALYSIS_AI_TIMEOUT_MS || 18000) // 18s timeout per provider (fits within 20s wrapper)
 
   const withTimeout = async <T>(p: Promise<T>, label: string, timeoutMs?: number): Promise<T> => {
     const timeout = timeoutMs || AI_TIMEOUT_MS;

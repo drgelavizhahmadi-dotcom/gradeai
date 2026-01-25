@@ -66,13 +66,29 @@ function cropToBuffer(img: ImageData, rect: { x: number; y: number; width: numbe
   return out
 }
 
+const OCR_CROP_TIMEOUT_MS = 8000 // 8s timeout per crop OCR to stay within buildVisualEvidencePackage 10s budget
+
 async function ocrCropToText(cropRawRgba: Buffer, rect: { width: number; height: number }): Promise<string> {
   // Convert raw RGBA to PNG buffer for OCR
   const png = await sharp(cropRawRgba, { raw: { width: rect.width, height: rect.height, channels: 4 } })
     .png()
     .toBuffer()
-  const { text } = await extractTextFromImage(png)
-  return text
+
+  // Add timeout to prevent hanging on Vision API
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`OCR crop timeout after ${OCR_CROP_TIMEOUT_MS}ms`)), OCR_CROP_TIMEOUT_MS)
+  })
+
+  try {
+    const { text } = await Promise.race([
+      extractTextFromImage(png),
+      timeoutPromise,
+    ])
+    return text
+  } catch (error) {
+    console.warn('[Visual] OCR crop failed:', error instanceof Error ? error.message : String(error))
+    return '' // Return empty on timeout/error - don't block the entire analysis
+  }
 }
 
 async function detectGrade(img: ImageData): Promise<number | null> {
