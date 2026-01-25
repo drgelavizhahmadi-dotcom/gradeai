@@ -49,6 +49,56 @@ NODE_ENV=production
 6. Upload the JSON file to your server
 7. Set this variable to the absolute path of the JSON file
 
+### Alternative: Use a base64 one-line value (recommended for hosts)
+
+You can store the credentials as a base64-encoded one-liner environment variable and the app will decode it at runtime.
+
+- Name the variable `GOOGLE_APPLICATION_CREDENTIALS_B64` and paste the base64 string.
+- The helper will decode it and write it to a temp file, setting `GOOGLE_APPLICATION_CREDENTIALS`.
+
+Create the base64 string locally:
+
+PowerShell (Windows):
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes('gradeai-credentials.json')) | Set-Clipboard
+```
+
+macOS / Linux:
+```bash
+base64 -w0 gradeai-credentials.json | pbcopy   # macOS
+base64 -w0 gradeai-credentials.json           # Linux (copy manually)
+```
+
+In Vercel: add `GOOGLE_APPLICATION_CREDENTIALS_B64` (Preview & Production) and paste the copied value.
+
+Notes:
+- Base64 prevents issues with line breaks or shell escaping when pasting JSON into dashboard fields.
+- Keep the value secret; rotate the service account if the key was previously leaked.
+
+### Using Google credentials on Vercel (or other host without persistent files)
+
+If you deploy to Vercel you cannot reliably upload a JSON file to the server filesystem. Use this approach:
+
+1. In the Vercel dashboard for your project go to Settings → Environment Variables.
+2. Create a variable named `GOOGLE_APPLICATION_CREDENTIALS_JSON` and paste the full JSON contents of the service-account key.
+3. Add a runtime step to write the JSON to a temporary file and point `GOOGLE_APPLICATION_CREDENTIALS` at it. Example (Node.js server entry or serverless function):
+
+```js
+// write-google-creds.js (import at runtime before any Google client usage)
+import fs from 'fs';
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+   const tmpPath = '/tmp/gradeai-google-creds.json';
+   fs.writeFileSync(tmpPath, process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+   process.env.GOOGLE_APPLICATION_CREDENTIALS = tmpPath;
+}
+```
+
+4. Ensure `GOOGLE_APPLICATION_CREDENTIALS_JSON` is set for both Preview and Production environments in Vercel.
+
+Notes:
+- Keep the variable value secret (Vercel marks env vars as encrypted).
+- On platforms without `/tmp`, choose the platform-appropriate writable path.
+
 ### NEXTAUTH_URL
 - Development: `http://localhost:3000`
 - Production: Your actual domain (e.g., `https://gradeai.com`)

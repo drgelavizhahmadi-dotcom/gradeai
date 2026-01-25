@@ -316,7 +316,7 @@ Watch logs for:
 ✅ `app/api/upload/route.ts` - Uses `process.env.NEXTAUTH_URL`
 ✅ `lib/auth.ts` - Uses `process.env.NEXTAUTH_SECRET`, `process.env.DATABASE_URL`
 ✅ `lib/ai/claude.ts` - Uses `process.env.ANTHROPIC_API_KEY`
-✅ `lib/ocr/vision.ts` - Uses `process.env.GOOGLE_APPLICATION_CREDENTIALS`
+✅ `lib/ocr/vision.ts` - Uses `process.env.GOOGLE_CREDENTIALS_JSON` (written to `/tmp` at runtime)
 ✅ `lib/db.ts` - Uses `process.env.DATABASE_URL`, `process.env.NODE_ENV`
 
 ## 15. Recommended Hosting Platforms
@@ -338,6 +338,29 @@ Watch logs for:
 ### File Storage (Recommended for Production)
 
 - **Vercel Blob** - If hosting on Vercel
+
+## Google Credentials on Vercel
+
+For serverless deployments (Vercel) we recommend using a single environment variable:
+
+- `GOOGLE_CREDENTIALS_JSON`: the full service-account JSON as a one-line JSON string (private_key should be PKCS#8 PEM compatible). The app writes this to `/tmp/google-credentials.json` at runtime and sets `GOOGLE_APPLICATION_CREDENTIALS` so Google client libs work.
+
+Why this is preferred:
+
+- Secure: keep the JSON in Vercel's encrypted env dashboard instead of committing files.
+- Works reliably on serverless platforms where bundling a file is inconvenient.
+
+Quick steps to set it up:
+
+1. Convert your service account JSON private_key to PKCS#8 one-line JSON using the included script `scripts/convert-key-pkcs8.cjs`.
+2. In the Vercel dashboard, set an environment variable `GOOGLE_CREDENTIALS_JSON` with the one-line JSON value.
+3. Remove any `GOOGLE_APPLICATION_CREDENTIALS` and `NODE_OPTIONS` entries from the Vercel env (they are not required and `NODE_OPTIONS` can cause build/runtime issues).
+4. Redeploy your project.
+
+Notes:
+
+- Local development can still use a file and `GOOGLE_APPLICATION_CREDENTIALS` if you prefer; production on Vercel should use `GOOGLE_CREDENTIALS_JSON`.
+- Keep the JSON secret and rotate the service account if it was committed anywhere.
 - **AWS S3** - Industry standard
 - **Cloudflare R2** - Cost-effective alternative to S3
 
