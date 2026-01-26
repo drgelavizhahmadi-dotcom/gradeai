@@ -11,6 +11,7 @@ import {
 import GradeAIParentReport from '@/components/GradeAIParentReport/index'
 import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 interface Upload {
   id: string
@@ -637,9 +638,37 @@ export default function UploadDetailPage() {
             {/* GradeAI Parent Report - Multilingual AI-Powered Report */}
             {upload.analysis?.ai && (
               <div className="mb-6">
-                <GradeAIParentReport
-                  analysisData={transformToReportFormat(upload.analysis.ai)}
-                />
+                {(() => {
+                  console.log('[Uploads Page] Rendering GradeAIParentReport with data:', upload.analysis.ai)
+                  const transformedData = transformToReportFormat(upload.analysis.ai)
+                  console.log('[Uploads Page] Transformed data:', transformedData)
+                  return (
+                    <ErrorBoundary
+                      fallback={
+                        <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <h3 className="text-lg font-semibold text-red-900 mb-2">
+                                Report Display Error
+                              </h3>
+                              <p className="text-red-800 mb-3">
+                                The analysis completed successfully, but there was an error displaying the report.
+                              </p>
+                              <p className="text-sm text-red-700">
+                                Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <GradeAIParentReport
+                        analysisData={transformedData}
+                      />
+                    </ErrorBoundary>
+                  )
+                })()}
               </div>
             )}
 

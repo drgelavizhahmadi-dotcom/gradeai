@@ -203,9 +203,12 @@ export async function POST(request: NextRequest) {
     // Run analysis INLINE (awaited) - required for Vercel serverless
     // Fire-and-forget doesn't work on Vercel because the function terminates after response
     try {
+      console.log('[Upload API] Starting analysis for upload:', upload.id)
       await analyzeUploadBuffer(upload.id, fileBuffers);
-      console.log('[Upload API] Analysis completed successfully');
+      console.log('[Upload API] Analysis completed successfully for upload:', upload.id)
     } catch (error) {
+      console.error('[Upload API] Analysis failed for upload:', upload.id, error)
+      // ... rest of error handling
       console.error('='.repeat(60));
       console.error('=== ANALYSIS FAILED ===');
       console.error('Upload ID:', upload.id);
