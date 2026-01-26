@@ -6,8 +6,10 @@
  * 2. If Google fails or confidence < 85%, fallback to Tesseract OCR
  * 3. Return best result based on confidence + text length
  *
- * UPDATED: Tesseract fallback is now ENABLED
+ * Set SKIP_GOOGLE_VISION=true to use Tesseract-only mode (for debugging)
  */
+
+const SKIP_GOOGLE_VISION = process.env.SKIP_GOOGLE_VISION === 'true' || process.env.SKIP_GOOGLE_VISION === '1';
 
 // Dynamically resolve Tesseract worker implementation depending on runtime.
 // On Node.js prefer `tesseract.js-node` which provides the correct worker entrypoint
@@ -183,7 +185,13 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
   let fallbackUsed = false
   let googleFailed = false
 
-  // Step 1: Try Google Cloud Vision first (primary)
+  // Step 1: Try Google Cloud Vision first (primary) - unless skipped
+  if (SKIP_GOOGLE_VISION) {
+    console.log('[Multi-OCR] ⚠️ SKIP_GOOGLE_VISION enabled - skipping Google Vision, using Tesseract only')
+    googleFailed = true
+  }
+
+  if (!SKIP_GOOGLE_VISION) {
   try {
     const startTime = Date.now()
     console.log('[Multi-OCR] Step 1: Running Google Cloud Vision (Primary)...')
@@ -249,16 +257,19 @@ export async function extractTextMultiOcr(imageBuffer: Buffer): Promise<MultiOcr
     console.error('[Multi-OCR] ✗ Google Vision failed:', error instanceof Error ? error.message : String(error))
     googleFailed = true
   }
+  } // End of !SKIP_GOOGLE_VISION block
 
   const fastMode = process.env.ANALYSIS_FAST === '1' || process.env.ANALYSIS_FAST === 'true'
 
   // Step 2: Try Tesseract OCR as fallback only if Google Vision failed or returned very little text
   // OPTIMIZATION: Skip Tesseract in fast mode OR if we already have good Google results
+  // BUT: Always run Tesseract if SKIP_GOOGLE_VISION is set (since we have no Google results)
   const hasGoodGoogleResult = allResults.length > 0 && allResults[0].text.length >= 50
+  const mustRunTesseract = SKIP_GOOGLE_VISION || googleFailed
 
-  if (!fastMode && !hasGoodGoogleResult) {
+  if (mustRunTesseract || (!fastMode && !hasGoodGoogleResult)) {
     try {
-      console.log('[Multi-OCR] Step 2: Running Tesseract OCR (Fallback - Google Vision insufficient)...')
+      console.log('[Multi-OCR] Step 2: Running Tesseract OCR' + (SKIP_GOOGLE_VISION ? ' (Primary - Google skipped)' : ' (Fallback)') + '...')
       const tesseractResult = await runTesseractOcr(imageBuffer)
       allResults.push(tesseractResult)
       fallbackUsed = true
