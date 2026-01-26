@@ -247,17 +247,32 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       console.log(`[UploadZone] Uploading ${files.length} file(s) as ONE test`);
 
       const formData = new FormData();
-      
+
       // Add all files with the key "files"
       files.forEach((file) => {
         formData.append("files", file);
       });
       formData.append("childId", childId);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      // Use AbortController for timeout (65 seconds - slightly more than Vercel's 60s limit)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 65000);
+
+      let response: Response;
+      try {
+        response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+      } catch (fetchError) {
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Upload timed out. The server is taking too long. Please try with a smaller or clearer image.');
+        }
+        throw fetchError;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       // Check if response is JSON
       const contentType = response.headers.get("content-type");
