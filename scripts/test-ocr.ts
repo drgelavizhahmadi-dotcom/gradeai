@@ -4,7 +4,8 @@ config({ path: '.env.local' })
 
 import fs from 'fs'
 import path from 'path'
-import { extractText, parseGermanTest } from '../lib/ocr'
+import { extractTextMultiOcr } from '../lib/ocr/multi-ocr'
+import { parseGermanTest } from '../lib/ocr/index'
 
 async function testOCR(imagePath: string) {
   console.log('='.repeat(60))
@@ -27,28 +28,36 @@ async function testOCR(imagePath: string) {
     console.log(`✓ Image loaded successfully (${(imageBuffer.length / 1024).toFixed(2)} KB)`)
     console.log()
 
-    // Extract text using Google Cloud Vision
+    // Extract text using Multi-OCR (Google Vision + Tesseract fallback)
     console.log('🔍 Extracting text from image...')
     console.log('-'.repeat(60))
-    const extractedText = await extractText(imageBuffer)
+    const ocrResult = await extractTextMultiOcr(imageBuffer)
     console.log('-'.repeat(60))
     console.log()
 
-    if (!extractedText) {
+    if (!ocrResult || !ocrResult.text) {
       console.log('⚠️  No text detected in the image')
       return
     }
 
-    console.log('📝 Extracted Text:')
+    console.log('📝 OCR Results:')
     console.log('='.repeat(60))
-    console.log(extractedText)
+    console.log(`Primary Provider: ${ocrResult.primaryProvider}`)
+    console.log(`Fallback Used: ${ocrResult.fallbackUsed}`)
+    console.log(`Confidence: ${ocrResult.confidence.toFixed(2)}`)
+    console.log(`Text Length: ${ocrResult.text.length} characters`)
+    console.log('='.repeat(60))
+    console.log(ocrResult.text)
     console.log('='.repeat(60))
     console.log()
+
+    // Use the extracted text for parsing
+    const extractedText = ocrResult.text
 
     // Parse the German test data
     console.log('🔬 Parsing German test data...')
     console.log('-'.repeat(60))
-    const parsedData = parseGermanTest(extractedText.text)
+    const parsedData = parseGermanTest(extractedText)
     console.log('-'.repeat(60))
     console.log()
 

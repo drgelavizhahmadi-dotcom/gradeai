@@ -9,27 +9,30 @@
  * Set SKIP_GOOGLE_VISION=true to use Tesseract-only mode (for debugging)
  */
 
+// Load environment variables
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 const SKIP_GOOGLE_VISION = process.env.SKIP_GOOGLE_VISION === 'true' || process.env.SKIP_GOOGLE_VISION === '1';
 
 // Dynamically resolve Tesseract worker implementation depending on runtime.
 // On Node.js prefer `tesseract.js-node` which provides the correct worker entrypoint
 // for server environments. Fall back to `tesseract.js` if not available.
 let createWorker: any
-try {
-  if (typeof window === 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const tn = require('tesseract.js-node')
-    createWorker = tn.createWorker
-  } else {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const tb = require('tesseract.js')
+
+async function initializeTesseract() {
+  if (createWorker) return createWorker
+
+  try {
+    // Use regular tesseract.js (the node version has issues)
+    const tb = await import('tesseract.js')
     createWorker = tb.createWorker
+  } catch (e) {
+    console.error('[Tesseract] Failed to import tesseract.js:', e)
+    throw e
   }
-} catch (e) {
-  // graceful fallback to the regular package if node-specific package not installed
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const tb = require('tesseract.js')
-  createWorker = tb.createWorker
+
+  return createWorker
 }
 import { extractTextFromImage } from './vision'
 
@@ -62,9 +65,18 @@ async function runTesseractOcr(imageBuffer: Buffer): Promise<OcrResult> {
   console.log('[Tesseract] Starting OCR...')
   console.log('[Tesseract] Image size:', (imageBuffer.length / 1024).toFixed(2), 'KB')
 
+  // Check if this is a PDF file
+  const isPDF = imageBuffer.length >= 4 && imageBuffer.subarray(0, 4).toString() === '%PDF';
+  if (isPDF) {
+    throw new Error('PDF files are not supported. Please convert to image format (PNG/JPG) first.');
+  }
+
   try {
+    // Initialize Tesseract worker factory
+    const createWorkerFn = await initializeTesseract()
+
     // Create worker with timeout wrapper
-    const workerPromise = createWorker(['deu', 'eng'], 1, {
+    const workerPromise = createWorkerFn(['deu', 'eng'], 1, {
       logger: (m: { status?: string; progress?: number }) => {
         // Only log progress updates, not every message
         if (m.status === 'recognizing text' && m.progress) {

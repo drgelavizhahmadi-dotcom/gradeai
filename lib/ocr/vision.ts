@@ -57,11 +57,10 @@ if (rawJsonEnv || b64Env) {
 }
 
 // Import DOMMatrix polyfill FIRST - must be before pdfjs-dist
-import './dommatrix-polyfill';
+import './dommatrix-polyfill.ts';
 
-import sharp from 'sharp'
+import * as sharp from 'sharp'
 import vision from '@google-cloud/vision';
-import * as pdfjsLib from 'pdfjs-dist';
 import type { ParsedTestData } from './types';
 
 const VISION_TIMEOUT_MS = 15000; // 15 second timeout for Vision API calls
@@ -77,6 +76,13 @@ console.log(`[Vision] ImageAnnotatorClient created in ${Date.now() - clientStart
  * @returns A promise resolving to an object containing the extracted text and confidence score.
  */
 export async function extractTextFromImage(imageBuffer: Buffer): Promise<{ text: string; confidence: number }> {
+  // Check if this is a PDF file
+  const isPDF = imageBuffer.length >= 4 && imageBuffer.subarray(0, 4).toString() === '%PDF';
+  
+  if (isPDF) {
+    throw new Error('PDF files are not supported. Please convert to image format (PNG/JPG) first.');
+  }
+
   // Wrap the Vision API call with a proper timeout to prevent hanging
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error(`Google Vision API timeout after ${VISION_TIMEOUT_MS}ms`)), VISION_TIMEOUT_MS);
@@ -102,18 +108,36 @@ export async function extractTextFromImage(imageBuffer: Buffer): Promise<{ text:
     }
 
     console.log(`[Vision] Detected ${detections.length} text annotations, ${detections[0].description?.length || 0} chars`);
-    return { text: detections[0].description || '', confidence: detections[0].score || 0 };
+    
+    // Calculate confidence from individual text annotations (skip the first one which is the full text)
+    let totalConfidence = 0;
+    let confidenceCount = 0;
+    
+    // Skip the first annotation (full text) and calculate average confidence from individual words/lines
+    for (let i = 1; i < detections.length; i++) {
+      const detection = detections[i];
+      // Use score or confidence property, whichever is available and valid
+      const conf = detection.confidence || detection.score;
+      if (typeof conf === 'number' && conf >= 0 && conf <= 1) {
+        totalConfidence += conf;
+        confidenceCount++;
+      }
+    }
+    
+    const averageConfidence = confidenceCount > 0 ? totalConfidence / confidenceCount : 0;
+    
+    // If Google Vision successfully extracted text but didn't provide confidence scores,
+    // assume high confidence since the extraction worked
+    const finalConfidence = averageConfidence > 0 ? averageConfidence : (detections[0].description ? 0.9 : 0);
+    
+    console.log(`[Vision] Confidence: ${(finalConfidence * 100).toFixed(1)}% (${confidenceCount} elements with scores)`);
+    
+    return { text: detections[0].description || '', confidence: finalConfidence };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('[Vision] Error extracting text:', errorMsg);
     throw error;
   }
-}
-
-// Configure PDF.js worker (required for Node.js)
-if (typeof window === 'undefined') {
-  // Node.js environment - disable worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
 }
 
 export function parseGermanTest(text: string): ParsedTestData {

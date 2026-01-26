@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { analyzeUploadBuffer } from "@/lib/analysis";
 import { uploadFileToStorage } from "@/lib/storage";
 
 // Route segment config for increased body size limit
@@ -190,52 +189,29 @@ export async function POST(request: NextRequest) {
     }
 
     // ============================================
-    // === TRIGGERING ANALYSIS ===
+    // === QUEUEING ANALYSIS FOR BACKGROUND PROCESSING ===
     // ============================================
     console.log('='.repeat(60));
-    console.log('=== TRIGGERING ANALYSIS ===');
+    console.log('=== QUEUEING ANALYSIS ===');
     console.log('Upload ID:', upload.id);
     console.log('Total Files:', files.length);
     console.log('Total Size:', totalSize, 'bytes');
-    console.log('Method: Inline analysis (Vercel serverless compatible)');
+    console.log('Method: Background processing (via analysis-worker)');
     console.log('='.repeat(60));
 
-    // Run analysis INLINE (awaited) - required for Vercel serverless
-    // Fire-and-forget doesn't work on Vercel because the function terminates after response
+    // Set status to 'queued' for background processing
     try {
-      console.log('[Upload API] Starting analysis for upload:', upload.id)
-      await analyzeUploadBuffer(upload.id, fileBuffers);
-      console.log('[Upload API] Analysis completed successfully for upload:', upload.id)
-    } catch (error) {
-      console.error('[Upload API] Analysis failed for upload:', upload.id, error)
-      // ... rest of error handling
-      console.error('='.repeat(60));
-      console.error('=== ANALYSIS FAILED ===');
-      console.error('Upload ID:', upload.id);
-      console.error('Error:', error);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      console.error('='.repeat(60));
-
-      // Update database with failed status (analyzeUploadBuffer should already do this, but ensure it)
-      try {
-        await db.upload.update({
-          where: { id: upload.id },
-          data: {
-            analysisStatus: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Analysis failed: Unknown error',
-          },
-        });
-        console.log('[Upload API] Database updated with failed status');
-      } catch (updateError) {
-        console.error('[Upload API] Failed to update database with error status:', updateError);
-      }
-
-      // Don't throw - return error response instead
-      return NextResponse.json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Analysis failed',
-        uploadId: upload.id,
-      }, { status: 500 });
+      await db.upload.update({
+        where: { id: upload.id },
+        data: { analysisStatus: 'queued' }
+      });
+      console.log('[Upload API] Upload queued for background analysis:', upload.id);
+    } catch (queueError) {
+      console.error('[Upload API] Failed to queue upload for analysis:', queueError);
+      return NextResponse.json(
+        { success: false, error: "Failed to queue analysis" },
+        { status: 500 }
+      );
     }
 
     console.log(`[Upload API] Analysis completed for ${files.length} file(s)`);

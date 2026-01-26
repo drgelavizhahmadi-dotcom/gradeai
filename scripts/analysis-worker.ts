@@ -1,10 +1,13 @@
 #!/usr/bin/env ts-node
-import { PrismaClient } from '@prisma/client'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import { Storage } from '@google-cloud/storage'
 import { analyzeUploadBuffer } from '@/lib/analysis'
 import { db } from '@/lib/db'
 
-const prisma = new PrismaClient()
+// Use unpooled connection for worker to avoid connection pool issues
+process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
 
 async function listAndDownloadBuffers(storage: Storage, bucketName: string, uploadId: string) {
   const bucket = storage.bucket(bucketName)
@@ -28,7 +31,7 @@ async function processOne(uploadId: string) {
 
   try {
     // mark processing
-    await prisma.upload.update({ where: { id: uploadId }, data: { analysisStatus: 'processing' } })
+    await db.upload.update({ where: { id: uploadId }, data: { analysisStatus: 'processing' } })
 
     const buffers = await listAndDownloadBuffers(storage, bucketName, uploadId)
     await analyzeUploadBuffer(uploadId, buffers)
@@ -36,7 +39,7 @@ async function processOne(uploadId: string) {
   } catch (err) {
     console.error('[Worker] Analysis failed for', uploadId, err)
     try {
-      await prisma.upload.update({ where: { id: uploadId }, data: { analysisStatus: 'failed', errorMessage: err instanceof Error ? err.message : String(err) } })
+      await db.upload.update({ where: { id: uploadId }, data: { analysisStatus: 'failed', errorMessage: err instanceof Error ? err.message : String(err) } })
     } catch (e) {
       console.error('[Worker] Failed to update DB for failed job', e)
     }
@@ -45,10 +48,11 @@ async function processOne(uploadId: string) {
 
 async function workerLoop() {
   console.log('[Worker] Starting analysis worker loop')
+  console.log('[Worker] DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 50) + '...')
   while (true) {
     try {
       // find one queued job
-      const job = await prisma.upload.findFirst({ where: { analysisStatus: 'queued' }, orderBy: { uploadedAt: 'asc' } })
+      const job = await db.upload.findFirst({ where: { analysisStatus: 'queued' }, orderBy: { uploadedAt: 'asc' } })
       if (job) {
         console.log('[Worker] Found queued upload:', job.id)
         await processOne(job.id)
