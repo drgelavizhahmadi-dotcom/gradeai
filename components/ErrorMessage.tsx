@@ -15,7 +15,7 @@ export default function ErrorMessage({
 }: ErrorMessageProps) {
   if (variant === 'inline') {
     return (
-      <div className="rounded-lg bg-red-50 border-2 border-red-200 p-4">
+      <div role="alert" className="rounded-lg bg-red-50 border-2 border-red-200 p-4">
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
@@ -37,7 +37,7 @@ export default function ErrorMessage({
   }
 
   return (
-    <div className="rounded-xl bg-white p-12 shadow-md border-2 border-red-200 text-center">
+    <div role="alert" className="rounded-xl bg-white p-12 shadow-md border-2 border-red-200 text-center">
       <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
         <XCircle className="w-8 h-8 text-red-600" />
       </div>

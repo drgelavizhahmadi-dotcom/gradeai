@@ -17,11 +17,14 @@ export default function FormSelect({
   options,
   required,
   className,
+  id,
   ...props
 }: FormSelectProps) {
+  const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`
+
   return (
     <div className="w-full">
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
+      <label htmlFor={selectId} className="block text-sm font-semibold text-gray-700 mb-2">
         {label}
         {required && <span className="text-red-600 ml-1">*</span>}
       </label>
@@ -34,6 +37,7 @@ export default function FormSelect({
         )}
 
         <select
+          id={selectId}
           required={required}
           className={`
             block w-full pr-10 py-3 border-2 rounded-xl

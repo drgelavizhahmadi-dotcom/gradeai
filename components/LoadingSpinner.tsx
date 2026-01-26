@@ -26,8 +26,8 @@ export default function LoadingSpinner({
   }
 
   const content = (
-    <div className="flex flex-col items-center justify-center gap-3">
-      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600`} />
+    <div role="status" aria-live="polite" className="flex flex-col items-center justify-center gap-3">
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600`} aria-hidden="true" />
       {text && (
         <p className={`${textSizeClasses[size]} text-gray-600 font-medium`}>
           {text}
