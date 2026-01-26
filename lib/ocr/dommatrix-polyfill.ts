@@ -1,7 +1,24 @@
 // DOMMatrix polyfill for Node.js - MUST be imported before pdfjs-dist
 // Using internal class name to avoid TypeScript type conflicts with global DOMMatrix
 
-// Immediately set up global DOMMatrix before any other code runs
+// CRITICAL: Set up a placeholder global DOMMatrix IMMEDIATELY before any imports
+// This prevents "DOMMatrix is not defined" during module evaluation
+if (typeof globalThis !== 'undefined' && typeof globalThis.DOMMatrix === 'undefined') {
+  // Temporary minimal implementation - will be replaced by full class below
+  (globalThis as any).DOMMatrix = class TempDOMMatrix {
+    m11 = 1; m12 = 0; m13 = 0; m14 = 0;
+    m21 = 0; m22 = 1; m23 = 0; m24 = 0;
+    m31 = 0; m32 = 0; m33 = 1; m34 = 0;
+    m41 = 0; m42 = 0; m43 = 0; m44 = 1;
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+    is2D = true; isIdentity = true;
+    constructor() {}
+    static fromMatrix(m?: any) { return new (globalThis as any).DOMMatrix(); }
+    static fromFloat32Array(a: Float32Array) { return new (globalThis as any).DOMMatrix(); }
+    static fromFloat64Array(a: Float64Array) { return new (globalThis as any).DOMMatrix(); }
+  };
+}
+
 class DOMMatrixPolyfill {
   m11: number; m12: number; m13: number; m14: number;
   m21: number; m22: number; m23: number; m24: number;
@@ -303,8 +320,8 @@ class DOMMatrixPolyfill {
   }
 }
 
-// Set global DOMMatrix if not defined (Node.js environment)
-if (typeof globalThis.DOMMatrix === 'undefined') {
+// Replace the temporary placeholder with the full implementation
+if (typeof globalThis !== 'undefined') {
   (globalThis as any).DOMMatrix = DOMMatrixPolyfill;
 }
 
