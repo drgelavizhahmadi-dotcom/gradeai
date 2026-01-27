@@ -91,7 +91,7 @@ function transformToTestAnalysis(
   // Extract points if available
   let score = 0;
   let maxScore = 100;
-  if (result.grade.points) {
+  if (result.grade.points && typeof result.grade.points === 'string') {
     const pointsMatch = result.grade.points.match(/(\d+)\s*(?:\/|von)\s*(\d+)/);
     if (pointsMatch) {
       score = parseInt(pointsMatch[1], 10);
@@ -104,7 +104,9 @@ function transformToTestAnalysis(
   // Build bySection from grade breakdown
   const bySection = result.grade.breakdown
     ? Object.entries(result.grade.breakdown).map(([name, value]) => {
-        const pointsMatch = value.match(/(\d+)\s*(?:\/|von)\s*(\d+)/);
+        // Ensure value is a string before calling .match()
+        const valueStr = typeof value === 'string' ? value : String(value || '');
+        const pointsMatch = valueStr.match(/(\d+)\s*(?:\/|von)\s*(\d+)/);
         const achieved = pointsMatch ? parseInt(pointsMatch[1], 10) : 0;
         const possible = pointsMatch ? parseInt(pointsMatch[2], 10) : 0;
         return {
