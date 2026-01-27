@@ -20,7 +20,7 @@ export async function analyzeWithGeminiVision(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.0-flash',
       systemInstruction: VISION_SYSTEM_PROMPT,
     });
 
@@ -39,7 +39,7 @@ export async function analyzeWithGeminiVision(
 
     parts.push({ text: VISION_ANALYSIS_PROMPT });
 
-    console.log('[Gemini Vision] Sending request to gemini-1.5-pro...');
+    console.log('[Gemini Vision] Sending request to gemini-2.0-flash...');
 
     const result = await model.generateContent(parts);
     const response = await result.response;
