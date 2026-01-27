@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { uploadFileToStorage } from "@/lib/storage";
+import { analyzeUploadedTest } from "@/lib/analyze-test";
+import { convertGermanGrade } from "@/lib/ocr/gradeConverter";
 
 // Route segment config for increased body size limit
 export const runtime = 'nodejs'; // Use Node.js runtime for better file handling
@@ -189,27 +191,88 @@ export async function POST(request: NextRequest) {
     }
 
     // ============================================
-    // === QUEUEING ANALYSIS FOR BACKGROUND PROCESSING ===
+    // === RUNNING MULTI-AI VISION ANALYSIS INLINE ===
     // ============================================
     console.log('='.repeat(60));
-    console.log('=== QUEUEING ANALYSIS ===');
+    console.log('=== STARTING MULTI-AI VISION ANALYSIS ===');
     console.log('Upload ID:', upload.id);
     console.log('Total Files:', files.length);
     console.log('Total Size:', totalSize, 'bytes');
-    console.log('Method: Background processing (via analysis-worker)');
+    console.log('Method: Inline (Vercel serverless compatible)');
     console.log('='.repeat(60));
 
-    // Set status to 'queued' for background processing
+    // Update status to processing
+    await db.upload.update({
+      where: { id: upload.id },
+      data: { analysisStatus: 'processing' }
+    });
+
+    // Run multi-AI vision analysis INLINE
     try {
+      const mimeTypes = files.map(f => f.type);
+      const result = await analyzeUploadedTest(fileBuffers, mimeTypes, {
+        childName: child.name,
+      });
+
+      console.log('[Upload API] Analysis complete!');
+      console.log('[Upload API] Grade:', result.consensus.finalResult.grade.value);
+      console.log('[Upload API] Agreement:', result.consensus.consensus.gradeAgreement);
+      console.log('[Upload API] Confidence:', result.confidence);
+
+      // Extract grade for database
+      const gradeValue = result.consensus.finalResult.grade.value;
+      const gradeFloat = gradeValue ? convertGermanGrade(gradeValue) || 0 : 0;
+
+      // Save analysis results to database
       await db.upload.update({
         where: { id: upload.id },
-        data: { analysisStatus: 'queued' }
+        data: {
+          grade: gradeFloat,
+          subject: result.analysis.summary?.subject || 'Unknown',
+          teacherComment: result.consensus.finalResult.teacherFeedback.mainComment || '',
+          extractedText: JSON.stringify({
+            student: result.consensus.finalResult.student,
+            test: result.consensus.finalResult.test,
+            teacherFeedback: result.consensus.finalResult.teacherFeedback,
+          }),
+          analysis: {
+            ai: result.analysis,
+            vision: {
+              consensus: result.consensus.consensus,
+              warnings: result.warnings,
+              confidence: result.confidence,
+              individualResults: result.consensus.individualResults.map(r => ({
+                provider: r.provider,
+                success: r.success,
+                error: r.error,
+                durationMs: r.durationMs,
+                grade: r.grade,
+              })),
+            },
+          } as any,
+          analysisStatus: 'completed',
+          processedAt: new Date(),
+        }
       });
-      console.log('[Upload API] Upload queued for background analysis:', upload.id);
-    } catch (queueError) {
-      console.error('[Upload API] Failed to queue upload for analysis:', queueError);
+
+      console.log('[Upload API] ✓ Analysis saved to database');
+    } catch (analysisError) {
+      console.error('[Upload API] Analysis failed:', analysisError);
+
+      await db.upload.update({
+        where: { id: upload.id },
+        data: {
+          analysisStatus: 'failed',
+          errorMessage: analysisError instanceof Error ? analysisError.message : 'Analysis failed'
+        }
+      });
+
       return NextResponse.json(
-        { success: false, error: "Failed to queue analysis" },
+        {
+          success: false,
+          error: analysisError instanceof Error ? analysisError.message : 'Analysis failed',
+          uploadId: upload.id,
+        },
         { status: 500 }
       );
     }
