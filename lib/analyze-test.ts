@@ -147,7 +147,10 @@ function transformToTestAnalysis(
       trends: [],
     },
     teacherFeedback: {
-      written: result.teacherFeedback.mainComment || '',
+      // Handle mainComment as either string or object with text property
+      written: typeof result.teacherFeedback.mainComment === 'string'
+        ? result.teacherFeedback.mainComment
+        : ((result.teacherFeedback.mainComment as any)?.text || ''),
       corrections: result.teacherFeedback.corrections,
       praise: result.strengths.map(s => s.point).slice(0, 3),
       evaluationMethodology: result.teacherFeedback.tone

@@ -224,12 +224,18 @@ export async function POST(request: NextRequest) {
       const gradeFloat = gradeValue ? convertGermanGrade(gradeValue) || 0 : 0;
 
       // Save analysis results to database
+      // Extract teacher comment - handle both string and object formats
+      const mainComment = result.consensus.finalResult.teacherFeedback.mainComment as any;
+      const teacherCommentText = typeof mainComment === 'string'
+        ? mainComment
+        : (mainComment?.text || '');
+
       await db.upload.update({
         where: { id: upload.id },
         data: {
           grade: gradeFloat,
           subject: result.analysis.summary?.subject || 'Unknown',
-          teacherComment: result.consensus.finalResult.teacherFeedback.mainComment || '',
+          teacherComment: teacherCommentText,
           extractedText: JSON.stringify({
             student: result.consensus.finalResult.student,
             test: result.consensus.finalResult.test,
