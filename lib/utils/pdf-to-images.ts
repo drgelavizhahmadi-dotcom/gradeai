@@ -41,18 +41,18 @@ export async function convertPdfToImages(pdfBuffer: Buffer): Promise<PageImage[]
 
         if (result.buffer && result.buffer.length > 0) {
           // Optimize with sharp
-          const optimized = await optimizeImage(result.buffer);
+          const { buffer: optimized, mimeType } = await optimizeImage(result.buffer);
 
           const sizeKB = optimized.length / 1024;
 
           images.push({
             pageNumber,
             base64: optimized.toString('base64'),
-            mimeType: 'image/png',
+            mimeType,
             sizeKB,
           });
 
-          console.log(`[PDF Converter] Page ${pageNumber}: ${sizeKB.toFixed(0)} KB`);
+          console.log(`[PDF Converter] Page ${pageNumber}: ${sizeKB.toFixed(0)} KB (${mimeType})`);
           pageNumber++;
         } else {
           hasMorePages = false;
@@ -85,21 +85,23 @@ export async function prepareImageForVision(
   console.log(`[Image Prep] Preparing image for vision (page ${pageNumber})...`);
   console.log(`[Image Prep] Original size: ${(imageBuffer.length / 1024).toFixed(0)} KB`);
 
-  const optimized = await optimizeImage(imageBuffer);
+  const { buffer: optimized, mimeType } = await optimizeImage(imageBuffer);
   const sizeKB = optimized.length / 1024;
 
-  console.log(`[Image Prep] Optimized size: ${sizeKB.toFixed(0)} KB`);
+  console.log(`[Image Prep] Optimized size: ${sizeKB.toFixed(0)} KB (${mimeType})`);
 
   return {
     pageNumber,
     base64: optimized.toString('base64'),
-    mimeType: 'image/png',
+    mimeType,
     sizeKB,
   };
 }
 
-async function optimizeImage(buffer: Buffer): Promise<Buffer> {
+async function optimizeImage(buffer: Buffer): Promise<{ buffer: Buffer; mimeType: 'image/jpeg' | 'image/png' }> {
   const metadata = await sharp(buffer).metadata();
+  const isJpeg = metadata.format === 'jpeg' || metadata.format === 'jpg';
+
   let processed = sharp(buffer);
 
   // Resize if too large
@@ -117,19 +119,40 @@ async function optimizeImage(buffer: Buffer): Promise<Buffer> {
     });
   }
 
-  // Convert to PNG with good compression
-  let optimized = await processed.png({ compressionLevel: 6 }).toBuffer();
+  // Keep JPEG as JPEG (smaller for photos), use PNG only for non-photos
+  let optimized: Buffer;
+  let mimeType: 'image/jpeg' | 'image/png';
 
-  // If still too large, reduce quality further
-  if (optimized.length / 1024 > MAX_IMAGE_SIZE_KB) {
-    console.log('[Image Prep] Image still too large, applying additional compression...');
-    optimized = await sharp(optimized)
-      .resize(Math.floor(MAX_IMAGE_WIDTH * 0.8), null, { fit: 'inside' })
-      .png({ compressionLevel: 9 })
-      .toBuffer();
+  if (isJpeg) {
+    // JPEG: use quality compression (much smaller for photos)
+    optimized = await processed.jpeg({ quality: 85 }).toBuffer();
+    mimeType = 'image/jpeg';
+
+    // If still too large, reduce quality
+    if (optimized.length / 1024 > MAX_IMAGE_SIZE_KB) {
+      console.log('[Image Prep] JPEG too large, reducing quality...');
+      optimized = await sharp(optimized)
+        .resize(Math.floor(MAX_IMAGE_WIDTH * 0.8), null, { fit: 'inside' })
+        .jpeg({ quality: 70 })
+        .toBuffer();
+    }
+  } else {
+    // PNG: use compression
+    optimized = await processed.png({ compressionLevel: 6 }).toBuffer();
+    mimeType = 'image/png';
+
+    // If still too large, try JPEG instead (usually smaller)
+    if (optimized.length / 1024 > MAX_IMAGE_SIZE_KB) {
+      console.log('[Image Prep] PNG too large, converting to JPEG...');
+      optimized = await sharp(buffer)
+        .resize(Math.floor(MAX_IMAGE_WIDTH * 0.8), null, { fit: 'inside' })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      mimeType = 'image/jpeg';
+    }
   }
 
-  return optimized;
+  return { buffer: optimized, mimeType };
 }
 
 export async function prepareMultipleImages(
