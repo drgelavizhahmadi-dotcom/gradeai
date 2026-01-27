@@ -112,10 +112,13 @@ export function mergeVisionResults(results: VisionAnalysisResult[]): ConsensusRe
 
   for (const result of successful) {
     for (const strength of result.strengths || []) {
-      const key = strength.point.toLowerCase().substring(0, 50);
+      // Ensure strength.point is a string
+      const point = typeof strength.point === 'string' ? strength.point : String(strength.point || '');
+      if (!point) continue;
+      const key = point.toLowerCase().substring(0, 50);
       if (!seenStrengths.has(key)) {
         seenStrengths.add(key);
-        allStrengths.push(strength);
+        allStrengths.push({ ...strength, point });
       }
     }
   }
@@ -126,10 +129,13 @@ export function mergeVisionResults(results: VisionAnalysisResult[]): ConsensusRe
 
   for (const result of successful) {
     for (const weakness of result.weaknesses || []) {
-      const key = weakness.point.toLowerCase().substring(0, 50);
+      // Ensure weakness.point is a string
+      const point = typeof weakness.point === 'string' ? weakness.point : String(weakness.point || '');
+      if (!point) continue;
+      const key = point.toLowerCase().substring(0, 50);
       if (!seenWeaknesses.has(key)) {
         seenWeaknesses.add(key);
-        allWeaknesses.push(weakness);
+        allWeaknesses.push({ ...weakness, point });
       }
     }
   }
@@ -140,10 +146,13 @@ export function mergeVisionResults(results: VisionAnalysisResult[]): ConsensusRe
 
   for (const result of successful) {
     for (const rec of result.recommendations || []) {
-      const key = rec.action.toLowerCase().substring(0, 50);
+      // Ensure rec.action is a string
+      const action = typeof rec.action === 'string' ? rec.action : String(rec.action || '');
+      if (!action) continue;
+      const key = action.toLowerCase().substring(0, 50);
       if (!seenRecs.has(key)) {
         seenRecs.add(key);
-        allRecommendations.push(rec);
+        allRecommendations.push({ ...rec, action });
       }
     }
   }
@@ -253,10 +262,12 @@ function normalizeGrade(grade: string): string {
 }
 
 // Deduplicate strings case-insensitively
-function deduplicateStrings(arr: string[]): string[] {
+function deduplicateStrings(arr: (string | unknown)[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const item of arr) {
+    // Ensure item is a string
+    if (typeof item !== 'string') continue;
     const key = item.toLowerCase().trim();
     if (key && !seen.has(key)) {
       seen.add(key);
