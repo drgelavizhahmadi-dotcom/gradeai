@@ -11,9 +11,9 @@ function getProviderConfig(): VisionProviderConfig[] {
   const mistralEnabled = process.env.VISION_MISTRAL_ENABLED !== 'false' && !!process.env.MISTRAL_API_KEY;
 
   return [
-    { name: 'claude', enabled: claudeEnabled, priority: 1, timeout: 55000 },
-    { name: 'gemini', enabled: geminiEnabled, priority: 2, timeout: 55000 },
-    { name: 'mistral', enabled: mistralEnabled, priority: 3, timeout: 55000 },
+    { name: 'claude', enabled: claudeEnabled, priority: 1, timeout: 120000 },
+    { name: 'gemini', enabled: false, priority: 2, timeout: 120000 },   // DISABLED - rate limit issues
+    { name: 'mistral', enabled: false, priority: 3, timeout: 120000 },  // DISABLED - rate limit issues
   ];
 }
 
