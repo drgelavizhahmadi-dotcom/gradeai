@@ -6,12 +6,12 @@ import { uploadFileToStorage } from "@/lib/storage";
 
 // Route segment config for increased body size limit
 export const runtime = 'nodejs'; // Use Node.js runtime for better file handling
-export const maxDuration = 60; // Maximum execution time in seconds
+export const maxDuration = 300; // Maximum execution time in seconds
 
 // Increase body size limit for file uploads (Vercel limit is 4.5MB by default)
 export const dynamic = 'force-dynamic';
 // Note: Body parser size limit is controlled by Vercel config
-// Add to vercel.json: { "functions": { "api/upload/route.ts": { "maxDuration": 60 } } }
+// Add to vercel.json: { "functions": { "api/upload/route.ts": { "maxDuration": 300 } } }
 
 // Validation schema for file uploads
 const uploadSchema = z.object({

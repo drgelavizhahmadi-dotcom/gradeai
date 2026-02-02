@@ -52,38 +52,39 @@ export async function extractWithClaude(images: PageImage[]) {
   try {
     const anthropic = new Anthropic({ apiKey });
 
-    const content: any[] = [];
+    // Process pages one by one to avoid timeouts
+    const extractions: string[] = [];
 
     for (const img of images) {
-      content.push({
+      console.log(`[Claude Extract] Processing page ${img.pageNumber}...`);
+
+      const content: any[] = [{
         type: 'image',
         source: {
           type: 'base64',
           media_type: img.mimeType,
           data: img.base64,
         },
-      });
-      content.push({
+      }, {
         type: 'text',
-        text: `[Page ${img.pageNumber}]`,
+        text: `[Page ${img.pageNumber} of ${images.length}]`,
+      }, {
+        type: 'text',
+        text: EXTRACTION_PROMPT,
+      }];
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000, // Reduced for single page
+        messages: [{ role: 'user', content }],
       });
+
+      const textContent = response.content.find(c => c.type === 'text');
+      const pageExtraction = textContent?.type === 'text' ? textContent.text : '';
+      extractions.push(`PAGE ${img.pageNumber}:\n${pageExtraction}\n---`);
     }
 
-    content.push({
-      type: 'text',
-      text: EXTRACTION_PROMPT,
-    });
-
-    console.log('[Claude Extract] Sending request...');
-
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      messages: [{ role: 'user', content }],
-    });
-
-    const textContent = response.content.find(c => c.type === 'text');
-    const extraction = textContent?.type === 'text' ? textContent.text : '';
+    const extraction = extractions.join('\n\n');
 
     const duration = Date.now() - startTime;
     console.log('[Claude Extract] Complete');

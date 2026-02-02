@@ -77,28 +77,33 @@ export async function extractWithGemini(images: PageImage[]) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    const parts: any[] = [];
+    // Process pages one by one to avoid timeouts
+    const extractions: string[] = [];
 
     for (const img of images) {
-      parts.push({
+      console.log(`[Gemini Extract] Processing page ${img.pageNumber}...`);
+
+      const parts: any[] = [{
         inlineData: {
           mimeType: img.mimeType,
           data: img.base64,
         },
-      });
-      parts.push({ text: `[Page ${img.pageNumber}]` });
+      }, {
+        text: `[Page ${img.pageNumber} of ${images.length}]`,
+      }, {
+        text: EXTRACTION_PROMPT,
+      }];
+
+      const result = await retryWithBackoff(async () => {
+        return await model.generateContent(parts);
+      }, 3, 2000);
+
+      const response = await result.response;
+      const pageExtraction = response.text();
+      extractions.push(`PAGE ${img.pageNumber}:\n${pageExtraction}\n---`);
     }
 
-    parts.push({ text: EXTRACTION_PROMPT });
-
-    console.log('[Gemini Extract] Sending request (with retry)...');
-
-    const result = await retryWithBackoff(async () => {
-      return await model.generateContent(parts);
-    }, 3, 2000);
-
-    const response = await result.response;
-    const extraction = response.text();
+    const extraction = extractions.join('\n\n');
 
     const duration = Date.now() - startTime;
     console.log('[Gemini Extract] Complete');

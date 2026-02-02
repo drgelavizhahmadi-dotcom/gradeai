@@ -5,7 +5,7 @@ import { generateReportWithClaude } from "@/lib/ai/report/claude-report";
 import { convertGermanGrade } from "@/lib/ocr/gradeConverter";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {

@@ -5,7 +5,7 @@ import { extractWithGemini } from "@/lib/ai/vision/gemini-extract";
 import { extractWithClaude } from "@/lib/ai/vision/claude-extract";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
