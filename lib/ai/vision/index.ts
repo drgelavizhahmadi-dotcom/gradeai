@@ -1,18 +1,15 @@
 import { PageImage, ConsensusResult, VisionProviderConfig, createEmptyResult } from './types';
 import { analyzeWithClaudeVision } from './claude-vision';
-import { analyzeWithGeminiVision } from './gemini-vision';
 import { analyzeWithMistralVision } from './mistral-vision';
 import { mergeVisionResults } from './consensus';
 
 // Provider configuration - easy to enable/disable via environment variables
 function getProviderConfig(): VisionProviderConfig[] {
   const claudeEnabled = process.env.VISION_CLAUDE_ENABLED !== 'false' && !!process.env.ANTHROPIC_API_KEY;
-  const geminiEnabled = process.env.VISION_GEMINI_ENABLED !== 'false' && !!(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY);
   const mistralEnabled = process.env.VISION_MISTRAL_ENABLED !== 'false' && !!process.env.MISTRAL_API_KEY;
 
   return [
     { name: 'claude', enabled: claudeEnabled, priority: 1, timeout: 120000 },
-    { name: 'gemini', enabled: false, priority: 2, timeout: 120000 },   // DISABLED - rate limit issues
     { name: 'mistral', enabled: false, priority: 3, timeout: 120000 },  // DISABLED - rate limit issues
   ];
 }
@@ -52,7 +49,6 @@ export async function analyzeTestWithMultiVision(
   // Map provider names to functions
   const providerFunctions: Record<string, (images: PageImage[]) => Promise<any>> = {
     claude: analyzeWithClaudeVision,
-    gemini: analyzeWithGeminiVision,
     mistral: analyzeWithMistralVision,
   };
 
@@ -109,7 +105,6 @@ export async function analyzeTestWithMultiVision(
 
 // Export single provider functions for direct access if needed
 export { analyzeWithClaudeVision } from './claude-vision';
-export { analyzeWithGeminiVision } from './gemini-vision';
 export { analyzeWithMistralVision } from './mistral-vision';
 export { mergeVisionResults } from './consensus';
 export * from './types';
