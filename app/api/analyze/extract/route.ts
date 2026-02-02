@@ -68,7 +68,13 @@ export async function POST(request: NextRequest) {
     if (analysisResult.report) {
       updateData.analysis = JSON.stringify(analysisResult.report);
       updateData.subject = analysisResult.report.test?.subject;
-      updateData.grade = analysisResult.report.grade?.value;
+      // Convert grade string to number
+      if (analysisResult.report.grade?.value) {
+        const gradeNum = parseFloat(analysisResult.report.grade.value);
+        if (!isNaN(gradeNum)) {
+          updateData.grade = gradeNum;
+        }
+      }
     }
 
     await db.upload.update({
