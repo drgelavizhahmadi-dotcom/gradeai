@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_REPORT_SYSTEM, AI_REPORT_PROMPT } from "@/lib/ai/prompts/ai-report-prompt";
+import { generateReportWithClaude } from "@/lib/ai/report/claude-report";
 import { convertGermanGrade } from "@/lib/ocr/gradeConverter";
 
 export const runtime = "nodejs";
@@ -49,42 +48,13 @@ export async function POST(request: NextRequest) {
       data: { analysisStatus: "analyzing" },
     });
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+    const result = await generateReportWithClaude(rawExtraction);
+
+    if (!result.success || !result.report) {
+      throw new Error(result.error || "Report generation failed");
     }
 
-    const anthropic = new Anthropic({ apiKey });
-
-    // Replace placeholder in prompt with actual extraction
-    const prompt = AI_REPORT_PROMPT.replace("{visionExtraction}", rawExtraction);
-
-    console.log("[Report API] Sending to Claude for report generation...");
-    const startTime = Date.now();
-
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system: AI_REPORT_SYSTEM,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const durationMs = Date.now() - startTime;
-    console.log(`[Report API] Response in ${durationMs}ms, tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}`);
-
-    const textContent = response.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from Claude");
-    }
-
-    // Parse JSON from response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("[Report API] No JSON found, response:", textContent.text.substring(0, 500));
-      throw new Error("Invalid response format - no JSON found");
-    }
-
-    const report = JSON.parse(jsonMatch[0]);
+    const report = result.report;
 
     console.log("[Report API] Report generated:");
     console.log("[Report API] Student:", report.student?.name);
@@ -102,18 +72,13 @@ export async function POST(request: NextRequest) {
       ? mainComment
       : mainComment?.text || "";
 
-    // Save report to database
+    // Save report to database (don't overwrite extractedText with report data)
     await db.upload.update({
       where: { id: uploadId },
       data: {
         grade: gradeFloat,
         subject: report.test?.subject || "Unknown",
         teacherComment: teacherCommentText,
-        extractedText: JSON.stringify({
-          student: report.student,
-          test: report.test,
-          teacherFeedback: report.teacherFeedback,
-        }),
         analysis: report as any,
         analysisStatus: "completed",
         processedAt: new Date(),
@@ -124,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      durationMs,
+      durationMs: result.duration,
       grade: gradeValue,
     });
   } catch (error) {
