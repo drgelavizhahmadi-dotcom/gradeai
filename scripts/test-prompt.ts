@@ -1,7 +1,7 @@
 
 
 
-import { OPTIMIZED_ANALYSIS_PROMPT } from '../lib/ai/optimized-prompt.js';
+import { OPTIMIZED_ANALYSIS_PROMPT } from '../lib/ai/optimized-prompt';
 
 const extractedText = "Sample OCR extracted text from the test.";
 const childName = "John Doe";
