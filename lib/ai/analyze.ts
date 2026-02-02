@@ -1,8 +1,17 @@
 import { extractWithClaude } from './vision/claude-extract';
 import { extractWithDocumentAI } from './vision/documentai-extract';
 import { generateReportWithClaude } from './report/claude-report';
+import { generateTeacherReport } from './report/teacher-report';
 
-export async function analyzeTest(images: Array<{base64: string, mimeType: string, pageNumber: number}>) {
+export interface AnalyzeOptions {
+  useTeacherReport?: boolean; // Use teacher-focused constructive reports
+}
+
+export async function analyzeTest(
+  images: Array<{base64: string, mimeType: string, pageNumber: number}>,
+  options: AnalyzeOptions = {}
+) {
+  const { useTeacherReport = false } = options;
   const totalStart = Date.now();
 
   console.log('================================================================');
@@ -37,9 +46,13 @@ export async function analyzeTest(images: Array<{base64: string, mimeType: strin
 
   console.log('[Analyze] Layer 1 complete with', extractResult.provider, 'in', extractResult.duration, 'ms');
 
-  // LAYER 2: Report Generation with Claude (quality)
-  console.log('[Analyze] Layer 2: Claude Report Generation...');
-  const reportResult = await generateReportWithClaude(extractResult.extraction);
+  // LAYER 2: Report Generation - Choose between regular or teacher-focused
+  const reportType = useTeacherReport ? 'Teacher-Focused' : 'Standard';
+  console.log(`[Analyze] Layer 2: ${reportType} Report Generation...`);
+
+  const reportResult = useTeacherReport
+    ? await generateTeacherReport(extractResult.extraction)
+    : await generateReportWithClaude(extractResult.extraction);
 
   if (!reportResult.success) {
     console.error('[Analyze] Layer 2 failed:', reportResult.error);
@@ -58,8 +71,20 @@ export async function analyzeTest(images: Array<{base64: string, mimeType: strin
   console.log('[Analyze] ANALYSIS COMPLETE');
   console.log('[Analyze] Total time:', totalDuration, 'ms');
   console.log('[Analyze] Vision provider:', extractResult.provider);
-  console.log('[Analyze] Student:', reportResult.report?.student?.name);
-  console.log('[Analyze] Grade:', reportResult.report?.grade?.value);
+  console.log('[Analyze] Report type:', useTeacherReport ? 'Teacher-Focused' : 'Standard');
+
+  // Get student name from appropriate field based on report type
+  const studentName = useTeacherReport
+    ? reportResult.report?.schueler?.name
+    : reportResult.report?.student?.name;
+
+  // Get grade from appropriate field based on report type
+  const grade = useTeacherReport
+    ? reportResult.report?.leistung?.gesamtnote?.wert
+    : reportResult.report?.grade?.value;
+
+  console.log('[Analyze] Student:', studentName);
+  console.log('[Analyze] Grade:', grade);
   console.log('================================================================');
 
   return {
@@ -73,7 +98,7 @@ export async function analyzeTest(images: Array<{base64: string, mimeType: strin
     },
     providers: {
       vision: extractResult.provider,
-      report: 'claude',
+      report: useTeacherReport ? 'teacher-claude' : 'claude',
     },
   };
 }

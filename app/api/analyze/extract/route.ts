@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
 
     const body = await request.json();
-    const { uploadId, images } = body;
+    const { uploadId, images, useTeacherReport = false } = body;
 
     if (!uploadId || !images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Run full two-layer analysis (extraction + report generation)
-    console.log(`[Extract API] Starting two-layer analysis...`);
-    const analysisResult = await analyzeTest(images);
+    console.log(`[Extract API] Starting two-layer analysis (teacher report: ${useTeacherReport})...`);
+    const analysisResult = await analyzeTest(images, { useTeacherReport });
 
     if (!analysisResult.success) {
       console.error(`[Extract API] Analysis failed: ${analysisResult.error}`);
