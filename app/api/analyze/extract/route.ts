@@ -90,14 +90,16 @@ export async function POST(request: NextRequest) {
     const extraction = textContent.text;
     console.log(`[Extract API] Extraction length: ${extraction.length} chars`);
 
-    // Save extraction in the analysis JSON field (no schema change needed)
+    // Save extraction to extractedText field
+    console.log("[Extract API] Saving to database...");
     await db.upload.update({
       where: { id: uploadId },
       data: {
-        analysis: { rawExtraction: extraction } as any,
+        extractedText: extraction,
         analysisStatus: "extracted",
       },
     });
+    console.log("[Extract API] Saved successfully");
 
     return NextResponse.json({
       success: true,

@@ -32,9 +32,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read extraction from analysis JSON field
-    const analysisData = upload.analysis as any;
-    const rawExtraction = analysisData?.rawExtraction as string | undefined;
+    // Read extraction from extractedText field
+    const rawExtraction = upload.extractedText;
 
     if (!rawExtraction) {
       return NextResponse.json(
