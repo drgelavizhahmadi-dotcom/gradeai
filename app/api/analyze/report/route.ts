@@ -32,14 +32,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!upload.rawExtraction) {
+    // Read extraction from analysis JSON field
+    const analysisData = upload.analysis as any;
+    const rawExtraction = analysisData?.rawExtraction as string | undefined;
+
+    if (!rawExtraction) {
       return NextResponse.json(
         { success: false, error: "No extraction found. Run extract first." },
         { status: 400 }
       );
     }
 
-    console.log(`[Report API] Starting report for upload ${uploadId}, extraction: ${upload.rawExtraction.length} chars`);
+    console.log(`[Report API] Starting report for upload ${uploadId}, extraction: ${rawExtraction.length} chars`);
 
     await db.upload.update({
       where: { id: uploadId },
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic({ apiKey });
 
     // Replace placeholder in prompt with actual extraction
-    const prompt = AI_REPORT_PROMPT.replace("{visionExtraction}", upload.rawExtraction);
+    const prompt = AI_REPORT_PROMPT.replace("{visionExtraction}", rawExtraction);
 
     console.log("[Report API] Sending to Claude for report generation...");
     const startTime = Date.now();

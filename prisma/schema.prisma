@@ -89,7 +89,6 @@ model Upload {
   grade          Float?
   teacherComment String?
   extractedText  String?
-  rawExtraction  String?   @db.Text
   analysisStatus String    @default("pending")
   analysis       Json?
   errorMessage   String?
