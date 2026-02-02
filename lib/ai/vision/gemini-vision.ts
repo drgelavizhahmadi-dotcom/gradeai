@@ -1,13 +1,20 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { PageImage, VisionAnalysisResult, createEmptyResult } from './types';
-import { VISION_ANALYSIS_PROMPT, VISION_SYSTEM_PROMPT } from '../prompts/vision-prompt';
+import {
+  VISION_EXTRACTION_SYSTEM,
+  VISION_EXTRACTION_PROMPT,
+} from '../prompts/vision-extraction-prompt';
+import {
+  AI_REPORT_SYSTEM,
+  AI_REPORT_PROMPT,
+} from '../prompts/ai-report-prompt';
 
 export async function analyzeWithGeminiVision(
   images: PageImage[]
 ): Promise<VisionAnalysisResult> {
   const startTime = Date.now();
   console.log('[Gemini Vision] ========================================');
-  console.log('[Gemini Vision] Starting analysis');
+  console.log('[Gemini Vision] Starting TWO-LAYER analysis');
   console.log('[Gemini Vision] Pages:', images.length);
   console.log('[Gemini Vision] Total size:', images.reduce((s, i) => s + i.sizeKB, 0).toFixed(0), 'KB');
 
@@ -19,41 +26,73 @@ export async function analyzeWithGeminiVision(
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+
+    // ================================================================
+    // LAYER 1: VISION EXTRACTION - Get ALL text from images
+    // ================================================================
+    console.log('[Gemini Vision] === LAYER 1: Vision Extraction ===');
+
+    const visionModel = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash',
-      systemInstruction: VISION_SYSTEM_PROMPT,
+      systemInstruction: VISION_EXTRACTION_SYSTEM,
     });
 
-    // Build parts with images
-    const parts: any[] = [];
+    const visionParts: any[] = [];
 
     for (const img of images) {
-      parts.push({
+      visionParts.push({
         inlineData: {
           mimeType: img.mimeType,
           data: img.base64,
         },
       });
-      parts.push({ text: `[Page ${img.pageNumber} of ${images.length}]` });
+      visionParts.push({ text: `[Page ${img.pageNumber} of ${images.length}]` });
     }
 
-    parts.push({ text: VISION_ANALYSIS_PROMPT });
+    visionParts.push({ text: VISION_EXTRACTION_PROMPT });
 
-    console.log('[Gemini Vision] Sending request to gemini-2.0-flash...');
+    console.log('[Gemini Vision] Sending vision extraction request to gemini-2.0-flash...');
 
-    const result = await model.generateContent(parts);
-    const response = await result.response;
-    const text = response.text();
+    const visionResult = await visionModel.generateContent(visionParts);
+    const visionResponse = await visionResult.response;
+    const rawExtraction = visionResponse.text();
+
+    const layer1Duration = Date.now() - startTime;
+
+    console.log(`[Gemini Vision] Layer 1 complete in ${layer1Duration}ms`);
+    console.log(`[Gemini Vision] Extracted ${rawExtraction.length} characters`);
+    console.log('[Gemini Vision] Preview:', rawExtraction.substring(0, 300));
+
+    // ================================================================
+    // LAYER 2: AI REPORT - Create structured report from extraction
+    // ================================================================
+    console.log('[Gemini Vision] === LAYER 2: AI Report Generation ===');
+
+    const reportModel = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: AI_REPORT_SYSTEM,
+    });
+
+    const reportPrompt = AI_REPORT_PROMPT.replace('{visionExtraction}', rawExtraction);
+
+    console.log('[Gemini Vision] Sending report generation request...');
+
+    const reportResult = await reportModel.generateContent(reportPrompt);
+    const reportResponse = await reportResult.response;
+    const reportText = reportResponse.text();
 
     const durationMs = Date.now() - startTime;
-    console.log(`[Gemini Vision] Response received in ${durationMs}ms`);
+    const layer2Duration = durationMs - layer1Duration;
+
+    console.log(`[Gemini Vision] Layer 2 complete in ${layer2Duration}ms`);
+    console.log(`[Gemini Vision] Total duration: ${durationMs}ms`);
 
     // Parse JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonMatch = reportText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('[Gemini Vision] No JSON found in response');
-      console.error('[Gemini Vision] Response preview:', text.substring(0, 500));
-      throw new Error('Invalid response format - no JSON found');
+      console.error('[Gemini Vision] No JSON found in report response');
+      console.error('[Gemini Vision] Response preview:', reportText.substring(0, 500));
+      throw new Error('Invalid response format - no JSON found in report');
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
@@ -62,6 +101,9 @@ export async function analyzeWithGeminiVision(
     console.log('[Gemini Vision] ✓ Confidence:', parsed.grade?.confidence);
     console.log('[Gemini Vision] ✓ Student:', parsed.student?.name || 'NOT FOUND');
     console.log('[Gemini Vision] ✓ Subject:', parsed.test?.subject || 'NOT FOUND');
+    console.log('[Gemini Vision] ✓ Strengths:', parsed.strengths?.length || 0);
+    console.log('[Gemini Vision] ✓ Weaknesses:', parsed.weaknesses?.length || 0);
+    console.log('[Gemini Vision] ✓ Recommendations:', parsed.recommendations?.length || 0);
 
     return {
       provider: 'gemini',
@@ -79,7 +121,8 @@ export async function analyzeWithGeminiVision(
         confidence: parsed.metadata?.confidence || 0,
         hasRedMarks: parsed.metadata?.hasRedMarks || false,
         hasHandwriting: parsed.metadata?.hasHandwriting || false,
-        rawResponse: text.substring(0, 500),
+        rawExtraction: rawExtraction.substring(0, 1000),
+        rawResponse: reportText.substring(0, 500),
       },
     };
 

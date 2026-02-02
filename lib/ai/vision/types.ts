@@ -66,6 +66,7 @@ export interface VisionAnalysisResult {
     confidence: number;
     hasRedMarks: boolean;
     hasHandwriting: boolean;
+    rawExtraction?: string;
     rawResponse?: string;
   };
 }
