@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { extractWithGemini } from "@/lib/ai/vision/gemini-extract";
-import { extractWithClaude } from "@/lib/ai/vision/claude-extract";
+import { analyzeTest } from "@/lib/ai/analyze";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -38,37 +37,52 @@ export async function POST(request: NextRequest) {
       data: { analysisStatus: "extracting" },
     });
 
-    // Try Gemini first, fallback to Claude
-    let result: { success: boolean; error?: string; extraction: string; duration: number; provider: string } = await extractWithGemini(images);
+    // Run full two-layer analysis (extraction + report generation)
+    console.log(`[Extract API] Starting two-layer analysis...`);
+    const analysisResult = await analyzeTest(images);
 
-    if (!result.success) {
-      console.log(`[Extract API] Gemini failed (${result.error}), falling back to Claude...`);
-      result = await extractWithClaude(images);
+    if (!analysisResult.success) {
+      console.error(`[Extract API] Analysis failed: ${analysisResult.error}`);
+      await db.upload.update({
+        where: { id: uploadId },
+        data: {
+          analysisStatus: "failed",
+          errorMessage: analysisResult.error,
+        },
+      });
+      throw new Error(analysisResult.error);
     }
 
-    if (!result.success) {
-      throw new Error(result.error || "Extraction failed with all providers");
-    }
+    console.log(`[Extract API] Analysis complete - Vision: ${analysisResult.providers.vision}, Report: ${analysisResult.providers.report}`);
+    console.log(`[Extract API] Extraction length: ${analysisResult.extraction.length} chars`);
+    console.log(`[Extract API] Report generated: ${analysisResult.report ? 'YES' : 'NO'}`);
 
-    console.log(`[Extract API] Extraction by ${result.provider}`);
-
-    console.log(`[Extract API] Extraction length: ${result.extraction.length} chars`);
-
-    // Save extraction to extractedText field
+    // Save both extraction and report to database
     console.log("[Extract API] Saving to database...");
+    const updateData: any = {
+      extractedText: analysisResult.extraction,
+      analysisStatus: "completed",
+      processedAt: new Date(),
+    };
+
+    if (analysisResult.report) {
+      updateData.analysis = JSON.stringify(analysisResult.report);
+      updateData.subject = analysisResult.report.test?.subject;
+      updateData.grade = analysisResult.report.grade?.value;
+    }
+
     await db.upload.update({
       where: { id: uploadId },
-      data: {
-        extractedText: result.extraction,
-        analysisStatus: "extracted",
-      },
+      data: updateData,
     });
     console.log("[Extract API] Saved successfully");
 
     return NextResponse.json({
       success: true,
-      extractionLength: result.extraction.length,
-      durationMs: result.duration,
+      extractionLength: analysisResult.extraction.length,
+      reportGenerated: !!analysisResult.report,
+      durationMs: analysisResult.timing.total,
+      providers: analysisResult.providers,
     });
   } catch (error) {
     console.error("[Extract API] Error:", error);

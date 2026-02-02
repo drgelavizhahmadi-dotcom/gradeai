@@ -9,6 +9,7 @@ import {
   BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2
 } from 'lucide-react'
 import GradeAIParentReport from '@/components/GradeAIParentReport/index'
+import { ParentReport } from '@/components/ParentReport'
 import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -635,39 +636,97 @@ export default function UploadDetailPage() {
               </div>
             </div>
 
-            {/* GradeAI Parent Report - Multilingual AI-Powered Report */}
-            {upload.analysis?.ai && (
+            {/* Parent Report */}
+            {(upload.analysis || upload.extractedText) && (
               <div className="mb-6">
                 {(() => {
-                  console.log('[Uploads Page] Rendering GradeAIParentReport with data:', upload.analysis.ai)
-                  const transformedData = transformToReportFormat(upload.analysis.ai)
-                  console.log('[Uploads Page] Transformed data:', transformedData)
-                  return (
-                    <ErrorBoundary
-                      fallback={
-                        <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <h3 className="text-lg font-semibold text-red-900 mb-2">
-                                Report Display Error
-                              </h3>
-                              <p className="text-red-800 mb-3">
-                                The analysis completed successfully, but there was an error displaying the report.
-                              </p>
-                              <p className="text-sm text-red-700">
-                                Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
-                              </p>
+                  // Check if we have new structured analysis data
+                  const analysisData = upload.analysis ? 
+                    (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis) : null;
+
+                  if (analysisData && typeof analysisData === 'object' && !Array.isArray(analysisData)) {
+                    // Use new ParentReport component for structured data
+                    console.log('[Uploads Page] Rendering new ParentReport with structured data')
+                    return (
+                      <ErrorBoundary
+                        fallback={
+                          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                                  Report Display Error
+                                </h3>
+                                <p className="text-red-800 mb-3">
+                                  The analysis completed successfully, but there was an error displaying the report.
+                                </p>
+                                <p className="text-sm text-red-700">
+                                  Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
+                                </p>
+                              </div>
                             </div>
                           </div>
+                        }
+                      >
+                        <ParentReport
+                          data={analysisData}
+                          extractedText={upload.extractedText}
+                          childName={upload.child?.name}
+                        />
+                      </ErrorBoundary>
+                    );
+                  } else if (upload.analysis?.ai) {
+                    // Fallback to old component for legacy data
+                    console.log('[Uploads Page] Rendering GradeAIParentReport with legacy data:', upload.analysis.ai)
+                    const transformedData = transformToReportFormat(upload.analysis.ai)
+                    console.log('[Uploads Page] Transformed data:', transformedData)
+                    return (
+                      <ErrorBoundary
+                        fallback={
+                          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                                  Report Display Error
+                                </h3>
+                                <p className="text-red-800 mb-3">
+                                  The analysis completed successfully, but there was an error displaying the report.
+                                </p>
+                                <p className="text-sm text-red-700">
+                                  Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <GradeAIParentReport
+                          analysisData={transformedData}
+                        />
+                      </ErrorBoundary>
+                    );
+                  } else if (upload.extractedText) {
+                    // Show extracted text if no structured analysis yet
+                    return (
+                      <div className="rounded-xl bg-yellow-50 border-2 border-yellow-200 p-6">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                              Report Generation in Progress
+                            </h3>
+                            <p className="text-yellow-800 mb-3">
+                              Text extraction completed successfully. The structured report is being generated.
+                            </p>
+                            <p className="text-sm text-yellow-700">
+                              Raw extracted text is available below.
+                            </p>
+                          </div>
                         </div>
-                      }
-                    >
-                      <GradeAIParentReport
-                        analysisData={transformedData}
-                      />
-                    </ErrorBoundary>
-                  )
+                      </div>
+                    );
+                  }
                 })()}
               </div>
             )}
@@ -726,14 +785,11 @@ export default function UploadDetailPage() {
           >
             Upload Another Test
           </Link>
-          {upload.analysisStatus === 'completed' && upload.analysis?.ai && (
+          {upload.analysisStatus === 'completed' && (upload.analysis || upload.extractedText) && (
             <button
               onClick={() => {
-                const ai = upload.analysis?.ai
-                if (!ai) return
-                const filename = `${upload.child.name || 'Kind'}-${upload.subject || 'Test'}.pdf`
-                const pdf = generatePDF(ai, upload.child.name, upload.subject || 'Test')
-                pdf.save(filename)
+                // Use browser print for now - can implement proper PDF generation later
+                window.print();
               }}
               className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700"
             >
