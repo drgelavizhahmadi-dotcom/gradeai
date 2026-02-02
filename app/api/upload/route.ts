@@ -3,8 +3,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { uploadFileToStorage } from "@/lib/storage";
-import { analyzeUploadedTest } from "@/lib/analyze-test";
-import { convertGermanGrade } from "@/lib/ocr/gradeConverter";
 
 // Route segment config for increased body size limit
 export const runtime = 'nodejs'; // Use Node.js runtime for better file handling
@@ -190,105 +188,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ============================================
-    // === RUNNING MULTI-AI VISION ANALYSIS INLINE ===
-    // ============================================
-    console.log('='.repeat(60));
-    console.log('=== STARTING MULTI-AI VISION ANALYSIS ===');
-    console.log('Upload ID:', upload.id);
-    console.log('Total Files:', files.length);
-    console.log('Total Size:', totalSize, 'bytes');
-    console.log('Method: Inline (Vercel serverless compatible)');
-    console.log('='.repeat(60));
+    // Convert files to base64 images for client-side orchestration
+    const images = fileBuffers.map((buffer, i) => ({
+      base64: buffer.toString('base64'),
+      mimeType: files[i].type,
+      pageNumber: i + 1,
+    }));
 
-    // Update status to processing
-    await db.upload.update({
-      where: { id: upload.id },
-      data: { analysisStatus: 'processing' }
-    });
+    console.log(`[Upload API] Upload complete, returning ${images.length} images for client orchestration`);
 
-    // Run multi-AI vision analysis INLINE
-    try {
-      const mimeTypes = files.map(f => f.type);
-      const result = await analyzeUploadedTest(fileBuffers, mimeTypes, {
-        childName: child.name,
-      });
-
-      console.log('[Upload API] Analysis complete!');
-      console.log('[Upload API] Grade:', result.consensus.finalResult.grade.value);
-      console.log('[Upload API] Agreement:', result.consensus.consensus.gradeAgreement);
-      console.log('[Upload API] Confidence:', result.confidence);
-
-      // Extract grade for database
-      const gradeValue = result.consensus.finalResult.grade.value;
-      const gradeFloat = gradeValue ? convertGermanGrade(gradeValue) || 0 : 0;
-
-      // Save analysis results to database
-      // Extract teacher comment - handle both string and object formats
-      const mainComment = result.consensus.finalResult.teacherFeedback.mainComment as any;
-      const teacherCommentText = typeof mainComment === 'string'
-        ? mainComment
-        : (mainComment?.text || '');
-
-      await db.upload.update({
-        where: { id: upload.id },
-        data: {
-          grade: gradeFloat,
-          subject: result.analysis.summary?.subject || 'Unknown',
-          teacherComment: teacherCommentText,
-          extractedText: JSON.stringify({
-            student: result.consensus.finalResult.student,
-            test: result.consensus.finalResult.test,
-            teacherFeedback: result.consensus.finalResult.teacherFeedback,
-          }),
-          analysis: {
-            ai: result.analysis,
-            vision: {
-              consensus: result.consensus.consensus,
-              warnings: result.warnings,
-              confidence: result.confidence,
-              individualResults: result.consensus.individualResults.map(r => ({
-                provider: r.provider,
-                success: r.success,
-                error: r.error,
-                durationMs: r.durationMs,
-                grade: r.grade,
-              })),
-            },
-          } as any,
-          analysisStatus: 'completed',
-          processedAt: new Date(),
-        }
-      });
-
-      console.log('[Upload API] ✓ Analysis saved to database');
-    } catch (analysisError) {
-      console.error('[Upload API] Analysis failed:', analysisError);
-
-      await db.upload.update({
-        where: { id: upload.id },
-        data: {
-          analysisStatus: 'failed',
-          errorMessage: analysisError instanceof Error ? analysisError.message : 'Analysis failed'
-        }
-      });
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: analysisError instanceof Error ? analysisError.message : 'Analysis failed',
-          uploadId: upload.id,
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log(`[Upload API] Analysis completed for ${files.length} file(s)`);
-
-    // Return success response with upload ID
+    // Return upload ID + images for client to call extract/report APIs
     return NextResponse.json({
       success: true,
       uploadId: upload.id,
+      images,
     });
   } catch (error) {
     console.error("Upload error:", error);

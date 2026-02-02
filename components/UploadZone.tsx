@@ -13,10 +13,13 @@ interface UploadZoneProps {
 interface UploadResponse {
   success: boolean;
   uploadId: string;
+  images?: { base64: string; mimeType: string; pageNumber: number }[];
   isDuplicate?: boolean;
   message?: string;
   error?: string;
 }
+
+type ProcessingStep = "idle" | "uploading" | "extracting" | "analyzing" | "complete" | "error";
 
 const fileSchema = z.object({
   size: z.number().max(4718592, "File must be less than 4.5MB"),
@@ -39,6 +42,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [processingStep, setProcessingStep] = useState<ProcessingStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -233,7 +237,6 @@ export default function UploadZone({ childId }: UploadZoneProps) {
   const handleUpload = async () => {
     if (files.length === 0) return;
 
-    // Check total size
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
       setError(`Total file size (${(totalSize / 1024 / 1024).toFixed(1)}MB) exceeds 50MB limit. Please reduce image quality or number of pages.`);
@@ -241,67 +244,89 @@ export default function UploadZone({ childId }: UploadZoneProps) {
     }
 
     setIsUploading(true);
+    setProcessingStep("uploading");
     setError(null);
 
     try {
-      console.log(`[UploadZone] Uploading ${files.length} file(s) as ONE test`);
+      // === STEP 1: Upload files ===
+      console.log(`[UploadZone] Step 1: Uploading ${files.length} file(s)`);
 
       const formData = new FormData();
-
-      // Add all files with the key "files"
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
+      files.forEach((file) => formData.append("files", file));
       formData.append("childId", childId);
 
-      // Use AbortController for timeout (65 seconds - slightly more than Vercel's 60s limit)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 65000);
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-      let response: Response;
-      try {
-        response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
-      } catch (fetchError) {
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('Upload timed out. The server is taking too long. Please try with a smaller or clearer image.');
-        }
-        throw fetchError;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
+      const contentType = uploadRes.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("[UploadZone] Non-JSON response:", text);
+        const text = await uploadRes.text();
         throw new Error(
           text.includes("Request Entity Too Large") || text.includes("413")
-            ? "Files are too large. Vercel free tier allows max 4MB. Please compress your file or upgrade to Pro."
+            ? "Files are too large. Vercel free tier allows max 4MB."
             : "Server error. Please try again later."
         );
       }
 
-      const data: UploadResponse = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Upload failed");
+      const uploadData: UploadResponse = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.success) {
+        throw new Error(uploadData.error || "Upload failed");
       }
 
-      // Clean up previews
-      previews.forEach(preview => {
+      const { uploadId, images } = uploadData;
+      if (!images || images.length === 0) {
+        throw new Error("No images returned from upload");
+      }
+
+      console.log(`[UploadZone] Step 1 complete: uploadId=${uploadId}, ${images.length} images`);
+
+      // === STEP 2: Extract (Layer 1 - Vision) ===
+      setProcessingStep("extracting");
+      console.log("[UploadZone] Step 2: Extracting text from images...");
+
+      const extractRes = await fetch("/api/analyze/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uploadId, images }),
+      });
+
+      const extractData = await extractRes.json();
+      if (!extractRes.ok || !extractData.success) {
+        throw new Error(extractData.error || "Extraction failed");
+      }
+
+      console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
+
+      // === STEP 3: Generate Report (Layer 2 - AI Analysis) ===
+      setProcessingStep("analyzing");
+      console.log("[UploadZone] Step 3: Generating report...");
+
+      const reportRes = await fetch("/api/analyze/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uploadId }),
+      });
+
+      const reportData = await reportRes.json();
+      if (!reportRes.ok || !reportData.success) {
+        throw new Error(reportData.error || "Report generation failed");
+      }
+
+      console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
+
+      // === Done ===
+      setProcessingStep("complete");
+      previews.forEach((preview) => {
         if (preview) URL.revokeObjectURL(preview);
       });
 
-      // Always redirect to the single upload result page
-      console.log(`[UploadZone] Upload successful, redirecting to /uploads/${data.uploadId}`);
-      router.push(`/uploads/${data.uploadId}`);
+      router.push(`/uploads/${uploadId}`);
     } catch (err) {
+      console.error("[UploadZone] Error:", err);
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+      setProcessingStep("error");
       setIsUploading(false);
     }
   };
@@ -413,6 +438,36 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             </div>
           )}
 
+          {/* Processing Steps Indicator */}
+          {processingStep !== "idle" && processingStep !== "error" && (
+            <div className="space-y-2 p-4 bg-blue-50 rounded-lg">
+              {[
+                { step: "uploading", label: "Hochladen..." },
+                { step: "extracting", label: "Text wird extrahiert (KI-Vision)..." },
+                { step: "analyzing", label: "Bericht wird erstellt (KI-Analyse)..." },
+                { step: "complete", label: "Fertig!" },
+              ].map(({ step, label }) => {
+                const isActive = processingStep === step;
+                const isDone =
+                  (step === "uploading" && ["extracting", "analyzing", "complete"].includes(processingStep)) ||
+                  (step === "extracting" && ["analyzing", "complete"].includes(processingStep)) ||
+                  (step === "analyzing" && processingStep === "complete");
+                return (
+                  <div key={step} className={`flex items-center gap-2 text-sm ${isActive ? "text-blue-700 font-medium" : isDone ? "text-green-600" : "text-gray-400"}`}>
+                    {isActive ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isDone ? (
+                      <span className="h-4 w-4 flex items-center justify-center">&#10003;</span>
+                    ) : (
+                      <span className="h-4 w-4 flex items-center justify-center">&#9679;</span>
+                    )}
+                    {label}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Upload Button */}
           <button
             onClick={handleUpload}
@@ -422,7 +477,10 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             {isUploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading {files.length} {files.length === 1 ? 'page' : 'pages'}...
+                {processingStep === "uploading" && "Hochladen..."}
+                {processingStep === "extracting" && "Text wird extrahiert..."}
+                {processingStep === "analyzing" && "Bericht wird erstellt..."}
+                {processingStep === "complete" && "Fertig!"}
               </>
             ) : (
               <>
