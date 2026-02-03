@@ -52,10 +52,8 @@ export async function extractWithClaude(images: PageImage[]) {
   try {
     const anthropic = new Anthropic({ apiKey });
 
-    // Process pages one by one to avoid timeouts
-    const extractions: string[] = [];
-
-    for (const img of images) {
+    // Process ALL pages in parallel for maximum speed
+    const pagePromises = images.map(async (img) => {
       console.log(`[Claude Extract] Processing page ${img.pageNumber}...`);
 
       const content: any[] = [{
@@ -75,16 +73,20 @@ export async function extractWithClaude(images: PageImage[]) {
 
       const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000, // Reduced for single page
+        max_tokens: 4000,
         messages: [{ role: 'user', content }],
       });
 
       const textContent = response.content.find(c => c.type === 'text');
       const pageExtraction = textContent?.type === 'text' ? textContent.text : '';
-      extractions.push(`PAGE ${img.pageNumber}:\n${pageExtraction}\n---`);
-    }
+      return { pageNumber: img.pageNumber, text: pageExtraction };
+    });
 
-    const extraction = extractions.join('\n\n');
+    const results = await Promise.all(pagePromises);
+
+    // Sort by page number and combine
+    results.sort((a, b) => a.pageNumber - b.pageNumber);
+    const extraction = results.map(r => `PAGE ${r.pageNumber}:\n${r.text}\n---`).join('\n\n');
 
     const duration = Date.now() - startTime;
     console.log('[Claude Extract] Complete');

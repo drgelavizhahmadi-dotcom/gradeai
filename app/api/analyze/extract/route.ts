@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
     console.log("[Extract API] Layer 2: Comprehensive Analysis...");
     const analysisResult = await analyzeTestComplete(extractResult.extraction, {
       language: language || 'de',
-      includeFairnessAssessment: false, // Disabled for speed
     });
 
     if (!analysisResult.success) {
@@ -84,7 +83,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Extract API] Analysis complete`);
-    console.log(`[Extract API] Fairness: ${analysisResult.fairnessAssessment?.assessmentResult || 'N/A'}`);
 
     // Save to database
     const updateData: any = {
@@ -124,7 +122,6 @@ export async function POST(request: NextRequest) {
       success: true,
       extractionLength: extractResult.extraction.length,
       reportGenerated: !!analysisResult.report,
-      fairnessAssessment: analysisResult.fairnessAssessment?.assessmentResult,
       language: language || 'de',
       durationMs: extractResult.duration + analysisResult.timing.total,
     });
