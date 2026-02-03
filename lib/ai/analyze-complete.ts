@@ -1,7 +1,8 @@
 // lib/ai/analyze-complete.ts
 // Maximum speed + quality: Optimized prompts, parallel execution, smart fallbacks
+// Using DeepSeek for cost-effective AI analysis
 
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import {
   COMPREHENSIVE_TEACHER_SYSTEM,
   COMPREHENSIVE_TEACHER_PROMPT,
@@ -14,8 +15,10 @@ import {
 
 export type LanguageCode = keyof typeof SUPPORTED_LANGUAGES;
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+// DeepSeek uses OpenAI-compatible API
+const deepseek = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
 });
 
 interface AnalyzeOptions {
@@ -50,20 +53,21 @@ function extractJSON(text: string): any {
 
 async function generateReport(extraction: string) {
   const startTime = Date.now();
-  console.log('[Report] Generating comprehensive report...');
+  console.log('[Report] Generating comprehensive report with DeepSeek...');
 
   try {
     const prompt = COMPREHENSIVE_TEACHER_PROMPT.replace('{extraction}', extraction);
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000, // Comprehensive report needs more tokens
-      system: COMPREHENSIVE_TEACHER_SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      max_tokens: 8000,
+      messages: [
+        { role: 'system', content: COMPREHENSIVE_TEACHER_SYSTEM },
+        { role: 'user', content: prompt },
+      ],
     });
 
-    const textContent = response.content.find(c => c.type === 'text');
-    const responseText = textContent?.type === 'text' ? textContent.text : '';
+    const responseText = response.choices[0]?.message?.content || '';
 
     const report = extractJSON(responseText);
     const duration = Date.now() - startTime;
@@ -85,7 +89,7 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
 
   const startTime = Date.now();
   const lang = SUPPORTED_LANGUAGES[targetLanguage];
-  console.log('[Translate] To', lang.name, '...');
+  console.log('[Translate] To', lang.name, 'with DeepSeek...');
 
   try {
     // Simplified translation prompt for speed
@@ -103,14 +107,13 @@ ${JSON.stringify(report, null, 2)}
 
 Antworte NUR mit dem übersetzten JSON.`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022', // Fast model for translation
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
       max_tokens: 5000,
       messages: [{ role: 'user', content: translationPrompt }],
     });
 
-    const textContent = response.content.find(c => c.type === 'text');
-    const responseText = textContent?.type === 'text' ? textContent.text : '';
+    const responseText = response.choices[0]?.message?.content || '';
 
     const translatedReport = extractJSON(responseText);
 
@@ -156,7 +159,7 @@ export async function analyzeTestComplete(
   const totalStart = Date.now();
 
   console.log('================================================================');
-  console.log('[Analyze] START | Language:', language);
+  console.log('[Analyze] START | Language:', language, '| Provider: DeepSeek');
   console.log('[Analyze] Extraction:', extraction.length, 'chars');
   console.log('================================================================');
 
