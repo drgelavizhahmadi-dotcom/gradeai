@@ -41,8 +41,11 @@ interface ReportData {
     summary?: string;
     errors?: Array<{
       type?: string;
+      what?: string;
       whatHappened?: string;
+      why?: string;
       whyItHappened?: string;
+      fix?: string;
       correctApproach?: string;
       howToFix?: string;
       severity?: string;
@@ -75,12 +78,29 @@ interface ReportData {
     timeNeeded?: string;
     frequency?: string;
   }>;
+  exercises?: Array<{
+    title?: string;
+    forWeakness?: string;
+    instructions?: string;
+    examples?: string[];
+    duration?: string;
+    frequency?: string;
+  }>;
+  weeklyPlan?: {
+    week1?: { goal?: string; monday?: string; tuesday?: string; wednesday?: string; thursday?: string; friday?: string };
+    week2?: { goal?: string; focus?: string };
+  };
   parentGuidance?: {
     howToDiscussGrade?: string;
     whatToAvoid?: string[];
     motivationTips?: string[];
     signsOfProgress?: string[];
     whenToSeekHelp?: string;
+  };
+  parentTips?: {
+    howToDiscuss?: string;
+    whatToAvoid?: string[];
+    motivation?: string[];
   };
   teacherCommunication?: {
     shouldContactTeacher?: boolean;
@@ -96,6 +116,7 @@ interface ReportData {
   };
   fairnessCheck?: {
     isGradeFair?: string;
+    verdict?: string;
     reasoning?: string;
     positiveAspects?: string[];
     whatWasFair?: string[];
@@ -353,16 +374,16 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
                     <span className="font-medium text-red-800">{error.type || 'Fehler'}</span>
                     <SeverityBadge severity={error.severity} />
                   </div>
-                  {error.whatHappened && (
-                    <p className="text-gray-700 text-sm mb-2"><strong>Was:</strong> {error.whatHappened}</p>
+                  {(error.what || error.whatHappened) && (
+                    <p className="text-gray-700 text-sm mb-2"><strong>Was:</strong> {error.what || error.whatHappened}</p>
                   )}
-                  {error.whyItHappened && (
+                  {(error.why || error.whyItHappened) && (
                     <p className="text-gray-700 text-sm mb-2 bg-red-50 p-2 rounded">
-                      <strong>Warum:</strong> {error.whyItHappened}
+                      <strong>Warum:</strong> {error.why || error.whyItHappened}
                     </p>
                   )}
-                  {error.howToFix && (
-                    <p className="text-green-700 text-sm"><strong>Lösung:</strong> {error.howToFix}</p>
+                  {(error.fix || error.howToFix) && (
+                    <p className="text-green-700 text-sm"><strong>Lösung:</strong> {error.fix || error.howToFix}</p>
                   )}
                 </div>
               ))}
@@ -718,34 +739,41 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
         <Section title="⚖️ War die Bewertung fair?" icon={Target} color="purple" defaultOpen={true}>
           <div className="space-y-4">
             {/* Fairness Status Badge */}
-            <div className={`flex items-center gap-3 p-4 rounded-lg ${
-              reportData.fairnessCheck.isGradeFair === 'ja' ? 'bg-green-50 border-2 border-green-200' :
-              reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'bg-blue-50 border-2 border-blue-200' :
-              reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'bg-yellow-50 border-2 border-yellow-200' :
-              reportData.fairnessCheck.isGradeFair === 'nein' ? 'bg-red-50 border-2 border-red-200' :
-              'bg-gray-50 border-2 border-gray-200'
-            }`}>
-              <span className="text-3xl">
-                {reportData.fairnessCheck.isGradeFair === 'ja' ? '✅' :
-                 reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? '👍' :
-                 reportData.fairnessCheck.isGradeFair === 'fraglich' ? '🤔' :
-                 reportData.fairnessCheck.isGradeFair === 'nein' ? '⚠️' : '❓'}
-              </span>
-              <div>
-                <p className={`font-semibold ${
-                  reportData.fairnessCheck.isGradeFair === 'ja' ? 'text-green-800' :
-                  reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'text-blue-800' :
-                  reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'text-yellow-800' :
-                  reportData.fairnessCheck.isGradeFair === 'nein' ? 'text-red-800' : 'text-gray-800'
+            {(() => {
+              const verdict = reportData.fairnessCheck?.verdict || reportData.fairnessCheck?.isGradeFair || '';
+              const isFair = verdict === 'ja' || verdict === 'fair';
+              const isProbablyFair = verdict === 'wahrscheinlich' || verdict === 'wahrscheinlich fair';
+              const isQuestionable = verdict === 'fraglich';
+              const isUnfair = verdict === 'nein' || verdict === 'unfair';
+
+              return (
+                <div className={`flex items-center gap-3 p-4 rounded-lg ${
+                  isFair ? 'bg-green-50 border-2 border-green-200' :
+                  isProbablyFair ? 'bg-blue-50 border-2 border-blue-200' :
+                  isQuestionable ? 'bg-yellow-50 border-2 border-yellow-200' :
+                  isUnfair ? 'bg-red-50 border-2 border-red-200' :
+                  'bg-gray-50 border-2 border-gray-200'
                 }`}>
-                  {reportData.fairnessCheck.isGradeFair === 'ja' ? 'Die Bewertung erscheint fair' :
-                   reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'Wahrscheinlich fair bewertet' :
-                   reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'Einige Punkte sind fraglich' :
-                   reportData.fairnessCheck.isGradeFair === 'nein' ? 'Bewertung sollte überprüft werden' :
-                   'Fairness nicht beurteilbar'}
-                </p>
-              </div>
-            </div>
+                  <span className="text-3xl">
+                    {isFair ? '✅' : isProbablyFair ? '👍' : isQuestionable ? '🤔' : isUnfair ? '⚠️' : '❓'}
+                  </span>
+                  <div>
+                    <p className={`font-semibold ${
+                      isFair ? 'text-green-800' :
+                      isProbablyFair ? 'text-blue-800' :
+                      isQuestionable ? 'text-yellow-800' :
+                      isUnfair ? 'text-red-800' : 'text-gray-800'
+                    }`}>
+                      {isFair ? 'Die Bewertung erscheint fair' :
+                       isProbablyFair ? 'Wahrscheinlich fair bewertet' :
+                       isQuestionable ? 'Einige Punkte sind fraglich' :
+                       isUnfair ? 'Bewertung sollte überprüft werden' :
+                       'Fairness nicht beurteilbar'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Reasoning */}
             {reportData.fairnessCheck.reasoning && (
@@ -882,6 +910,168 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
             </div>
           </div>
         </div>
+      )}
+
+      {/* New Weekly Plan (from simplified prompt) */}
+      {reportData.weeklyPlan && (reportData.weeklyPlan.week1 || reportData.weeklyPlan.week2) && (
+        <Section title="📅 Wochenplan" icon={Calendar} color="purple" defaultOpen={true}>
+          <div className="space-y-4">
+            {/* Week 1 - Detailed daily plan */}
+            {reportData.weeklyPlan.week1 && (
+              <div className="border-2 border-purple-200 rounded-lg overflow-hidden">
+                <div className="bg-purple-100 p-3">
+                  <h4 className="font-semibold text-purple-800">Woche 1</h4>
+                  {reportData.weeklyPlan.week1.goal && (
+                    <p className="text-sm text-purple-600">🎯 Ziel: {reportData.weeklyPlan.week1.goal}</p>
+                  )}
+                </div>
+                <div className="p-4 space-y-2">
+                  {reportData.weeklyPlan.week1.monday && (
+                    <div className="flex items-start gap-3">
+                      <span className="font-medium text-purple-700 w-20 flex-shrink-0">Montag:</span>
+                      <span className="text-gray-700">{reportData.weeklyPlan.week1.monday}</span>
+                    </div>
+                  )}
+                  {reportData.weeklyPlan.week1.tuesday && (
+                    <div className="flex items-start gap-3">
+                      <span className="font-medium text-purple-700 w-20 flex-shrink-0">Dienstag:</span>
+                      <span className="text-gray-700">{reportData.weeklyPlan.week1.tuesday}</span>
+                    </div>
+                  )}
+                  {reportData.weeklyPlan.week1.wednesday && (
+                    <div className="flex items-start gap-3">
+                      <span className="font-medium text-purple-700 w-20 flex-shrink-0">Mittwoch:</span>
+                      <span className="text-gray-700">{reportData.weeklyPlan.week1.wednesday}</span>
+                    </div>
+                  )}
+                  {reportData.weeklyPlan.week1.thursday && (
+                    <div className="flex items-start gap-3">
+                      <span className="font-medium text-purple-700 w-20 flex-shrink-0">Donnerstag:</span>
+                      <span className="text-gray-700">{reportData.weeklyPlan.week1.thursday}</span>
+                    </div>
+                  )}
+                  {reportData.weeklyPlan.week1.friday && (
+                    <div className="flex items-start gap-3">
+                      <span className="font-medium text-purple-700 w-20 flex-shrink-0">Freitag:</span>
+                      <span className="text-gray-700">{reportData.weeklyPlan.week1.friday}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Week 2 - Focus overview */}
+            {reportData.weeklyPlan.week2 && (
+              <div className="border-2 border-purple-100 rounded-lg p-4 bg-purple-50">
+                <h4 className="font-semibold text-purple-700">Woche 2</h4>
+                {reportData.weeklyPlan.week2.goal && (
+                  <p className="text-sm text-purple-600 mt-1">🎯 Ziel: {reportData.weeklyPlan.week2.goal}</p>
+                )}
+                {reportData.weeklyPlan.week2.focus && (
+                  <p className="text-sm text-gray-600 mt-1">📌 Fokus: {reportData.weeklyPlan.week2.focus}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {/* New Exercises (from simplified prompt) */}
+      {reportData.exercises && reportData.exercises.length > 0 && (
+        <Section title="📝 Gezielte Übungen" icon={Lightbulb} color="yellow" defaultOpen={true}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-2">
+              Diese Übungen sind speziell auf die identifizierten Schwächen abgestimmt:
+            </p>
+            {reportData.exercises.map((exercise, i) => (
+              <div key={i} className="bg-white border-2 border-yellow-200 rounded-lg overflow-hidden">
+                {/* Header */}
+                <div className="bg-yellow-50 p-4 border-b border-yellow-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-semibold text-yellow-800">{exercise.title}</h4>
+                    <div className="flex gap-2 text-xs flex-shrink-0">
+                      {exercise.duration && (
+                        <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                          ⏱️ {exercise.duration}
+                        </span>
+                      )}
+                      {exercise.frequency && (
+                        <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                          📅 {exercise.frequency}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {exercise.forWeakness && (
+                    <p className="text-xs text-orange-600 mt-1">🎯 Für Schwäche: {exercise.forWeakness}</p>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div className="p-4 space-y-3">
+                  {exercise.instructions && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">So geht's:</p>
+                      <p className="text-gray-700 text-sm">{exercise.instructions}</p>
+                    </div>
+                  )}
+
+                  {/* Examples */}
+                  {exercise.examples && exercise.examples.length > 0 && (
+                    <div className="p-3 bg-yellow-50 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800 mb-2">Beispielaufgaben:</p>
+                      <ul className="text-sm text-gray-700 space-y-1">
+                        {exercise.examples.map((ex, j) => (
+                          <li key={j}>• {ex}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* New Parent Tips (from simplified prompt) */}
+      {reportData.parentTips && (reportData.parentTips.howToDiscuss || reportData.parentTips.whatToAvoid?.length || reportData.parentTips.motivation?.length) && (
+        <Section title="💡 Tipps für Eltern" icon={Users} color="pink" defaultOpen={true}>
+          <div className="space-y-4">
+            {reportData.parentTips.howToDiscuss && (
+              <div className="bg-white rounded-lg p-4 border border-pink-100">
+                <h4 className="font-medium text-pink-800 mb-2">🗣️ So besprechen Sie die Note:</h4>
+                <p className="text-gray-700 text-sm">{reportData.parentTips.howToDiscuss}</p>
+              </div>
+            )}
+
+            {reportData.parentTips.whatToAvoid && reportData.parentTips.whatToAvoid.length > 0 && (
+              <div className="bg-red-50 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 mb-2">⚠️ Das sollten Sie vermeiden:</h4>
+                <ul className="space-y-1">
+                  {reportData.parentTips.whatToAvoid.map((item, i) => (
+                    <li key={i} className="text-sm text-red-700 flex items-start gap-2">
+                      <span>✕</span> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {reportData.parentTips.motivation && reportData.parentTips.motivation.length > 0 && (
+              <div className="bg-green-50 rounded-lg p-4">
+                <h4 className="font-medium text-green-800 mb-2">💪 So motivieren Sie Ihr Kind:</h4>
+                <ul className="space-y-1">
+                  {reportData.parentTips.motivation.map((tip, i) => (
+                    <li key={i} className="text-sm text-green-700 flex items-start gap-2">
+                      <span>✓</span> {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </Section>
       )}
 
       {/* Legacy recommendations fallback */}
