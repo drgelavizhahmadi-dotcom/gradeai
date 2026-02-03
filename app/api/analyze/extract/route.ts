@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Extract API] Extraction complete: ${extractResult.extraction.length} chars`);
 
-    // LAYERS 2-4: Comprehensive Analysis + Fairness + Translation
-    console.log("[Extract API] Layers 2-4: Comprehensive Analysis...");
+    // LAYER 2: Comprehensive Analysis (+ optional translation)
+    console.log("[Extract API] Layer 2: Comprehensive Analysis...");
     const analysisResult = await analyzeTestComplete(extractResult.extraction, {
       language: language || 'de',
-      includeFairnessAssessment: true,
+      includeFairnessAssessment: false, // Disabled for speed
     });
 
     if (!analysisResult.success) {

@@ -1,5 +1,6 @@
 // lib/ai/analyze-complete.ts
-// Complete analysis orchestrator: Teacher Report + Fairness Assessment + Translation
+// Optimized analysis: Teacher Report + Optional Fairness + Translation
+// Uses parallel API calls and faster models where appropriate
 
 import Anthropic from '@anthropic-ai/sdk';
 import {
@@ -29,14 +30,14 @@ interface AnalyzeOptions {
 
 async function generateComprehensiveReport(extraction: string) {
   const startTime = Date.now();
-  console.log('[Comprehensive Report] Starting analysis...');
+  console.log('[Report] Starting...');
 
   try {
     const prompt = COMPREHENSIVE_TEACHER_PROMPT.replace('{extraction}', extraction);
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
+      max_tokens: 6000, // Reduced from 8000
       system: COMPREHENSIVE_TEACHER_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -46,26 +47,24 @@ async function generateComprehensiveReport(extraction: string) {
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('No JSON found in comprehensive report response');
+      throw new Error('No JSON found in report response');
     }
 
     const report = JSON.parse(jsonMatch[0]);
     const duration = Date.now() - startTime;
 
-    console.log('[Comprehensive Report] Complete in', duration, 'ms');
-    console.log('[Comprehensive Report] Student:', report.student?.name);
-    console.log('[Comprehensive Report] Grade:', report.grade?.value);
+    console.log('[Report] Done in', duration, 'ms');
 
     return { success: true as const, report, duration };
   } catch (error: any) {
-    console.error('[Comprehensive Report] Error:', error.message);
+    console.error('[Report] Error:', error.message);
     return { success: false as const, error: error.message, duration: Date.now() - startTime };
   }
 }
 
 async function assessFairness(report: any) {
   const startTime = Date.now();
-  console.log('[Fairness Assessment] Starting assessment...');
+  console.log('[Fairness] Starting...');
 
   try {
     const prompt = FAIRNESS_ASSESSMENT_PROMPT.replace(
@@ -74,8 +73,8 @@ async function assessFairness(report: any) {
     );
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
+      model: 'claude-3-5-haiku-20241022', // Faster model for fairness
+      max_tokens: 2500, // Reduced from 4000
       system: FAIRNESS_ASSESSMENT_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -85,18 +84,17 @@ async function assessFairness(report: any) {
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('No JSON found in fairness assessment response');
+      throw new Error('No JSON found in fairness response');
     }
 
     const assessment = JSON.parse(jsonMatch[0]);
     const duration = Date.now() - startTime;
 
-    console.log('[Fairness Assessment] Complete in', duration, 'ms');
-    console.log('[Fairness Assessment] Result:', assessment.assessmentResult);
+    console.log('[Fairness] Done in', duration, 'ms -', assessment.assessmentResult);
 
     return { success: true as const, assessment, duration };
   } catch (error: any) {
-    console.error('[Fairness Assessment] Error:', error.message);
+    console.error('[Fairness] Error:', error.message);
     return { success: false as const, error: error.message, duration: Date.now() - startTime };
   }
 }
@@ -108,7 +106,7 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
 
   const startTime = Date.now();
   const lang = SUPPORTED_LANGUAGES[targetLanguage];
-  console.log('[Translation] Translating to', lang.name, '...');
+  console.log('[Translate] To', lang.name, '...');
 
   try {
     const prompt = TRANSLATION_PROMPT
@@ -117,8 +115,8 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
       .replace('{report}', JSON.stringify(report, null, 2));
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 10000,
+      model: 'claude-3-5-haiku-20241022', // Faster model for translation
+      max_tokens: 6000, // Reduced from 10000
       system: TRANSLATION_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -133,7 +131,6 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
 
     const translatedReport = JSON.parse(jsonMatch[0]);
 
-    // Add language metadata
     translatedReport._meta = {
       language: {
         code: targetLanguage,
@@ -145,11 +142,11 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
     };
 
     const duration = Date.now() - startTime;
-    console.log('[Translation] Complete in', duration, 'ms');
+    console.log('[Translate] Done in', duration, 'ms');
 
     return { success: true as const, translatedReport, duration };
   } catch (error: any) {
-    console.error('[Translation] Error:', error.message);
+    console.error('[Translate] Error:', error.message);
     return { success: false as const, error: error.message, duration: Date.now() - startTime };
   }
 }
@@ -158,17 +155,14 @@ export async function analyzeTestComplete(
   extraction: string,
   options: AnalyzeOptions = {}
 ) {
-  const { language = 'de', includeFairnessAssessment = true } = options;
+  const { language = 'de', includeFairnessAssessment = false } = options; // Fairness OFF by default
   const totalStart = Date.now();
 
   console.log('================================================================');
-  console.log('[Analyze Complete] STARTING COMPREHENSIVE ANALYSIS');
-  console.log('[Analyze Complete] Target language:', language);
-  console.log('[Analyze Complete] Include fairness:', includeFairnessAssessment);
+  console.log('[Analyze] START - Lang:', language, '| Fairness:', includeFairnessAssessment);
   console.log('================================================================');
 
-  // STEP 1: Generate comprehensive teacher report (German)
-  console.log('[Analyze Complete] STEP 1: Comprehensive Teacher Report...');
+  // STEP 1: Generate comprehensive teacher report (German) - REQUIRED
   const reportResult = await generateComprehensiveReport(extraction);
 
   if (!reportResult.success) {
@@ -180,74 +174,70 @@ export async function analyzeTestComplete(
   }
 
   let report = reportResult.report;
+  const reportGerman = JSON.parse(JSON.stringify(report));
+
+  // STEP 2 & 3: Run fairness and translation IN PARALLEL
+  const parallelTasks: Promise<any>[] = [];
+
+  // Queue fairness assessment if requested
+  if (includeFairnessAssessment) {
+    parallelTasks.push(
+      assessFairness(report).then(result => ({ type: 'fairness', result }))
+    );
+  }
+
+  // Queue translation if needed
+  if (language !== 'de') {
+    parallelTasks.push(
+      translateReport(report, language).then(result => ({ type: 'translation', result }))
+    );
+  }
+
+  // Execute parallel tasks
   let fairnessAssessment = null;
   let fairnessDuration = 0;
+  let translationDuration = 0;
 
-  // STEP 2: Fairness assessment (if requested)
-  if (includeFairnessAssessment) {
-    console.log('[Analyze Complete] STEP 2: Fairness Assessment...');
-    const fairnessResult = await assessFairness(report);
-    fairnessDuration = fairnessResult.duration;
+  if (parallelTasks.length > 0) {
+    console.log('[Analyze] Running', parallelTasks.length, 'tasks in parallel...');
+    const results = await Promise.all(parallelTasks);
 
-    if (fairnessResult.success) {
-      fairnessAssessment = fairnessResult.assessment;
-      // Add fairness assessment to report
-      report.fairnessAssessment = fairnessAssessment;
-      console.log('[Analyze Complete] Fairness assessment added');
-    } else {
-      console.warn('[Analyze Complete] Fairness assessment failed:', fairnessResult.error);
-      // Continue without fairness assessment
+    for (const { type, result } of results) {
+      if (type === 'fairness') {
+        fairnessDuration = result.duration;
+        if (result.success) {
+          fairnessAssessment = result.assessment;
+          report.fairnessAssessment = fairnessAssessment;
+          reportGerman.fairnessAssessment = fairnessAssessment;
+        }
+      } else if (type === 'translation') {
+        translationDuration = result.duration;
+        if (result.success) {
+          report = result.translatedReport;
+        } else {
+          // Fallback to German with meta
+          report._meta = {
+            language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
+            translationFailed: true,
+            requestedLanguage: language,
+          };
+        }
+      }
     }
   }
 
-  // Keep German report
-  const reportGerman = JSON.parse(JSON.stringify(report));
-
-  // STEP 3: Translation (if needed)
-  let translationDuration = 0;
-
-  if (language !== 'de') {
-    console.log('[Analyze Complete] STEP 3: Translation to', language, '...');
-    const translateResult = await translateReport(report, language);
-    translationDuration = translateResult.duration;
-
-    if (translateResult.success) {
-      report = translateResult.translatedReport;
-      console.log('[Analyze Complete] Translation complete');
-    } else {
-      console.warn('[Analyze Complete] Translation failed, using German report:', translateResult.error);
-      // Add language meta to German report as fallback
-      report._meta = {
-        language: {
-          code: 'de',
-          name: 'German',
-          native: 'Deutsch',
-          rtl: false,
-        },
-        translationFailed: true,
-        requestedLanguage: language,
-      };
-    }
-  } else {
-    // German - add meta
+  // Add meta for German if no translation
+  if (language === 'de' && !report._meta) {
     report._meta = {
-      language: {
-        code: 'de',
-        name: 'German',
-        native: 'Deutsch',
-        rtl: false,
-      },
+      language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
     };
   }
 
   const totalDuration = Date.now() - totalStart;
 
   console.log('================================================================');
-  console.log('[Analyze Complete] COMPLETE');
-  console.log('[Analyze Complete] Total time:', totalDuration, 'ms');
-  console.log('[Analyze Complete] Report:', reportResult.duration, 'ms');
-  console.log('[Analyze Complete] Fairness:', fairnessDuration, 'ms');
-  console.log('[Analyze Complete] Translation:', translationDuration, 'ms');
+  console.log('[Analyze] DONE in', totalDuration, 'ms');
+  console.log('[Analyze] Report:', reportResult.duration, 'ms | Fairness:', fairnessDuration, 'ms | Translate:', translationDuration, 'ms');
   console.log('================================================================');
 
   return {
