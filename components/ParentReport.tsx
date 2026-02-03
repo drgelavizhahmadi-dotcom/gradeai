@@ -15,7 +15,15 @@ interface ReportData {
     description?: string;
     percentage?: number | string;
     points?: string;
+    isEstimated?: boolean;
+    confidence?: string;
   };
+  flashcards?: Array<{
+    forWeakness?: string;
+    front?: string;
+    back?: string;
+    tip?: string;
+  }>;
   testContext?: {
     whatWasTested?: string;
     whyItMatters?: string;
@@ -58,9 +66,11 @@ interface ReportData {
   practiceExercises?: Array<{
     title?: string;
     targetSkill?: string;
+    forWeakness?: string;
     difficulty?: string;
     instructions?: string;
     example?: string;
+    examples?: string[];
     variations?: string[];
     timeNeeded?: string;
     frequency?: string;
@@ -88,8 +98,11 @@ interface ReportData {
     isGradeFair?: string;
     reasoning?: string;
     positiveAspects?: string[];
+    whatWasFair?: string[];
     concerns?: string[];
     recommendation?: string;
+    missingContext?: string;
+    howToAddress?: string;
   };
   emotionalSupport?: {
     childMightFeel?: string;
@@ -186,11 +199,12 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
   const studentName = reportData.student?.name || childName || 'Schüler/in';
   const grade = reportData.grade?.value || '—';
-  const gradeDesc = reportData.grade?.description || getGradeDescription(grade);
+  const isGradeUnknown = !grade || grade === '—' || grade === 'nicht erkennbar' || grade.toLowerCase().includes('nicht');
+  const gradeDesc = isGradeUnknown ? '' : (reportData.grade?.description || getGradeDescription(grade));
   const subject = reportData.test?.subject || 'Unbekannt';
   const percentage = typeof reportData.grade?.percentage === 'number'
     ? reportData.grade.percentage
-    : (typeof reportData.grade?.percentage === 'string' ? parseInt(reportData.grade.percentage) : null);
+    : (typeof reportData.grade?.percentage === 'string' && !reportData.grade.percentage.includes('nicht') ? parseInt(reportData.grade.percentage) : null);
 
   // Get summary text
   const summaryText = typeof reportData.summary === 'string'
@@ -211,10 +225,19 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
               <p className="text-blue-200 text-sm mt-1">Thema: {reportData.test.topic}</p>
             )}
           </div>
-          <div className="text-center bg-white/20 rounded-lg px-6 py-3">
-            <div className="text-4xl font-bold">{grade}</div>
-            <div className="text-blue-100 text-sm">{gradeDesc}</div>
-            {percentage && <div className="text-blue-200 text-xs">{percentage}%</div>}
+          <div className={`text-center rounded-lg px-6 py-3 ${isGradeUnknown ? 'bg-yellow-500/30' : 'bg-white/20'}`}>
+            {isGradeUnknown ? (
+              <>
+                <div className="text-2xl font-bold">?</div>
+                <div className="text-yellow-100 text-sm">Note nicht erkennbar</div>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl font-bold">{grade}</div>
+                <div className="text-blue-100 text-sm">{gradeDesc}</div>
+                {percentage && <div className="text-blue-200 text-xs">{percentage}%</div>}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -416,6 +439,49 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
         )}
       </div>
 
+      {/* Flashcards Section */}
+      {reportData.flashcards && reportData.flashcards.length > 0 && (
+        <Section title="🎴 Lernkarten zum Ausdrucken" icon={Lightbulb} color="orange" defaultOpen={true}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Drucken Sie diese Karten aus oder schreiben Sie sie auf Karteikarten. Vorderseite lesen,
+              Antwort überlegen, dann umdrehen und überprüfen!
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {reportData.flashcards.map((card, i) => (
+                <div key={i} className="border-2 border-orange-200 rounded-lg overflow-hidden">
+                  {/* Card Front */}
+                  <div className="bg-orange-50 p-4 border-b-2 border-orange-200">
+                    <div className="text-xs text-orange-600 mb-1">Vorderseite:</div>
+                    <p className="font-medium text-gray-800">{card.front}</p>
+                  </div>
+                  {/* Card Back */}
+                  <div className="bg-white p-4">
+                    <div className="text-xs text-green-600 mb-1">Rückseite:</div>
+                    <p className="text-gray-700">{card.back}</p>
+                    {card.tip && (
+                      <p className="text-xs text-blue-600 mt-2 italic">💡 Merkhilfe: {card.tip}</p>
+                    )}
+                  </div>
+                  {/* For Weakness */}
+                  {card.forWeakness && (
+                    <div className="bg-gray-50 px-4 py-2 text-xs text-gray-500">
+                      Für: {card.forWeakness}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-3 bg-orange-100 rounded-lg">
+              <p className="text-sm text-orange-800">
+                <strong>Tipp:</strong> Üben Sie die Karten täglich 10 Minuten. Sortieren Sie gemeisterte
+                Karten aus und konzentrieren Sie sich auf die schwierigen!
+              </p>
+            </div>
+          </div>
+        </Section>
+      )}
+
       {/* Action Plan */}
       {reportData.actionPlan && (
         <Section title="4-Wochen Aktionsplan" icon={Calendar} color="purple" defaultOpen={true}>
@@ -487,35 +553,71 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
       {/* Practice Exercises */}
       {reportData.practiceExercises && reportData.practiceExercises.length > 0 && (
         <Section title="Übungen für zu Hause" icon={Lightbulb} color="yellow">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {reportData.practiceExercises.map((exercise, i) => (
-              <div key={i} className="bg-white border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="font-medium text-yellow-800">{exercise.title}</h4>
-                  <div className="flex gap-2 text-xs">
-                    {exercise.timeNeeded && (
-                      <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-                        ⏱️ {exercise.timeNeeded}
-                      </span>
-                    )}
-                    {exercise.frequency && (
-                      <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-                        📅 {exercise.frequency}
-                      </span>
-                    )}
+              <div key={i} className="bg-white border-2 border-yellow-200 rounded-lg overflow-hidden">
+                {/* Header */}
+                <div className="bg-yellow-50 p-4 border-b border-yellow-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-semibold text-yellow-800">{exercise.title}</h4>
+                    <div className="flex gap-2 text-xs flex-shrink-0">
+                      {exercise.timeNeeded && (
+                        <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                          ⏱️ {exercise.timeNeeded}
+                        </span>
+                      )}
+                      {exercise.frequency && (
+                        <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                          📅 {exercise.frequency}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  {exercise.forWeakness && (
+                    <p className="text-xs text-orange-600 mt-1">Für Schwäche: {exercise.forWeakness}</p>
+                  )}
+                  {exercise.targetSkill && (
+                    <p className="text-sm text-gray-600 mt-1">Trainiert: {exercise.targetSkill}</p>
+                  )}
                 </div>
-                {exercise.targetSkill && (
-                  <p className="text-sm text-gray-600 mb-2">Trainiert: {exercise.targetSkill}</p>
-                )}
-                {exercise.instructions && (
-                  <p className="text-gray-700 text-sm">{exercise.instructions}</p>
-                )}
-                {exercise.example && (
-                  <div className="mt-2 p-2 bg-yellow-50 rounded text-sm">
-                    <strong>Beispiel:</strong> {exercise.example}
-                  </div>
-                )}
+
+                {/* Body */}
+                <div className="p-4 space-y-3">
+                  {exercise.instructions && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Anleitung:</p>
+                      <p className="text-gray-700 text-sm">{exercise.instructions}</p>
+                    </div>
+                  )}
+
+                  {/* Examples */}
+                  {(exercise.examples?.length || exercise.example) && (
+                    <div className="p-3 bg-yellow-50 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800 mb-2">Beispiele:</p>
+                      {exercise.examples ? (
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {exercise.examples.map((ex, j) => (
+                            <li key={j}>• {ex}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-700">{exercise.example}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Variations */}
+                  {exercise.variations && exercise.variations.length > 0 && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Variationen:</p>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {exercise.variations.map((v, j) => (
+                          <li key={j}>• {v}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -611,29 +713,63 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
         </Section>
       )}
 
-      {/* Fairness Check */}
-      {reportData.fairnessCheck && reportData.fairnessCheck.isGradeFair && (
-        <Section title="Bewertung der Note" icon={Target} color="gray" defaultOpen={false}>
-          <div className="space-y-3">
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-              reportData.fairnessCheck.isGradeFair === 'ja' ? 'bg-green-100 text-green-800' :
-              reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'bg-blue-100 text-blue-800' :
-              reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
+      {/* Fairness Check - ALWAYS VISIBLE */}
+      {reportData.fairnessCheck && (
+        <Section title="⚖️ War die Bewertung fair?" icon={Target} color="purple" defaultOpen={true}>
+          <div className="space-y-4">
+            {/* Fairness Status Badge */}
+            <div className={`flex items-center gap-3 p-4 rounded-lg ${
+              reportData.fairnessCheck.isGradeFair === 'ja' ? 'bg-green-50 border-2 border-green-200' :
+              reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'bg-blue-50 border-2 border-blue-200' :
+              reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'bg-yellow-50 border-2 border-yellow-200' :
+              reportData.fairnessCheck.isGradeFair === 'nein' ? 'bg-red-50 border-2 border-red-200' :
+              'bg-gray-50 border-2 border-gray-200'
             }`}>
-              {reportData.fairnessCheck.isGradeFair === 'ja' ? '✓ Note erscheint fair' :
-               reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? '~ Wahrscheinlich fair' :
-               reportData.fairnessCheck.isGradeFair === 'fraglich' ? '? Einige Fragen' :
-               '⚠ Überprüfung empfohlen'}
+              <span className="text-3xl">
+                {reportData.fairnessCheck.isGradeFair === 'ja' ? '✅' :
+                 reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? '👍' :
+                 reportData.fairnessCheck.isGradeFair === 'fraglich' ? '🤔' :
+                 reportData.fairnessCheck.isGradeFair === 'nein' ? '⚠️' : '❓'}
+              </span>
+              <div>
+                <p className={`font-semibold ${
+                  reportData.fairnessCheck.isGradeFair === 'ja' ? 'text-green-800' :
+                  reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'text-blue-800' :
+                  reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'text-yellow-800' :
+                  reportData.fairnessCheck.isGradeFair === 'nein' ? 'text-red-800' : 'text-gray-800'
+                }`}>
+                  {reportData.fairnessCheck.isGradeFair === 'ja' ? 'Die Bewertung erscheint fair' :
+                   reportData.fairnessCheck.isGradeFair === 'wahrscheinlich' ? 'Wahrscheinlich fair bewertet' :
+                   reportData.fairnessCheck.isGradeFair === 'fraglich' ? 'Einige Punkte sind fraglich' :
+                   reportData.fairnessCheck.isGradeFair === 'nein' ? 'Bewertung sollte überprüft werden' :
+                   'Fairness nicht beurteilbar'}
+                </p>
+              </div>
             </div>
 
+            {/* Reasoning */}
             {reportData.fairnessCheck.reasoning && (
-              <p className="text-gray-700 text-sm">{reportData.fairnessCheck.reasoning}</p>
+              <div className="p-3 bg-white rounded-lg border">
+                <p className="text-gray-700">{reportData.fairnessCheck.reasoning}</p>
+              </div>
             )}
 
+            {/* What was fair */}
+            {(reportData.fairnessCheck.whatWasFair?.length || reportData.fairnessCheck.positiveAspects?.length) && (
+              <div className="bg-green-50 rounded-lg p-3">
+                <h4 className="font-medium text-green-800 mb-2">✓ Das war fair:</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  {(reportData.fairnessCheck.whatWasFair || reportData.fairnessCheck.positiveAspects || []).map((item, i) => (
+                    <li key={i}>• {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Concerns */}
             {reportData.fairnessCheck.concerns && reportData.fairnessCheck.concerns.length > 0 && (
               <div className="bg-yellow-50 rounded-lg p-3">
-                <h4 className="font-medium text-yellow-800 mb-1">Mögliche Bedenken:</h4>
+                <h4 className="font-medium text-yellow-800 mb-2">⚠️ Mögliche Bedenken:</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
                   {reportData.fairnessCheck.concerns.map((c, i) => (
                     <li key={i}>• {c}</li>
@@ -642,11 +778,27 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
               </div>
             )}
 
+            {/* Missing Context */}
+            {reportData.fairnessCheck.missingContext && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="font-medium text-gray-700 mb-1">ℹ️ Was fehlt zur Beurteilung:</h4>
+                <p className="text-sm text-gray-600">{reportData.fairnessCheck.missingContext}</p>
+              </div>
+            )}
+
+            {/* Recommendation */}
             {reportData.fairnessCheck.recommendation && (
-              <div className="bg-gray-100 rounded-lg p-3">
-                <p className="text-sm text-gray-700">
-                  <strong>Empfehlung:</strong> {reportData.fairnessCheck.recommendation}
-                </p>
+              <div className="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-400">
+                <h4 className="font-medium text-purple-800 mb-1">📋 Empfehlung:</h4>
+                <p className="text-sm text-purple-700">{reportData.fairnessCheck.recommendation}</p>
+              </div>
+            )}
+
+            {/* How to Address */}
+            {reportData.fairnessCheck.howToAddress && (
+              <div className="bg-blue-50 rounded-lg p-3">
+                <h4 className="font-medium text-blue-800 mb-1">💡 So können Sie das ansprechen:</h4>
+                <p className="text-sm text-blue-700">{reportData.fairnessCheck.howToAddress}</p>
               </div>
             )}
           </div>
