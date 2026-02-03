@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
 
     const body = await request.json();
-    const { uploadId, images } = body;
+    const { uploadId, images, language } = body;
 
     if (!uploadId || !images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Run full two-layer analysis (extraction + teacher report)
-    const analysisResult = await analyzeTest(images);
+    const analysisResult = await analyzeTest(images, { language: language || 'de' });
 
     if (!analysisResult.success) {
       console.error(`[Extract API] Analysis failed: ${analysisResult.error}`);

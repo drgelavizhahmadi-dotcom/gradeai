@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Upload, X, FileImage, FileText, Loader2, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
@@ -46,6 +47,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { language } = useLanguage();
 
   // Configure PDF.js worker
   useEffect(() => {
@@ -289,7 +291,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       const extractRes = await fetch("/api/analyze/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uploadId, images }),
+        body: JSON.stringify({ uploadId, images, language }),
       });
 
       const extractData = await extractRes.json();
