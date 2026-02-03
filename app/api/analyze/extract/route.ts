@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { analyzeTest } from "@/lib/ai/analyze";
+import { extractWithVisionOCR } from "@/lib/ai/vision/vision-ocr-extract";
+import { extractWithClaude } from "@/lib/ai/vision/claude-extract";
+import { analyzeTestComplete } from "@/lib/ai/analyze-complete";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -37,37 +39,69 @@ export async function POST(request: NextRequest) {
       data: { analysisStatus: "extracting" },
     });
 
-    // Run full two-layer analysis (extraction + teacher report)
-    const analysisResult = await analyzeTest(images, { language: language || 'de' });
+    // LAYER 1: Vision Extraction
+    console.log("[Extract API] Layer 1: Vision Extraction...");
+    let extractResult: { success: boolean; error?: string; extraction: string; duration: number; provider: string; confidence?: number } = await extractWithVisionOCR(images);
 
-    if (!analysisResult.success) {
-      console.error(`[Extract API] Analysis failed: ${analysisResult.error}`);
+    if (!extractResult.success || (extractResult.confidence !== undefined && extractResult.confidence < 0.85)) {
+      console.log("[Extract API] Vision OCR insufficient, trying Claude fallback...");
+      extractResult = await extractWithClaude(images);
+    }
+
+    if (!extractResult.success) {
+      console.error(`[Extract API] Vision extraction failed: ${extractResult.error}`);
       await db.upload.update({
         where: { id: uploadId },
         data: {
           analysisStatus: "failed",
-          errorMessage: analysisResult.error,
+          errorMessage: extractResult.error || "Unknown extraction error",
         },
       });
-      throw new Error(analysisResult.error);
+      throw new Error(extractResult.error || "Unknown extraction error");
     }
 
-    console.log(`[Extract API] Extraction length: ${analysisResult.extraction.length} chars`);
-    console.log(`[Extract API] Report generated: ${analysisResult.report ? 'YES' : 'NO'}`);
+    console.log(`[Extract API] Extraction complete: ${extractResult.extraction.length} chars`);
 
-    // Save both extraction and report to database
+    // LAYERS 2-4: Comprehensive Analysis + Fairness + Translation
+    console.log("[Extract API] Layers 2-4: Comprehensive Analysis...");
+    const analysisResult = await analyzeTestComplete(extractResult.extraction, {
+      language: language || 'de',
+      includeFairnessAssessment: true,
+    });
+
+    if (!analysisResult.success) {
+      const errorMsg = analysisResult.error || "Unknown analysis error";
+      console.error(`[Extract API] Analysis failed: ${errorMsg}`);
+      await db.upload.update({
+        where: { id: uploadId },
+        data: {
+          analysisStatus: "failed",
+          errorMessage: errorMsg,
+          extractedText: extractResult.extraction,
+        },
+      });
+      throw new Error(errorMsg);
+    }
+
+    console.log(`[Extract API] Analysis complete`);
+    console.log(`[Extract API] Fairness: ${analysisResult.fairnessAssessment?.assessmentResult || 'N/A'}`);
+
+    // Save to database
     const updateData: any = {
-      extractedText: analysisResult.extraction,
+      extractedText: extractResult.extraction,
       analysisStatus: "completed",
       processedAt: new Date(),
     };
 
     if (analysisResult.report) {
-      updateData.analysis = JSON.stringify(analysisResult.report);
-      updateData.subject = analysisResult.report.subject;
-      // Convert grade string to number
-      if (analysisResult.report.grade?.value) {
-        const gradeNum = parseFloat(analysisResult.report.grade.value);
+      updateData.analysis = analysisResult.report;
+      updateData.analysisGerman = analysisResult.reportGerman;
+      updateData.subject = analysisResult.report.test?.subject || analysisResult.reportGerman?.test?.subject;
+
+      // Get grade from German report (more reliable)
+      const gradeValue = analysisResult.reportGerman?.grade?.value || analysisResult.report?.grade?.value;
+      if (gradeValue) {
+        const gradeNum = parseFloat(gradeValue);
         if (!isNaN(gradeNum)) {
           updateData.grade = gradeNum;
         }
@@ -82,9 +116,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      extractionLength: analysisResult.extraction.length,
+      extractionLength: extractResult.extraction.length,
       reportGenerated: !!analysisResult.report,
-      durationMs: analysisResult.timing.total,
+      fairnessAssessment: analysisResult.fairnessAssessment?.assessmentResult,
+      language: language || 'de',
+      durationMs: extractResult.duration + analysisResult.timing.total,
     });
   } catch (error) {
     console.error("[Extract API] Error:", error);
