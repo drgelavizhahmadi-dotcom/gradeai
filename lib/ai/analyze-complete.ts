@@ -57,7 +57,7 @@ async function generateReport(extraction: string) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000, // Optimized - prompt is shorter now
+      max_tokens: 8000, // Comprehensive report needs more tokens
       system: COMPREHENSIVE_TEACHER_SYSTEM,
       messages: [{ role: 'user', content: prompt }],
     });
