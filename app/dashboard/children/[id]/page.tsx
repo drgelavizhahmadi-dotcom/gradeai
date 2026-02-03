@@ -279,6 +279,13 @@ export default function ChildProfilePage() {
           </div>
           <div className="flex gap-3">
             <Link
+              href={`/dashboard/children/${child.id}/progress`}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:from-purple-700 hover:to-indigo-700 transition-colors"
+            >
+              <TrendingUp className="h-4 w-4" />
+              Progress
+            </Link>
+            <Link
               href={`/dashboard/children/${child.id}/edit`}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
             >
