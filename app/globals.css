@@ -1,28 +1,351 @@
+/* Import fonts FIRST - must precede other rules */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ============================================
+   GradeAI Design System
+   Theme: "Friendly Companions + Storybook"
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Core Colors === */
+  /* Warm cream background - like aged paper */
+  --background: #FDF8F3;
+  --background-soft: #FAF5EF;
+  --foreground: #2D2A26;
+
+  /* Primary - Warm Teal (trustworthy but friendly) */
+  --primary: #2A9D8F;
+  --primary-light: #40B4A6;
+  --primary-dark: #1E7268;
+  --primary-soft: #E8F5F3;
+
+  /* Secondary - Warm Coral (energy, celebration) */
+  --coral: #E07A5F;
+  --coral-light: #E99A85;
+  --coral-dark: #C45D42;
+  --coral-soft: #FBE9E4;
+
+  /* Accent - Sunny Gold (achievements, highlights) */
+  --gold: #F4A261;
+  --gold-light: #F7BC8A;
+  --gold-dark: #D98B4A;
+  --gold-soft: #FEF3E6;
+
+  /* Lavender - Calm, study mode */
+  --lavender: #9B8EC5;
+  --lavender-light: #B5AADB;
+  --lavender-dark: #7A6BA8;
+  --lavender-soft: #F3F0F9;
+
+  /* Success Green - Growth, improvement */
+  --success: #6BAA75;
+  --success-light: #8DC295;
+  --success-dark: #4F8A5A;
+  --success-soft: #EDF7EF;
+
+  /* Warning/Alert - Soft amber */
+  --warning: #E9C46A;
+  --warning-soft: #FCF5E3;
+
+  /* Error - Gentle red */
+  --error: #D66853;
+  --error-soft: #FBEAE7;
+
+  /* Neutrals - Warm grays */
+  --gray-50: #FAF9F7;
+  --gray-100: #F3F1ED;
+  --gray-200: #E8E4DD;
+  --gray-300: #D4CFC5;
+  --gray-400: #B0A99B;
+  --gray-500: #8A8275;
+  --gray-600: #6B6459;
+  --gray-700: #4A453C;
+  --gray-800: #2D2A26;
+  --gray-900: #1A1816;
+
+  /* === Typography === */
+  --font-display: 'Quicksand', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+
+  /* === Shadows (softer, warmer) === */
+  --shadow-sm: 0 1px 2px rgba(45, 42, 38, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(45, 42, 38, 0.07), 0 2px 4px -1px rgba(45, 42, 38, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(45, 42, 38, 0.08), 0 4px 6px -2px rgba(45, 42, 38, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(45, 42, 38, 0.1), 0 10px 10px -5px rgba(45, 42, 38, 0.04);
+  --shadow-glow: 0 0 20px rgba(42, 157, 143, 0.2);
+
+  /* === Border Radius (softer, more organic) === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
+
+  /* Custom colors for Tailwind */
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-coral: var(--coral);
+  --color-gold: var(--gold);
+  --color-lavender: var(--lavender);
 }
 
+/* Disable dark mode - we want warm tones always */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #FDF8F3;
+    --foreground: #2D2A26;
   }
 }
 
+/* === Base Styles === */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use display font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--gray-800);
+}
+
+/* === Custom Utility Classes === */
+
+/* Storybook-style cards */
+.card-story {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
+  transition: all 0.3s ease;
+}
+
+.card-story:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Warm gradient backgrounds */
+.bg-warm-gradient {
+  background: linear-gradient(135deg, var(--background) 0%, var(--gold-soft) 50%, var(--coral-soft) 100%);
+}
+
+.bg-teal-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+}
+
+.bg-celebration {
+  background: linear-gradient(135deg, var(--gold-soft) 0%, var(--coral-soft) 50%, var(--lavender-soft) 100%);
+}
+
+/* Paper texture effect */
+.paper-texture {
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Buttons with character */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-coral {
+  background: var(--coral);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.btn-coral:hover {
+  background: var(--coral-dark);
+  transform: translateY(-1px);
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--gray-800);
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.btn-gold:hover {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+}
+
+/* Grade badges with character */
+.grade-badge {
+  font-family: var(--font-display);
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.grade-1 { background: linear-gradient(135deg, #22C55E, #16A34A); color: white; }
+.grade-2 { background: linear-gradient(135deg, #84CC16, #65A30D); color: white; }
+.grade-3 { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white; }
+.grade-4 { background: linear-gradient(135deg, var(--coral), var(--coral-dark)); color: white; }
+.grade-5 { background: linear-gradient(135deg, #F87171, #EF4444); color: white; }
+.grade-6 { background: linear-gradient(135deg, #A855F7, #9333EA); color: white; }
+
+/* Achievement/celebration animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-wiggle { animation: wiggle 0.5s ease-in-out; }
+.animate-sparkle { animation: sparkle 2s ease-in-out infinite; }
+.animate-bounce-in { animation: bounce-in 0.5s ease-out forwards; }
+
+/* Companion mascot styles */
+.companion {
+  transition: all 0.3s ease;
+}
+
+.companion:hover {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.companion-happy {
+  filter: drop-shadow(0 0 10px var(--gold));
+}
+
+/* Progress bar with character */
+.progress-bar-warm {
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-warm .progress-fill {
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+/* Subject tags */
+.subject-tag {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.subject-math { background: var(--lavender-soft); color: var(--lavender-dark); }
+.subject-german { background: var(--primary-soft); color: var(--primary-dark); }
+.subject-english { background: var(--coral-soft); color: var(--coral-dark); }
+.subject-science { background: var(--success-soft); color: var(--success-dark); }
+.subject-default { background: var(--gold-soft); color: var(--gold-dark); }
+
+/* Storybook dividers */
+.divider-story {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--gray-400);
+}
+
+.divider-story::before,
+.divider-story::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gray-300), transparent);
+}
+
+/* Tooltip styles */
+.tooltip-warm {
+  background: var(--gray-800);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
 }
 
 /* RTL Support */
@@ -44,9 +367,40 @@ body {
 [dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
 [dir="rtl"] .pr-4 { padding-right: 0; padding-left: 1rem; }
 
-/* Farsi/Arabic font */
-@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
-
+/* Farsi/Arabic font (imported at top of file) */
 [dir="rtl"] {
   font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+}
+
+/* === Scrollbar Styling === */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* === Selection === */
+::selection {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+/* === Focus States === */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

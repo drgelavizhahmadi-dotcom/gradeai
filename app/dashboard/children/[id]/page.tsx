@@ -8,20 +8,19 @@ import {
   GraduationCap,
   FileText,
   TrendingUp,
-  Edit,
   Upload,
   CheckCircle,
   Clock,
   AlertCircle,
   Pencil,
-  Trash2
+  Trash2,
+  ArrowRight
 } from 'lucide-react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
 import Breadcrumbs from '@/components/Breadcrumbs'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import EmptyState from '@/components/EmptyState'
-import ErrorMessage from '@/components/ErrorMessage'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
+import { Mascot, FoxMascot } from '@/components/mascots'
+import { GradeBadge } from '@/components/ui/GradeBadge'
 
 interface Child {
   id: string
@@ -31,7 +30,7 @@ interface Child {
   createdAt: string
 }
 
-interface Upload {
+interface UploadItem {
   id: string
   fileName: string
   uploadedAt: string
@@ -53,7 +52,7 @@ export default function ChildProfilePage() {
   const childId = params.id as string
 
   const [child, setChild] = useState<Child | null>(null)
-  const [uploads, setUploads] = useState<Upload[]>([])
+  const [uploads, setUploads] = useState<UploadItem[]>([])
   const [stats, setStats] = useState<Stats>({ totalTests: 0, averageGrade: null, completedTests: 0, pendingTests: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,19 +87,18 @@ export default function ChildProfilePage() {
       if (childData.success) {
         setChild(childData.child)
 
-        // Calculate stats from uploads
-        const uploads = childData.child.uploads || []
-        const completed = uploads.filter((u: Upload) => u.analysisStatus === 'completed')
-        const gradesArray = completed.map((u: Upload) => u.grade).filter((g: number | null) => g !== null)
+        const uploadList = childData.child.uploads || []
+        const completed = uploadList.filter((u: UploadItem) => u.analysisStatus === 'completed')
+        const gradesArray = completed.map((u: UploadItem) => u.grade).filter((g: number | null) => g !== null)
 
         setStats({
-          totalTests: uploads.length,
+          totalTests: uploadList.length,
           averageGrade: gradesArray.length > 0 ? gradesArray.reduce((a: number, b: number) => a + b, 0) / gradesArray.length : null,
           completedTests: completed.length,
-          pendingTests: uploads.filter((u: Upload) => u.analysisStatus === 'pending' || u.analysisStatus === 'processing').length,
+          pendingTests: uploadList.filter((u: UploadItem) => u.analysisStatus === 'pending' || u.analysisStatus === 'processing').length,
         })
 
-        setUploads(uploads)
+        setUploads(uploadList)
       } else {
         throw new Error(childData.error || 'Failed to load child profile')
       }
@@ -180,28 +178,28 @@ export default function ChildProfilePage() {
     switch (status) {
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 border border-green-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-soft)] px-3 py-1 text-xs font-semibold text-[var(--success-dark)] border border-[var(--success)]">
             <CheckCircle className="h-3.5 w-3.5" />
             Completed
           </span>
         )
       case 'processing':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 border border-blue-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-semibold text-[var(--primary-dark)] border border-[var(--primary)]">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Processing
           </span>
         )
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800 border border-red-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--error-soft)] px-3 py-1 text-xs font-semibold text-[var(--error)] border border-[var(--error)]">
             <AlertCircle className="h-3.5 w-3.5" />
             Failed
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800 border border-yellow-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--warning-soft)] px-3 py-1 text-xs font-semibold text-[var(--gold-dark)] border border-[var(--warning)]">
             <Clock className="h-3.5 w-3.5" />
             Pending
           </span>
@@ -209,298 +207,354 @@ export default function ChildProfilePage() {
     }
   }
 
-  const getGradeColor = (grade: number): string => {
-    if (grade <= 2.0) return 'text-green-700 bg-green-50 border-green-200'
-    if (grade <= 3.0) return 'text-blue-700 bg-blue-50 border-blue-200'
-    if (grade <= 4.0) return 'text-amber-700 bg-amber-50 border-amber-200'
-    return 'text-red-700 bg-red-50 border-red-200'
+  // Determine mascot mood based on stats
+  const getMascotMood = () => {
+    if (stats.averageGrade && stats.averageGrade <= 2.0) return 'celebrating'
+    if (stats.pendingTests > 0) return 'thinking'
+    if (stats.totalTests === 0) return 'encouraging'
+    return 'happy'
   }
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <LoadingSpinner size="lg" text="Loading child profile..." />
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <FoxMascot mood="thinking" size="xl" message="Loading profile..." />
+            <p className="text-[var(--gray-600)] font-medium mt-4">Getting everything ready...</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <Breadcrumbs />
-        <ErrorMessage
-          title="Failed to Load Profile"
-          message={error}
-          onRetry={fetchChildData}
-        />
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <Breadcrumbs />
+          <div className="card-story p-12 text-center bg-white mt-6">
+            <div className="flex justify-center mb-4">
+              <FoxMascot mood="encouraging" size="lg" message="Oops! Let me try again..." />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              Failed to Load Profile
+            </h3>
+            <p className="text-[var(--gray-600)] mb-6">{error}</p>
+            <button
+              onClick={fetchChildData}
+              className="btn-primary"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!child) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <Breadcrumbs />
-        <EmptyState
-          icon={AlertCircle}
-          iconColor="text-red-600"
-          title="Child Not Found"
-          description="The child profile you're looking for doesn't exist or may have been deleted."
-          action={
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-            >
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <Breadcrumbs />
+          <div className="card-story p-12 text-center bg-white mt-6">
+            <div className="flex justify-center mb-4">
+              <FoxMascot mood="thinking" size="lg" message="I can't find this profile..." />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              Child Not Found
+            </h3>
+            <p className="text-[var(--gray-600)] mb-6">
+              The child profile you're looking for doesn't exist or may have been deleted.
+            </p>
+            <Link href="/dashboard" className="btn-primary inline-flex items-center gap-2">
               Back to Dashboard
             </Link>
-          }
-        />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs />
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumbs />
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 p-4">
-              <GraduationCap className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">{child.name}</h1>
-              <p className="text-lg text-gray-600">
-                Grade {child.grade} • {child.schoolType}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href={`/dashboard/children/${child.id}/progress`}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:from-purple-700 hover:to-indigo-700 transition-colors"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Progress
-            </Link>
-            <Link
-              href={`/dashboard/children/${child.id}/edit`}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-            >
-              <Pencil className="h-4 w-4" />
-              {t.common?.edit || 'Edit Profile'}
-            </Link>
-            <button
-              onClick={() => setDeleteModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t.common?.delete || 'Delete'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-6 border-2 border-blue-200">
-          <div className="flex items-center gap-3">
-            <FileText className="h-8 w-8 text-blue-600" />
-            <div>
-              <p className="text-sm font-medium text-blue-900">Total Tests</p>
-              <p className="text-3xl font-bold text-blue-900">{stats.totalTests}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 border-2 border-emerald-200">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <div>
-              <p className="text-sm font-medium text-emerald-900">Avg. Grade</p>
-              <p className="text-3xl font-bold text-emerald-900">
-                {stats.averageGrade ? stats.averageGrade.toFixed(1) : '-'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-gradient-to-br from-green-50 to-green-100 p-6 border-2 border-green-200">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="h-8 w-8 text-green-600" />
-            <div>
-              <p className="text-sm font-medium text-green-900">{t.child?.completed || 'Completed'}</p>
-              <p className="text-3xl font-bold text-green-900">{stats.completedTests}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 p-6 border-2 border-amber-200">
-          <div className="flex items-center gap-3">
-            <Clock className="h-8 w-8 text-amber-600" />
-            <div>
-              <p className="text-sm font-medium text-amber-900">{t.child?.pending || 'Pending'}</p>
-              <p className="text-3xl font-bold text-amber-900">{stats.pendingTests}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Action */}
-      <div className="mb-8">
-        <Link
-          href={`/dashboard/upload?childId=${child.id}`}
-          className="block rounded-xl border-2 border-dashed border-blue-300 p-6 text-center hover:border-blue-500 hover:bg-blue-50 transition-all group"
-        >
-          <div className="mx-auto w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
-            <Upload className="h-6 w-6 text-blue-600" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">{t.child?.uploadNewTest || 'Upload New Test'}</h3>
-          <p className="text-sm text-gray-600">
-            {(t.child?.uploadForChild || 'Upload a test for {name} to get AI-powered analysis').replace('{name}', child.name)}
-          </p>
-        </Link>
-      </div>
-
-      {/* Test History */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-900">{t.child?.testHistory || 'Test History'}</h2>
-            {uploads.length > 0 && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedUploads.size === uploads.length && uploads.length > 0}
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        {/* Header with Mascot */}
+        <div className="mb-8 mt-6 bg-warm-gradient rounded-3xl p-8 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="hidden sm:block">
+                <FoxMascot
+                  mood={getMascotMood()}
+                  size="lg"
+                  message={stats.totalTests === 0 ? `Let's upload ${child.name}'s first test!` : `${child.name} is doing great!`}
                 />
-                <span className="text-sm text-gray-600">{t.common?.selectAll || 'Select All'}</span>
-              </label>
-            )}
-          </div>
-        </div>
-
-        {/* Bulk Actions Toolbar */}
-        {selectedUploads.size > 0 && (
-          <div className="mb-4 rounded-lg bg-blue-50 border-2 border-blue-200 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">{selectedUploads.size}</span>
               </div>
-              <p className="text-sm font-semibold text-gray-900">
-                {selectedUploads.size} {selectedUploads.size === 1 ? (t.upload?.selected || 'test selected') : (t.upload?.selectedPlural || 'tests selected')}
-              </p>
+              <div>
+                <h1 className="text-3xl font-bold text-[var(--gray-800)] sm:text-4xl mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                  {child.name}
+                </h1>
+                <p className="text-lg text-[var(--gray-600)]">
+                  Grade {child.grade} • {child.schoolType}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSelectedUploads(new Set())}
-                className="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+            <div className="flex gap-3 flex-wrap">
+              <Link
+                href={`/dashboard/children/${child.id}/progress`}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--lavender)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--lavender-dark)] transition-colors"
+                style={{ fontFamily: 'var(--font-display)' }}
               >
-                {t.common?.cancel || 'Cancel'}
-              </button>
+                <TrendingUp className="h-4 w-4" />
+                Progress
+              </Link>
+              <Link
+                href={`/dashboard/children/${child.id}/edit`}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                {t.common?.edit || 'Edit Profile'}
+              </Link>
               <button
-                onClick={() => setBulkDeleteModal(true)}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+                onClick={() => setDeleteModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--error)] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-90 transition-colors"
+                style={{ fontFamily: 'var(--font-display)' }}
               >
                 <Trash2 className="h-4 w-4" />
                 {t.common?.delete || 'Delete'}
               </button>
             </div>
           </div>
-        )}
+          {/* Decorative elements */}
+          <div className="absolute top-4 right-8 text-4xl opacity-20">🦊</div>
+          <div className="absolute bottom-4 right-24 text-3xl opacity-20">⭐</div>
+        </div>
 
-        {uploads.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="No tests uploaded yet"
-            description={`Upload ${child.name}'s first test to start tracking their progress and get AI-powered insights`}
-            action={
+        {/* Stats Grid */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="card-story p-6 bg-white">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-[var(--primary-soft)] p-4">
+                <FileText className="h-7 w-7 text-[var(--primary)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--gray-500)]">Total Tests</p>
+                <p className="text-3xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  {stats.totalTests}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-story p-6 bg-white">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-[var(--success-soft)] p-4">
+                <TrendingUp className="h-7 w-7 text-[var(--success)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--gray-500)]">Avg. Grade</p>
+                <div className="mt-1">
+                  <GradeBadge grade={stats.averageGrade} size="lg" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-story p-6 bg-white">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-[var(--success-soft)] p-4">
+                <CheckCircle className="h-7 w-7 text-[var(--success)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.child?.completed || 'Completed'}</p>
+                <p className="text-3xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  {stats.completedTests}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-story p-6 bg-white">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-[var(--warning-soft)] p-4">
+                <Clock className="h-7 w-7 text-[var(--gold-dark)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.child?.pending || 'Pending'}</p>
+                <p className="text-3xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  {stats.pendingTests}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Action - Upload */}
+        <div className="mb-8">
+          <Link
+            href={`/dashboard/upload?childId=${child.id}`}
+            className="group card-story block p-8 text-center border-2 border-dashed border-[var(--gray-300)] hover:border-[var(--coral)] hover:bg-[var(--coral-soft)] transition-all bg-white"
+          >
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--coral-soft)] flex items-center justify-center mb-4 group-hover:bg-[var(--coral)] transition-colors">
+              <Upload className="h-8 w-8 text-[var(--coral)] group-hover:text-white transition-colors" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              {t.child?.uploadNewTest || 'Upload New Test'}
+            </h3>
+            <p className="text-sm text-[var(--gray-500)]">
+              {(t.child?.uploadForChild || 'Upload a test for {name} to get AI-powered analysis').replace('{name}', child.name)}
+            </p>
+          </Link>
+        </div>
+
+        {/* Test History */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                {t.child?.testHistory || 'Test History'}
+              </h2>
+              {uploads.length > 0 && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedUploads.size === uploads.length && uploads.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-[var(--primary)] border-[var(--gray-300)] rounded focus:ring-[var(--primary)]"
+                  />
+                  <span className="text-sm text-[var(--gray-500)]">{t.common?.selectAll || 'Select All'}</span>
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Bulk Actions Toolbar */}
+          {selectedUploads.size > 0 && (
+            <div className="mb-4 rounded-2xl bg-[var(--primary-soft)] border-2 border-[var(--primary)] p-4 flex items-center justify-between animate-bounce-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">{selectedUploads.size}</span>
+                </div>
+                <p className="text-sm font-semibold text-[var(--gray-800)]">
+                  {selectedUploads.size} {selectedUploads.size === 1 ? 'test selected' : 'tests selected'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedUploads(new Set())}
+                  className="text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--gray-800)] transition-colors"
+                >
+                  {t.common?.cancel || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => setBulkDeleteModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--error)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 transition-all"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t.common?.delete || 'Delete'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {uploads.length === 0 ? (
+            <div className="card-story p-12 text-center bg-white">
+              <div className="flex justify-center mb-4">
+                <FoxMascot mood="encouraging" size="lg" message={`Upload ${child.name}'s first test!`} />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                No tests uploaded yet
+              </h3>
+              <p className="text-[var(--gray-600)] mb-6 max-w-md mx-auto">
+                Upload {child.name}'s first test to start tracking their progress and get AI-powered insights
+              </p>
               <Link
                 href={`/dashboard/upload?childId=${child.id}`}
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-base font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+                className="btn-coral inline-flex items-center gap-2"
               >
                 <Upload className="h-5 w-5" />
                 Upload First Test
               </Link>
-            }
-          />
-        ) : (
-          <div className="rounded-xl bg-white shadow-md border border-gray-200 overflow-hidden divide-y divide-gray-200">
-            {uploads.map((upload) => (
-              <div
-                key={upload.id}
-                className="flex items-center gap-3 p-5 hover:bg-gray-50 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedUploads.has(upload.id)}
-                  onChange={(e) => {
-                    e.stopPropagation()
-                    toggleSelectUpload(upload.id)
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                />
-              <Link
-                href={`/uploads/${upload.id}`}
-                className="flex items-center justify-between gap-4 flex-1 min-w-0"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+          ) : (
+            <div className="card-story bg-white overflow-hidden p-0">
+              <div className="divide-y divide-[var(--gray-200)]">
+                {uploads.map((upload) => (
+                  <div
+                    key={upload.id}
+                    className="flex items-center gap-3 p-5 hover:bg-[var(--gray-50)] transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUploads.has(upload.id)}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        toggleSelectUpload(upload.id)
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 text-[var(--primary)] border-[var(--gray-300)] rounded focus:ring-[var(--primary)] cursor-pointer"
+                    />
+                    <Link
+                      href={`/uploads/${upload.id}`}
+                      className="flex items-center justify-between gap-4 flex-1 min-w-0"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-[var(--primary-soft)] flex items-center justify-center flex-shrink-0">
+                          <FileText className="h-6 w-6 text-[var(--primary)]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[var(--gray-800)] truncate">{upload.fileName}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-sm text-[var(--gray-500)]">
+                              {new Date(upload.uploadedAt).toLocaleDateString()}
+                            </span>
+                            {upload.grade && (
+                              <>
+                                <span className="text-[var(--gray-300)]">•</span>
+                                <GradeBadge grade={upload.grade} size="sm" />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <span className="text-xs text-[var(--gray-400)] hidden sm:block">
+                          {new Date(upload.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {getStatusBadge(upload.analysisStatus)}
+                      </div>
+                    </Link>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{upload.fileName}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-gray-600">
-                        {new Date(upload.uploadedAt).toLocaleDateString()}
-                      </span>
-                      {upload.grade && (
-                        <>
-                          <span className="text-gray-400">•</span>
-                          <span className={`text-sm font-bold px-2 py-0.5 rounded border ${getGradeColor(upload.grade)}`}>
-                            {upload.grade.toFixed(1)}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <span className="text-xs text-gray-500 hidden sm:block">
-                      {new Date(upload.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {getStatusBadge(upload.analysisStatus)}
-                  </div>
-                </Link>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModal}
+          onClose={() => setDeleteModal(false)}
+          onConfirm={handleDeleteChild}
+          loading={deleteLoading}
+          title={t.common?.confirmDelete || 'Confirm Delete'}
+          message={`${t.child?.confirmDeleteMessage || 'Are you sure you want to delete'} "${child.name}"? ${t.child?.deleteWarning || 'This action cannot be undone and will delete all associated tests.'}`}
+        />
+
+        {/* Bulk Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={bulkDeleteModal}
+          onClose={() => setBulkDeleteModal(false)}
+          onConfirm={handleBulkDelete}
+          loading={bulkDeleteLoading}
+          title={t.upload?.bulkDelete || 'Delete Multiple Tests?'}
+          message={`${t.upload?.bulkDeleteMessage || 'Are you sure you want to delete'} ${selectedUploads.size} ${selectedUploads.size === 1 ? (t.upload?.test || 'test') : (t.upload?.tests || 'tests')}? ${t.upload?.bulkDeleteWarning || 'This action cannot be undone.'}`}
+        />
       </div>
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={deleteModal}
-        onClose={() => setDeleteModal(false)}
-        onConfirm={handleDeleteChild}
-        loading={deleteLoading}
-        title={t.common?.confirmDelete || 'Confirm Delete'}
-        message={`${t.child?.confirmDeleteMessage || 'Are you sure you want to delete'} "${child.name}"? ${t.child?.deleteWarning || 'This action cannot be undone and will delete all associated tests.'}`}
-      />
-
-      {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={bulkDeleteModal}
-        onClose={() => setBulkDeleteModal(false)}
-        onConfirm={handleBulkDelete}
-        loading={bulkDeleteLoading}
-        title={t.upload?.bulkDelete || 'Delete Multiple Tests?'}
-        message={`${t.upload?.bulkDeleteMessage || 'Are you sure you want to delete'} ${selectedUploads.size} ${selectedUploads.size === 1 ? (t.upload?.test || 'test') : (t.upload?.tests || 'tests')}? ${t.upload?.bulkDeleteWarning || 'This action cannot be undone.'}`}
-      />
     </div>
   )
 }
