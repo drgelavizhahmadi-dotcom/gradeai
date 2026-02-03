@@ -94,8 +94,14 @@ export async function POST(request: NextRequest) {
     };
 
     if (analysisResult.report) {
-      updateData.analysis = analysisResult.report;
-      updateData.analysisGerman = analysisResult.reportGerman;
+      // Store translated report in analysis field
+      // German report is embedded in analysis._germanOriginal for now
+      // TODO: Once analysisGerman column exists in DB, store separately
+      const reportWithGerman = {
+        ...analysisResult.report,
+        _germanOriginal: analysisResult.reportGerman,
+      };
+      updateData.analysis = reportWithGerman;
       updateData.subject = analysisResult.report.test?.subject || analysisResult.reportGerman?.test?.subject;
 
       // Get grade from German report (more reliable)

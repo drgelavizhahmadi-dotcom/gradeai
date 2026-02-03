@@ -91,7 +91,6 @@ model Upload {
   extractedText  String?
   analysisStatus String    @default("pending")
   analysis       Json?
-  analysisGerman Json?
   errorMessage   String?
   uploadedAt     DateTime  @default(now())
   processedAt    DateTime?
