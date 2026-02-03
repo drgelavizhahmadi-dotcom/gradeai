@@ -1,5 +1,5 @@
 import { extractWithClaude } from './vision/claude-extract';
-import { extractWithDocumentAI } from './vision/documentai-extract';
+import { extractWithVisionOCR } from './vision/vision-ocr-extract';
 import { generateReportWithClaude } from './report/claude-report';
 import { generateTeacherReport } from './report/teacher-report';
 
@@ -19,16 +19,16 @@ export async function analyzeTest(
   console.log('[Analyze] Pages:', images.length);
   console.log('================================================================');
 
-  // LAYER 1: Vision Extraction - Try Document AI first, fallback to Claude if accuracy < 85%
+  // LAYER 1: Vision Extraction - Try Google Vision OCR first, fallback to Claude if accuracy < 85%
   console.log('[Analyze] Layer 1: Vision Extraction...');
 
-  let extractResult: { success: boolean; error?: string; extraction: string; duration: number; provider: string; confidence?: number } = await extractWithDocumentAI(images);
+  let extractResult: { success: boolean; error?: string; extraction: string; duration: number; provider: string; confidence?: number } = await extractWithVisionOCR(images);
 
-  // Check if Document AI succeeded and has sufficient confidence
+  // Check if Vision OCR succeeded and has sufficient confidence
   if (!extractResult.success || (extractResult.confidence !== undefined && extractResult.confidence < 0.85)) {
     const confidenceMsg = extractResult.confidence !== undefined ?
       ` (confidence: ${(extractResult.confidence * 100).toFixed(1)}% < 85%)` : ' (failed)';
-    console.log(`[Analyze] Document AI ${extractResult.success ? 'low confidence' : 'failed'}${confidenceMsg}, trying Claude as fallback...`);
+    console.log(`[Analyze] Vision OCR ${extractResult.success ? 'low confidence' : 'failed'}${confidenceMsg}, trying Claude as fallback...`);
     extractResult = await extractWithClaude(images);
   }
 
