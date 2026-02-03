@@ -74,6 +74,12 @@ async function generateReport(extraction: string) {
 
     console.log('[Report] Done in', duration, 'ms');
     console.log('[Report] Student:', report.student?.name, '| Grade:', report.grade?.value);
+    console.log('[Report] Has weaknesses:', Array.isArray(report.weaknesses), '| Count:', report.weaknesses?.length || 0);
+    console.log('[Report] Has fairnessCheck:', !!report.fairnessCheck, '| Verdict:', report.fairnessCheck?.verdict);
+    console.log('[Report] Has exercises:', Array.isArray(report.exercises), '| Count:', report.exercises?.length || 0);
+    console.log('[Report] Has flashcards:', Array.isArray(report.flashcards), '| Count:', report.flashcards?.length || 0);
+    console.log('[Report] Has weeklyPlan:', !!report.weeklyPlan);
+    console.log('[Report] Has parentTips:', !!report.parentTips);
 
     return { success: true as const, report, duration };
   } catch (error: any) {

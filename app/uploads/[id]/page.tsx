@@ -753,6 +753,50 @@ export default function UploadDetailPage() {
               </div>
             )}
 
+            {/* Debug: Raw Analysis JSON - Collapsible */}
+            {upload.analysis && (() => {
+              const data = upload.analysis as any;
+              return (
+                <details className="mb-6 rounded-xl bg-white p-6 shadow-md">
+                  <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2 hover:text-blue-600">
+                    <Info className="h-5 w-5" />
+                    Debug: View Raw Analysis JSON
+                  </summary>
+                  <div className="mt-4">
+                    {/* Quick check of required fields */}
+                    <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
+                      <p className="font-semibold mb-2">Field Check:</p>
+                      <ul className="space-y-1 text-xs">
+                        <li className={data?.weaknesses?.length ? 'text-green-600' : 'text-red-600'}>
+                          weaknesses: {data?.weaknesses?.length || 0} items {!data?.weaknesses?.length && '⚠️ MISSING'}
+                        </li>
+                        <li className={data?.fairnessCheck?.verdict ? 'text-green-600' : 'text-red-600'}>
+                          fairnessCheck.verdict: {data?.fairnessCheck?.verdict || 'MISSING ⚠️'}
+                        </li>
+                        <li className={data?.exercises?.length ? 'text-green-600' : 'text-red-600'}>
+                          exercises: {data?.exercises?.length || 0} items {!data?.exercises?.length && '⚠️ MISSING'}
+                        </li>
+                        <li className={data?.flashcards?.length ? 'text-green-600' : 'text-red-600'}>
+                          flashcards: {data?.flashcards?.length || 0} items {!data?.flashcards?.length && '⚠️ MISSING'}
+                        </li>
+                        <li className={data?.weeklyPlan ? 'text-green-600' : 'text-red-600'}>
+                          weeklyPlan: {data?.weeklyPlan ? 'Present' : 'MISSING ⚠️'}
+                        </li>
+                        <li className={data?.parentTips ? 'text-green-600' : 'text-red-600'}>
+                          parentTips: {data?.parentTips ? 'Present' : 'MISSING ⚠️'}
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-4">
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+              );
+            })()}
+
             {/* Raw Extracted Text - Collapsible */}
             {upload.extractedText && (
               <details className="mb-6 rounded-xl bg-white p-6 shadow-md">
