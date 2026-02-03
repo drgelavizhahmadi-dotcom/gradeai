@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { TEACHER_REPORT_SYSTEM, TEACHER_REPORT_PROMPT } from '../prompts/ai-report-prompt';
+import { TEACHER_SYSTEM, TEACHER_PROMPT } from '../prompts/teacher-prompt';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -7,75 +7,44 @@ const anthropic = new Anthropic({
 
 export async function generateTeacherReport(extraction: string) {
   const startTime = Date.now();
+  console.log('[Teacher Report] Starting teacher-style analysis...');
+  console.log('[Teacher Report] Extraction length:', extraction.length, 'chars');
 
   try {
-    console.log('[Teacher Report] Starting teacher-focused analysis...');
+    const prompt = TEACHER_PROMPT.replace('{extraction}', extraction);
 
-    const prompt = TEACHER_REPORT_PROMPT.replace('{visionExtraction}', extraction);
+    console.log('[Teacher Report] Sending to Claude...');
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 8000,
-      temperature: 0.3, // Lower temperature for more consistent, teacher-like responses
-      system: TEACHER_REPORT_SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 5000,
+      system: TEACHER_SYSTEM,
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude');
-    }
-
-    const rawText = content.text.trim();
+    const textContent = response.content.find(c => c.type === 'text');
+    const reportText = textContent?.type === 'text' ? textContent.text : '';
 
     // Extract JSON from response
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    const jsonMatch = reportText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('[Teacher Report] No JSON found in response:', rawText.substring(0, 500));
-      return {
-        success: false as const,
-        error: 'No valid JSON found in teacher report response',
-        report: null,
-        duration: Date.now() - startTime
-      };
+      console.error('[Teacher Report] No JSON found in response');
+      throw new Error('No JSON found in teacher response');
     }
 
-    let report;
-    try {
-      report = JSON.parse(jsonMatch[0]);
-    } catch (parseError) {
-      console.error('[Teacher Report] JSON parse error:', parseError);
-      console.error('[Teacher Report] Raw response:', rawText);
-      return {
-        success: false as const,
-        error: `JSON parse error: ${parseError}`,
-        report: null,
-        duration: Date.now() - startTime
-      };
-    }
+    const report = JSON.parse(jsonMatch[0]);
 
-    // Validate required fields
-    if (!report.schueler?.name || !report.leistung?.gesamtnote) {
-      console.error('[Teacher Report] Missing required fields in report');
-      return {
-        success: false as const,
-        error: 'Report missing required fields (student name or grade)',
-        report: null,
-        duration: Date.now() - startTime
-      };
-    }
-
-    console.log('[Teacher Report] Successfully generated teacher report for:', report.schueler.name);
+    const duration = Date.now() - startTime;
+    console.log('[Teacher Report] Analysis complete');
+    console.log('[Teacher Report] Student:', report.student?.name);
+    console.log('[Teacher Report] Subject:', report.subject);
+    console.log('[Teacher Report] Grade:', report.grade?.value);
+    console.log('[Teacher Report] Time:', duration, 'ms');
 
     return {
       success: true as const,
       report,
-      duration: Date.now() - startTime
+      duration,
     };
 
   } catch (error: any) {
@@ -84,7 +53,7 @@ export async function generateTeacherReport(extraction: string) {
       success: false as const,
       error: error.message,
       report: null,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     };
   }
 }

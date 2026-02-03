@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
 
     const body = await request.json();
-    const { uploadId, images, useTeacherReport = false } = body;
+    const { uploadId, images } = body;
 
     if (!uploadId || !images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
@@ -30,16 +30,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[Extract API] Starting extraction for upload ${uploadId}, ${images.length} pages`);
+    console.log(`[Extract API] Starting analysis for upload ${uploadId}, ${images.length} pages`);
 
     await db.upload.update({
       where: { id: uploadId },
       data: { analysisStatus: "extracting" },
     });
 
-    // Run full two-layer analysis (extraction + report generation)
-    console.log(`[Extract API] Starting two-layer analysis (teacher report: ${useTeacherReport})...`);
-    const analysisResult = await analyzeTest(images, { useTeacherReport });
+    // Run full two-layer analysis (extraction + teacher report)
+    const analysisResult = await analyzeTest(images);
 
     if (!analysisResult.success) {
       console.error(`[Extract API] Analysis failed: ${analysisResult.error}`);
@@ -53,12 +52,10 @@ export async function POST(request: NextRequest) {
       throw new Error(analysisResult.error);
     }
 
-    console.log(`[Extract API] Analysis complete - Vision: ${analysisResult.providers.vision}, Report: ${analysisResult.providers.report}`);
     console.log(`[Extract API] Extraction length: ${analysisResult.extraction.length} chars`);
     console.log(`[Extract API] Report generated: ${analysisResult.report ? 'YES' : 'NO'}`);
 
     // Save both extraction and report to database
-    console.log("[Extract API] Saving to database...");
     const updateData: any = {
       extractedText: analysisResult.extraction,
       analysisStatus: "completed",
@@ -67,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (analysisResult.report) {
       updateData.analysis = JSON.stringify(analysisResult.report);
-      updateData.subject = analysisResult.report.test?.subject;
+      updateData.subject = analysisResult.report.subject;
       // Convert grade string to number
       if (analysisResult.report.grade?.value) {
         const gradeNum = parseFloat(analysisResult.report.grade.value);
@@ -88,7 +85,6 @@ export async function POST(request: NextRequest) {
       extractionLength: analysisResult.extraction.length,
       reportGenerated: !!analysisResult.report,
       durationMs: analysisResult.timing.total,
-      providers: analysisResult.providers,
     });
   } catch (error) {
     console.error("[Extract API] Error:", error);
