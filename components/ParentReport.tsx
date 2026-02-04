@@ -69,8 +69,8 @@ interface ReportData {
       foundationNeeded?: string;
     }>;
   };
-  strengths?: Array<{ title?: string; description?: string; evidence?: string; howToLeverage?: string } | string>;
-  weaknesses?: Array<{ title?: string; description?: string; rootCause?: string; example?: string; impact?: string; severity?: string } | string>;
+  strengths?: Array<{ title?: string; description?: string; point?: string; evidence?: string; teacherNote?: string; howToLeverage?: string; page?: number } | string>;
+  weaknesses?: Array<{ title?: string; description?: string; point?: string; evidence?: string; teacherNote?: string; rootCause?: string; example?: string; impact?: string; severity?: string; page?: number } | string>;
   actionPlan?: {
     immediate?: { title?: string; goal?: string; activities?: Array<{ day?: string; task?: string; duration?: string; howTo?: string; materials?: string }> };
     week2?: { title?: string; goal?: string; focus?: string; activities?: Array<{ task?: string; frequency?: string; duration?: string; howTo?: string }> };
@@ -442,15 +442,18 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
       <div className="grid md:grid-cols-2 gap-4">
         {/* Strengths */}
         {reportData.strengths && reportData.strengths.length > 0 && (
-          <Section title="Stärken" icon={CheckCircle} color="green">
+          <Section title={t.strengths || "Stärken"} icon={CheckCircle} color="green">
             <ul className="space-y-3">
               {reportData.strengths.map((s, i) => {
                 const strength = typeof s === 'string' ? { title: s } : s;
+                // Handle multiple possible field names from different AI prompts
+                const strengthText = strength.title || strength.description || strength.point || '';
+                const evidenceText = strength.evidence || strength.teacherNote || '';
                 return (
                   <li key={i} className="bg-white border border-green-100 rounded-lg p-3">
-                    <p className="font-medium text-green-800">{strength.title || strength.description}</p>
-                    {strength.evidence && (
-                      <p className="text-sm text-gray-600 mt-1">Beleg: {strength.evidence}</p>
+                    <p className="font-medium text-green-800">{strengthText}</p>
+                    {evidenceText && (
+                      <p className="text-sm text-gray-600 mt-1">Beleg: {evidenceText}</p>
                     )}
                     {strength.howToLeverage && (
                       <p className="text-sm text-green-700 mt-1 bg-green-50 p-2 rounded">
@@ -466,21 +469,27 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
         {/* Weaknesses */}
         {reportData.weaknesses && reportData.weaknesses.length > 0 && (
-          <Section title="Verbesserungsfelder" icon={AlertCircle} color="orange">
+          <Section title={t.areasForImprovement || "Verbesserungsfelder"} icon={AlertCircle} color="orange">
             <ul className="space-y-3">
               {reportData.weaknesses.map((w, i) => {
                 const weakness = typeof w === 'string' ? { title: w } : w;
+                // Handle multiple possible field names from different AI prompts
+                const weaknessText = weakness.title || weakness.description || weakness.point || weakness.evidence || '';
+                const causeText = weakness.rootCause || weakness.teacherNote || '';
                 return (
                   <li key={i} className="bg-white border border-orange-100 rounded-lg p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-orange-800">{weakness.title || weakness.description}</p>
+                      <p className="font-medium text-orange-800">{weaknessText}</p>
                       <SeverityBadge severity={weakness.severity} />
                     </div>
-                    {weakness.rootCause && (
-                      <p className="text-sm text-gray-600 mt-1">Ursache: {weakness.rootCause}</p>
+                    {causeText && (
+                      <p className="text-sm text-gray-600 mt-1">{t.cause || 'Ursache'}: {causeText}</p>
                     )}
                     {weakness.impact && (
                       <p className="text-sm text-orange-700 mt-1">⚠️ {weakness.impact}</p>
+                    )}
+                    {weakness.page && (
+                      <p className="text-xs text-gray-400 mt-1">📄 {weakness.page}</p>
                     )}
                   </li>
                 );
