@@ -16,6 +16,7 @@ import { ParentReport } from '@/components/ParentReport'
 import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { FlashcardsPremiumSection, FairnessCheckPremiumSection, UpgradeModal } from '@/components/PremiumFeatures'
 
 // Supported languages for report translation
 const REPORT_LANGUAGES = {
@@ -77,6 +78,18 @@ export default function UploadDetailPage() {
   const [translationError, setTranslationError] = useState<string | null>(null)
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [originalReport, setOriginalReport] = useState<any>(null)
+
+  // Premium features state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeFeature, setUpgradeFeature] = useState<'flashcards' | 'fairness' | undefined>()
+
+  // TODO: Get this from user session/subscription status
+  const isPremiumUser = false // Set to true to test premium features
+
+  const handleUpgrade = (feature?: 'flashcards' | 'fairness') => {
+    setUpgradeFeature(feature)
+    setShowUpgradeModal(true)
+  }
 
   // Check for duplicate detection message
   const isDuplicate = searchParams.get('duplicate') === 'true'
@@ -811,6 +824,27 @@ export default function UploadDetailPage() {
               </div>
             )}
 
+            {/* Premium Features: Flashcards & Fairness Check */}
+            {upload.analysis && (
+              <div className="space-y-6 mb-6">
+                {/* Flashcards Section */}
+                <FlashcardsPremiumSection
+                  isPremium={isPremiumUser}
+                  childName={upload.child.name}
+                  analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
+                  onUpgrade={() => handleUpgrade('flashcards')}
+                />
+
+                {/* Fairness Check Section */}
+                <FairnessCheckPremiumSection
+                  isPremium={isPremiumUser}
+                  childName={upload.child.name}
+                  analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
+                  onUpgrade={() => handleUpgrade('fairness')}
+                />
+              </div>
+            )}
+
             {/* Upload Details - Collapsible */}
             <details className="mb-6 card-story overflow-hidden">
               <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
@@ -906,6 +940,13 @@ export default function UploadDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={upgradeFeature}
+      />
     </div>
   )
 }
