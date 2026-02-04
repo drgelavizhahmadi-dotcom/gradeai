@@ -336,7 +336,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Test Context */}
       {reportData.testContext && (
-        <Section title="Was wurde getestet?" icon={BookOpen} color="blue">
+        <Section title={t.whatWasTested || "Was wurde getestet?"} icon={BookOpen} color="blue">
           <div className="space-y-3">
             {reportData.testContext.whatWasTested && (
               <div>
@@ -346,13 +346,13 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
             {reportData.testContext.whyItMatters && (
               <div className="p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Warum ist das wichtig?</strong> {reportData.testContext.whyItMatters}
+                  <strong>{t.whyImportant || "Warum ist das wichtig?"}</strong> {reportData.testContext.whyItMatters}
                 </p>
               </div>
             )}
             {reportData.testContext.nextTopics && (
               <p className="text-sm text-gray-600">
-                <strong>Als nächstes kommt:</strong> {reportData.testContext.nextTopics}
+                <strong>{t.nextTopics || "Als nächstes kommt:"}</strong> {reportData.testContext.nextTopics}
               </p>
             )}
           </div>
@@ -361,7 +361,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Teacher Feedback */}
       {reportData.teacherFeedback?.mainComment && (
-        <Section title="Lehrerkommentar" icon={MessageCircle} color="yellow">
+        <Section title={t.teacherComment || "Lehrerkommentar"} icon={MessageCircle} color="yellow">
           <div className="space-y-3">
             <blockquote className="border-l-4 border-yellow-400 pl-4 py-2 italic text-gray-700 bg-yellow-50 rounded-r-lg">
               "{reportData.teacherFeedback.mainComment}"
@@ -369,7 +369,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
             {reportData.teacherFeedback.whatTeacherMeans && (
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-700">
-                  <strong>Das bedeutet:</strong> {reportData.teacherFeedback.whatTeacherMeans}
+                  <strong>{t.thatMeans || "Das bedeutet:"}</strong> {reportData.teacherFeedback.whatTeacherMeans}
                 </p>
               </div>
             )}
@@ -390,7 +390,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Error Analysis */}
       {reportData.errorAnalysis && (reportData.errorAnalysis.errors?.length || reportData.errorAnalysis.conceptGaps?.length) && (
-        <Section title="Fehleranalyse" icon={AlertTriangle} color="red" defaultOpen={true}>
+        <Section title={t.errorAnalysis || "Fehleranalyse"} icon={AlertTriangle} color="red" defaultOpen={true}>
           {reportData.errorAnalysis.summary && (
             <p className="text-gray-700 mb-4">{reportData.errorAnalysis.summary}</p>
           )}
@@ -501,7 +501,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Flashcards Section */}
       {reportData.flashcards && reportData.flashcards.length > 0 && (
-        <Section title="🎴 Lernkarten zum Ausdrucken" icon={Lightbulb} color="orange" defaultOpen={true}>
+        <Section title={`🎴 ${t.flashcards || "Lernkarten zum Ausdrucken"}`} icon={Lightbulb} color="orange" defaultOpen={true}>
           <div className="space-y-4">
             <p className="text-sm text-gray-600 mb-4">
               Drucken Sie diese Karten aus oder schreiben Sie sie auf Karteikarten. Vorderseite lesen,
@@ -544,7 +544,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Action Plan */}
       {reportData.actionPlan && (
-        <Section title="4-Wochen Aktionsplan" icon={Calendar} color="purple" defaultOpen={true}>
+        <Section title={t.actionPlan || "4-Wochen Aktionsplan"} icon={Calendar} color="purple" defaultOpen={true}>
           <div className="space-y-4">
             {/* Week 1 */}
             {reportData.actionPlan.immediate && (
@@ -612,7 +612,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Practice Exercises */}
       {reportData.practiceExercises && reportData.practiceExercises.length > 0 && (
-        <Section title="Übungen für zu Hause" icon={Lightbulb} color="yellow">
+        <Section title={t.exercises || "Übungen für zu Hause"} icon={Lightbulb} color="yellow">
           <div className="space-y-4">
             {reportData.practiceExercises.map((exercise, i) => (
               <div key={i} className="bg-white border-2 border-yellow-200 rounded-lg overflow-hidden">
@@ -686,7 +686,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Parent Guidance */}
       {reportData.parentGuidance && (
-        <Section title="Tipps für Eltern" icon={Users} color="pink">
+        <Section title={t.parentTips || "Tipps für Eltern"} icon={Users} color="pink">
           <div className="space-y-4">
             {reportData.parentGuidance.howToDiscussGrade && (
               <div className="bg-white rounded-lg p-4 border border-pink-100">
@@ -745,7 +745,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Teacher Communication */}
       {reportData.teacherCommunication && reportData.teacherCommunication.shouldContactTeacher && (
-        <Section title="Gespräch mit der Lehrkraft" icon={MessageCircle} color="blue">
+        <Section title={t.talkToTeacher || "Gespräch mit der Lehrkraft"} icon={MessageCircle} color="blue">
           <div className="space-y-3">
             {reportData.teacherCommunication.reason && (
               <p className="text-gray-700">{reportData.teacherCommunication.reason}</p>
@@ -775,7 +775,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Fairness Check - ALWAYS VISIBLE */}
       {reportData.fairnessCheck && (
-        <Section title="⚖️ War die Bewertung fair?" icon={Target} color="purple" defaultOpen={true}>
+        <Section title={`⚖️ ${t.fairnessCheck || "War die Bewertung fair?"}`} icon={Target} color="purple" defaultOpen={true}>
           <div className="space-y-4">
             {/* Fairness Status Badge */}
             {(() => {
@@ -874,7 +874,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Resources */}
       {reportData.resources && (reportData.resources.websites?.length || reportData.resources.apps?.length || reportData.resources.books?.length) && (
-        <Section title="Hilfreiche Ressourcen" icon={ExternalLink} color="blue" defaultOpen={false}>
+        <Section title={t.resources || "Hilfreiche Ressourcen"} icon={ExternalLink} color="blue" defaultOpen={false}>
           <div className="space-y-4">
             {reportData.resources.websites && reportData.resources.websites.length > 0 && (
               <div>
@@ -917,7 +917,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Emotional Support */}
       {reportData.emotionalSupport && (
-        <Section title="Emotionale Unterstützung" icon={Heart} color="pink" defaultOpen={false}>
+        <Section title={t.emotionalSupport || "Emotionale Unterstützung"} icon={Heart} color="pink" defaultOpen={false}>
           <div className="space-y-3">
             {reportData.emotionalSupport.childMightFeel && (
               <p className="text-gray-700">
@@ -953,7 +953,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* New Weekly Plan (from simplified prompt) */}
       {reportData.weeklyPlan && (reportData.weeklyPlan.week1 || reportData.weeklyPlan.week2) && (
-        <Section title="📅 Wochenplan" icon={Calendar} color="purple" defaultOpen={true}>
+        <Section title={`📅 ${t.weeklyPlan || "Wochenplan"}`} icon={Calendar} color="purple" defaultOpen={true}>
           <div className="space-y-4">
             {/* Week 1 - Detailed daily plan */}
             {reportData.weeklyPlan.week1 && (
@@ -1017,7 +1017,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* New Exercises (from simplified prompt) */}
       {reportData.exercises && reportData.exercises.length > 0 && (
-        <Section title="📝 Gezielte Übungen" icon={Lightbulb} color="yellow" defaultOpen={true}>
+        <Section title={`📝 ${t.exercises || "Gezielte Übungen"}`} icon={Lightbulb} color="yellow" defaultOpen={true}>
           <div className="space-y-4">
             <p className="text-sm text-gray-600 mb-2">
               Diese Übungen sind speziell auf die identifizierten Schwächen abgestimmt:
@@ -1075,7 +1075,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* New Parent Tips (from simplified prompt) */}
       {reportData.parentTips && (reportData.parentTips.howToDiscuss || reportData.parentTips.whatToAvoid?.length || reportData.parentTips.motivation?.length) && (
-        <Section title="💡 Tipps für Eltern" icon={Users} color="pink" defaultOpen={true}>
+        <Section title={`💡 ${t.parentTips || "Tipps für Eltern"}`} icon={Users} color="pink" defaultOpen={true}>
           <div className="space-y-4">
             {reportData.parentTips.howToDiscuss && (
               <div className="bg-white rounded-lg p-4 border border-pink-100">
@@ -1115,7 +1115,7 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Legacy recommendations fallback */}
       {!reportData.actionPlan && reportData.recommendations && reportData.recommendations.length > 0 && (
-        <Section title="Empfehlungen" icon={Lightbulb} color="blue">
+        <Section title={t.recommendation || "Empfehlungen"} icon={Lightbulb} color="blue">
           <ul className="space-y-2">
             {reportData.recommendations.map((r, i) => (
               <li key={i} className="bg-white p-3 rounded-lg border">
