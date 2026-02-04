@@ -6,10 +6,22 @@ import {
   Target, BookOpen, MessageCircle, Calendar, Lightbulb,
   Heart, Users, ExternalLink, Clock, TrendingUp, AlertCircle
 } from 'lucide-react';
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { translations, Language } from '@/lib/translations';
+
+// Helper to get report translations with English fallback
+function getReportTranslations(language: Language) {
+  const t = translations[language];
+  const en = translations.en;
+
+  // Return translations with English fallback for missing keys
+  return t.report || en.report;
+}
 
 interface ReportData {
   student?: { name?: string; class?: string };
   test?: { subject?: string; date?: string; topic?: string; type?: string; maxPoints?: string; achievedPoints?: string };
+  _meta?: { language?: { code?: string; name?: string; native?: string; rtl?: boolean }; translatedFrom?: string };
   grade?: {
     value?: string;
     description?: string;
@@ -229,13 +241,18 @@ function SeverityBadge({ severity }: { severity: string | undefined }) {
 
 export function ParentReport({ data, extractedText, childName }: ParentReportProps) {
   const [showRaw, setShowRaw] = useState(false);
+  const { language } = useLanguage();
+  const t = getReportTranslations(language);
   const reportData = data || {};
 
-  const studentName = reportData.student?.name || childName || 'Schüler/in';
+  // Check if report has RTL language metadata
+  const isRTL = data?._meta?.language?.rtl || ['ar', 'fa', 'ku'].includes(language);
+
+  const studentName = reportData.student?.name || childName || 'Student';
   const grade = reportData.grade?.value || '—';
-  const isGradeUnknown = !grade || grade === '—' || grade === 'nicht erkennbar' || grade.toLowerCase().includes('nicht');
+  const isGradeUnknown = !grade || grade === '—' || grade === 'nicht erkennbar' || grade.toLowerCase().includes('nicht') || grade.toLowerCase().includes('not');
   const gradeDesc = isGradeUnknown ? '' : (reportData.grade?.description || getGradeDescription(grade));
-  const subject = reportData.test?.subject || 'Unbekannt';
+  const subject = reportData.test?.subject || 'Unknown';
   const percentage = typeof reportData.grade?.percentage === 'number'
     ? reportData.grade.percentage
     : (typeof reportData.grade?.percentage === 'string' && !reportData.grade.percentage.includes('nicht') ? parseInt(reportData.grade.percentage) : null);
@@ -246,24 +263,24 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
     : reportData.summary?.oneSentence;
 
   return (
-    <div className="space-y-5">
+    <div className={`space-y-5 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header with Grade */}
       <div className="bg-gradient-to-br from-[var(--primary)] via-[var(--primary-dark)] to-[var(--lavender)] text-white p-6 rounded-2xl shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>Elternbericht - {subject}</h1>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>{t.parentReport} - {subject}</h1>
             <p className="text-white/80 mt-1">
               {studentName} {reportData.student?.class && `• ${reportData.student.class}`}
             </p>
             {reportData.test?.topic && (
-              <p className="text-white/60 text-sm mt-1">Thema: {reportData.test.topic}</p>
+              <p className="text-white/60 text-sm mt-1">{reportData.test.topic}</p>
             )}
           </div>
           <div className={`text-center rounded-xl px-6 py-4 ${isGradeUnknown ? 'bg-[var(--gold)]/30' : 'bg-white/20'}`}>
             {isGradeUnknown ? (
               <>
                 <div className="text-2xl font-bold">?</div>
-                <div className="text-[var(--gold)]/80 text-sm">Note nicht erkennbar</div>
+                <div className="text-[var(--gold)]/80 text-sm">—</div>
               </>
             ) : (
               <>
