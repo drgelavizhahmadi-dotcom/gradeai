@@ -1,15 +1,14 @@
 // lib/ai/analyze-complete.ts
 // Maximum speed + quality: Optimized prompts, parallel execution, smart fallbacks
 // Using DeepSeek for cost-effective AI analysis
+// Report is generated in ENGLISH first, then translated to target language
 
 import OpenAI from 'openai';
 import {
-  COMPREHENSIVE_TEACHER_SYSTEM,
-  COMPREHENSIVE_TEACHER_PROMPT,
-} from './prompts/comprehensive-teacher-prompt';
+  COMPREHENSIVE_TEACHER_SYSTEM_EN,
+  COMPREHENSIVE_TEACHER_PROMPT_EN,
+} from './prompts/comprehensive-teacher-prompt-en';
 import {
-  TRANSLATION_SYSTEM,
-  TRANSLATION_PROMPT,
   SUPPORTED_LANGUAGES,
 } from './prompts/translation-prompt';
 
@@ -53,16 +52,16 @@ function extractJSON(text: string): any {
 
 async function generateReport(extraction: string) {
   const startTime = Date.now();
-  console.log('[Report] Generating comprehensive report with DeepSeek...');
+  console.log('[Report] Generating comprehensive report in English with DeepSeek...');
 
   try {
-    const prompt = COMPREHENSIVE_TEACHER_PROMPT.replace('{extraction}', extraction);
+    const prompt = COMPREHENSIVE_TEACHER_PROMPT_EN.replace('{extraction}', extraction);
 
     const response = await deepseek.chat.completions.create({
       model: 'deepseek-chat',
       max_tokens: 8000,
       messages: [
-        { role: 'system', content: COMPREHENSIVE_TEACHER_SYSTEM },
+        { role: 'system', content: COMPREHENSIVE_TEACHER_SYSTEM_EN },
         { role: 'user', content: prompt },
       ],
     });
@@ -88,8 +87,47 @@ async function generateReport(extraction: string) {
   }
 }
 
+// Deep merge to preserve structure - copies missing fields from original to translated
+function preserveStructure(original: any, translated: any): any {
+  if (!original || typeof original !== 'object') return translated;
+  if (!translated || typeof translated !== 'object') return original;
+
+  // Handle arrays
+  if (Array.isArray(original)) {
+    if (!Array.isArray(translated) || translated.length === 0) {
+      return original; // Use original if translation lost the array
+    }
+    // For arrays, preserve length and merge each item
+    return original.map((item, i) => {
+      if (i < translated.length) {
+        return preserveStructure(item, translated[i]);
+      }
+      return item;
+    });
+  }
+
+  // Handle objects
+  const result: any = { ...translated };
+
+  for (const key of Object.keys(original)) {
+    if (key === '_meta') continue; // Skip metadata
+
+    if (!(key in result) || result[key] === null || result[key] === undefined) {
+      // Field missing in translation - use original
+      result[key] = original[key];
+      console.log(`[Translate] Preserved missing field: ${key}`);
+    } else if (typeof original[key] === 'object' && original[key] !== null) {
+      // Recursively preserve nested structures
+      result[key] = preserveStructure(original[key], result[key]);
+    }
+  }
+
+  return result;
+}
+
 async function translateReport(report: any, targetLanguage: LanguageCode) {
-  if (targetLanguage === 'de') {
+  // English is the base language now - no translation needed
+  if (targetLanguage === 'en') {
     return { success: true as const, translatedReport: report, duration: 0 };
   }
 
@@ -98,30 +136,56 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
   console.log('[Translate] To', lang.name, 'with DeepSeek...');
 
   try {
-    // Simplified translation prompt for speed
-    const translationPrompt = `Übersetze diesen deutschen Schulbericht ins ${lang.name} (${lang.native}).
+    // More explicit translation prompt to preserve structure
+    const translationPrompt = `Translate this English school report to ${lang.name} (${lang.native}).
 
-REGELN:
-- Behalte den warmen, einfühlsamen Ton
-- Schülernamen NICHT übersetzen
-- Notenwerte (1-6) NICHT ändern
-- JSON-Feldnamen bleiben Englisch
-- Nur die TEXT-WERTE übersetzen
+CRITICAL RULES:
+1. Translate ONLY the text values, NOT the JSON field names
+2. Keep ALL fields and arrays - do NOT remove any
+3. Student names should NOT be translated
+4. Grade values (numbers/letters) should NOT change
+5. Keep the warm, empathetic tone
+6. Output ONLY valid JSON - no explanations
 
-BERICHT:
+IMPORTANT: The translated JSON MUST have the exact same structure with ALL fields:
+- student, test, grade, teacherFeedback, errorAnalysis
+- strengths (array), weaknesses (array)
+- flashcards (array - MUST keep all 5+ items)
+- exercises (array - MUST keep all 2+ items)
+- weeklyPlan (with week1 and week2)
+- fairnessCheck (with verdict, reasoning, etc.)
+- parentTips (with howToDiscuss, whatToAvoid, motivation)
+- resources, messages, summary
+
+ENGLISH REPORT:
 ${JSON.stringify(report, null, 2)}
 
-Antworte NUR mit dem übersetzten JSON.`;
+Respond with ONLY the translated JSON. No explanations.`;
 
     const response = await deepseek.chat.completions.create({
       model: 'deepseek-chat',
-      max_tokens: 5000,
+      max_tokens: 8000, // Increased to handle full report
       messages: [{ role: 'user', content: translationPrompt }],
     });
 
     const responseText = response.choices[0]?.message?.content || '';
 
-    const translatedReport = extractJSON(responseText);
+    let translatedReport = extractJSON(responseText);
+
+    // Validate and preserve structure - copy any missing fields from original
+    translatedReport = preserveStructure(report, translatedReport);
+
+    // Log what was preserved
+    const checkFields = ['weaknesses', 'flashcards', 'exercises', 'weeklyPlan', 'parentTips', 'fairnessCheck'];
+    for (const field of checkFields) {
+      const origCount = Array.isArray(report[field]) ? report[field].length : (report[field] ? 1 : 0);
+      const transCount = Array.isArray(translatedReport[field]) ? translatedReport[field].length : (translatedReport[field] ? 1 : 0);
+      if (transCount < origCount) {
+        console.log(`[Translate] WARNING: ${field} reduced from ${origCount} to ${transCount}`);
+      } else {
+        console.log(`[Translate] ✓ ${field}: ${transCount} items preserved`);
+      }
+    }
 
     // Add language metadata
     translatedReport._meta = {
@@ -131,7 +195,7 @@ Antworte NUR mit dem übersetzten JSON.`;
         native: lang.native,
         rtl: lang.rtl,
       },
-      translatedFrom: 'de',
+      translatedFrom: 'en',
     };
 
     const duration = Date.now() - startTime;
@@ -140,14 +204,14 @@ Antworte NUR mit dem übersetzten JSON.`;
     return { success: true as const, translatedReport, duration };
   } catch (error: any) {
     console.error('[Translate] Error:', error.message);
-    // Return German report with error flag
+    // Return English report with error flag
     return {
       success: false as const,
       error: error.message,
       translatedReport: {
         ...report,
         _meta: {
-          language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
+          language: { code: 'en', name: 'English', native: 'English', rtl: false },
           translationFailed: true,
           requestedLanguage: targetLanguage,
         },
@@ -161,7 +225,7 @@ export async function analyzeTestComplete(
   extraction: string,
   options: AnalyzeOptions = {}
 ) {
-  const { language = 'de' } = options;
+  const { language = 'en' } = options;
   const totalStart = Date.now();
 
   console.log('================================================================');
@@ -169,7 +233,7 @@ export async function analyzeTestComplete(
   console.log('[Analyze] Extraction:', extraction.length, 'chars');
   console.log('================================================================');
 
-  // STEP 1: Generate comprehensive report (German)
+  // STEP 1: Generate comprehensive report (English base)
   const reportResult = await generateReport(extraction);
 
   if (!reportResult.success) {
@@ -181,19 +245,19 @@ export async function analyzeTestComplete(
   }
 
   let report = reportResult.report;
-  const reportGerman = JSON.parse(JSON.stringify(report));
+  const reportEnglish = JSON.parse(JSON.stringify(report));
 
-  // STEP 2: Translate if needed
+  // STEP 2: Translate if needed (English is base, so translate if not English)
   let translationDuration = 0;
 
-  if (language !== 'de') {
+  if (language !== 'en') {
     const translateResult = await translateReport(report, language);
     translationDuration = translateResult.duration;
     report = translateResult.translatedReport;
   } else {
-    // Add German meta
+    // Add English meta
     report._meta = {
-      language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
+      language: { code: 'en', name: 'English', native: 'English', rtl: false },
     };
   }
 
@@ -207,7 +271,8 @@ export async function analyzeTestComplete(
   return {
     success: true as const,
     report,
-    reportGerman,
+    reportEnglish, // English base report for reference
+    reportGerman: reportEnglish, // Keep for backwards compatibility
     timing: {
       report: reportResult.duration,
       translation: translationDuration,
