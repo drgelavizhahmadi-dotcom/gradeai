@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Mail, Lock, AlertCircle, GraduationCap } from 'lucide-react'
+import { Loader2, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react'
+import { OwlMascot } from '@/components/mascots'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -45,36 +46,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo/Header */}
+        {/* Logo/Header with Mascot */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 mb-4 shadow-lg">
-            <GraduationCap className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-4">
+            <OwlMascot mood="happy" size="lg" message="Welcome back!" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to your GradeAI account</p>
+          <h1 className="text-3xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+            Welcome Back
+          </h1>
+          <p className="text-[var(--gray-600)]">Sign in to your GradeAI account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
+        <div className="card-story p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="rounded-lg bg-red-50 border-2 border-red-200 p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800 font-medium">{error}</p>
+              <div className="rounded-xl bg-[var(--coral)]/10 border-2 border-[var(--coral)]/30 p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-[var(--coral)] font-medium">{error}</p>
               </div>
             )}
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="email"
@@ -82,7 +85,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="you@example.com"
                   disabled={isLoading}
                 />
@@ -91,12 +94,12 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="password"
@@ -104,7 +107,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="Enter your password"
                   disabled={isLoading}
                 />
@@ -115,7 +118,7 @@ export default function LoginPage() {
             <div className="flex items-center justify-end">
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline"
               >
                 Forgot password?
               </Link>
@@ -125,7 +128,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -133,7 +136,10 @@ export default function LoginPage() {
                   Signing In...
                 </>
               ) : (
-                'Sign In'
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Sign In
+                </>
               )}
             </button>
           </form>
@@ -141,30 +147,30 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 font-medium">Don't have an account?</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Don't have an account?</span>
             </div>
           </div>
 
           {/* Sign Up Link */}
           <Link
             href="/signup"
-            className="block w-full text-center px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+            className="btn-secondary w-full block text-center"
           >
             Create an Account
           </Link>
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-sm text-gray-600">
+        <p className="mt-8 text-center text-sm text-[var(--gray-600)]">
           By signing in, you agree to our{' '}
-          <Link href="/terms" className="text-blue-600 hover:underline font-medium">
+          <Link href="/terms" className="text-[var(--primary)] hover:underline font-medium">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/privacy" className="text-blue-600 hover:underline font-medium">
+          <Link href="/privacy" className="text-[var(--primary)] hover:underline font-medium">
             Privacy Policy
           </Link>
         </p>

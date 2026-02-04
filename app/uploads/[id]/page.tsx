@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import jsPDF from 'jspdf'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
-  BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2
+  BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2,
+  Sparkles, Calendar, User
 } from 'lucide-react'
+import { OwlMascot } from '@/components/mascots'
+import { GradeBadge } from '@/components/ui/GradeBadge'
+import { SubjectTag } from '@/components/ui/SubjectTag'
 import GradeAIParentReport from '@/components/GradeAIParentReport/index'
 import { ParentReport } from '@/components/ParentReport'
 import { TestAnalysis } from '@/lib/ai/prompts'
@@ -72,11 +75,6 @@ export default function UploadDetailPage() {
         throw new Error(data.error || 'Failed to fetch upload')
       }
 
-      console.log('[Upload Page] Fetched upload data:', data.upload)
-      console.log('[Upload Page] Analysis status:', data.upload.analysisStatus)
-      console.log('[Upload Page] Analysis data:', data.upload.analysis)
-      console.log('[Upload Page] AI analysis:', data.upload.analysis?.ai)
-
       setUpload(data.upload)
       setError(null)
     } catch (err) {
@@ -88,11 +86,9 @@ export default function UploadDetailPage() {
   }
 
   useEffect(() => {
-    console.log('Fetching upload details for ID:', uploadId)
     fetch(`/api/uploads/${uploadId}`)
       .then((res) => {
         if (!res.ok) {
-          console.error('Error fetching upload details:', res.status, res.statusText)
           setError('Failed to fetch upload details')
           return null
         }
@@ -102,7 +98,6 @@ export default function UploadDetailPage() {
         if (data?.success) {
           setUpload(data.upload)
         } else {
-          console.error('API returned error:', data?.error)
           setError(data?.error || 'Unknown error')
         }
       })
@@ -116,21 +111,18 @@ export default function UploadDetailPage() {
   // Auto-refresh every 2 seconds if status is pending or processing
   useEffect(() => {
     if (!upload) return
-    
+
     const status = upload.analysisStatus
     if (status === 'pending' || status === 'processing') {
-      console.log(`[Upload Page] Starting auto-refresh for ${status} status`)
       const interval = setInterval(() => {
-        console.log('[Upload Page] Auto-refreshing upload status...')
         fetchUpload()
       }, 2000)
 
       return () => {
-        console.log('[Upload Page] Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [upload?.analysisStatus]) // Only depend on status, not entire upload object
+  }, [upload?.analysisStatus])
 
   const handleRetry = async () => {
     if (!uploadId) return
@@ -147,7 +139,6 @@ export default function UploadDetailPage() {
         throw new Error('Failed to trigger analysis')
       }
 
-      // Refresh the upload data
       await fetchUpload()
     } catch (err) {
       console.error('Error retrying analysis:', err)
@@ -175,7 +166,6 @@ export default function UploadDetailPage() {
         throw new Error(data.error || 'Failed to delete upload')
       }
 
-      // Redirect to child profile or dashboard
       if (upload?.childId) {
         router.push(`/dashboard/children/${upload.childId}`)
       } else {
@@ -196,164 +186,50 @@ export default function UploadDetailPage() {
   }
 
   const formatDate = (dateString: string): string => {
-    // Using toLocaleString() for local timezone display
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString('de-DE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
     })
   }
 
-  const generatePDF = (analysis: any, childName: string, subject: string) => {
-    const doc = new jsPDF()
-    const summary = analysis?.summary || {}
-    const meta = analysis?.metadata || {}
-    const ev = meta?.visualEvidence || {}
-    const strengths: string[] = analysis?.strengths || []
-    const weaknesses: string[] = analysis?.weaknesses || []
-    const recs: any[] = analysis?.recommendations || []
-
-    let y = 20
-    const lineHeight = 7
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const margin = 20
-    const maxWidth = pageWidth - 2 * margin
-
-    // Title
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Elternbericht - ${subject || 'Unbekanntes Fach'}`, margin, y)
-    y += 10
-
-    // Student name
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Schuler/in: ${childName}`, margin, y)
-    y += lineHeight
-
-    // Grade
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Gesamtnote: ${summary.overallGrade || '-'} (${Math.round((summary.percentage || 0))}%)`, margin, y)
-    y += lineHeight + 3
-
-    // Confidence
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`KI-Vertrauen: ${Math.round(((summary.confidence || 0.85) * 100))}% | OCR: ${Math.round(((meta.ocrConfidence || 0.85) * 100))}%`, margin, y)
-    y += lineHeight + 5
-
-    // Visual Evidence
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Visuelle Evidenz:', margin, y)
-    y += lineHeight
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.text(`Erkannte Note: ${ev.grade_detected ?? '—'}`, margin + 5, y)
-    y += lineHeight
-    doc.text(`Punkte: ${ev.points ?? '—'}`, margin + 5, y)
-    y += lineHeight
-    doc.text(`Korrekturdichte: ${ev.correction_density != null ? Math.round(ev.correction_density * 100) + '%' : '—'}`, margin + 5, y)
-    y += lineHeight
-    if (ev.teacher_comment) {
-      const commentLines = doc.splitTextToSize(`Lehrkraft-Kommentar: ${ev.teacher_comment}`, maxWidth - 5)
-      doc.text(commentLines, margin + 5, y)
-      y += commentLines.length * lineHeight
+  // Get mascot mood based on status
+  const getMascotMood = () => {
+    if (!upload) return 'thinking'
+    switch (upload.analysisStatus) {
+      case 'completed': return upload.grade && upload.grade <= 2 ? 'celebrating' : 'happy'
+      case 'failed': return 'encouraging'
+      case 'processing': return 'thinking'
+      default: return 'happy'
     }
-    y += 5
+  }
 
-    // Strengths
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Starken:', margin, y)
-    y += lineHeight
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    strengths.slice(0, 6).forEach(s => {
-      const lines = doc.splitTextToSize(`• ${s}`, maxWidth - 5)
-      if (y + lines.length * lineHeight > doc.internal.pageSize.getHeight() - 20) {
-        doc.addPage()
-        y = 20
-      }
-      doc.text(lines, margin + 5, y)
-      y += lines.length * lineHeight
-    })
-    y += 5
-
-    // Weaknesses
-    if (y > doc.internal.pageSize.getHeight() - 40) {
-      doc.addPage()
-      y = 20
+  // Get mascot message based on status
+  const getMascotMessage = () => {
+    if (!upload) return 'Loading...'
+    switch (upload.analysisStatus) {
+      case 'completed':
+        return upload.grade && upload.grade <= 2
+          ? 'Excellent work!'
+          : 'Analysis complete!'
+      case 'failed': return 'Let\'s try again!'
+      case 'processing': return 'Analyzing...'
+      case 'pending': return 'Getting ready...'
+      default: return 'Let\'s learn together!'
     }
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Verbesserungsfelder:', margin, y)
-    y += lineHeight
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    weaknesses.slice(0, 6).forEach(w => {
-      const lines = doc.splitTextToSize(`• ${w}`, maxWidth - 5)
-      if (y + lines.length * lineHeight > doc.internal.pageSize.getHeight() - 20) {
-        doc.addPage()
-        y = 20
-      }
-      doc.text(lines, margin + 5, y)
-      y += lines.length * lineHeight
-    })
-    y += 5
-
-    // Recommendations
-    if (y > doc.internal.pageSize.getHeight() - 40) {
-      doc.addPage()
-      y = 20
-    }
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Empfehlungen:', margin, y)
-    y += lineHeight
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    recs.slice(0, 8).forEach(r => {
-      const text = `• ${r.action || ''}${r.timeframe ? ' (' + r.timeframe + ')' : ''}`
-      const lines = doc.splitTextToSize(text, maxWidth - 5)
-      if (y + lines.length * lineHeight > doc.internal.pageSize.getHeight() - 20) {
-        doc.addPage()
-        y = 20
-      }
-      doc.text(lines, margin + 5, y)
-      y += lines.length * lineHeight
-    })
-    y += 5
-
-    // Executive Summary
-    if (summary.executiveSummary) {
-      if (y > doc.internal.pageSize.getHeight() - 40) {
-        doc.addPage()
-        y = 20
-      }
-      doc.setFontSize(12)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Zusammenfassung:', margin, y)
-      y += lineHeight
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      const summaryLines = doc.splitTextToSize(summary.executiveSummary, maxWidth)
-      doc.text(summaryLines, margin, y)
-    }
-
-    return doc
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading upload details...</p>
+          <OwlMascot mood="thinking" size="lg" message="Loading test details..." />
+          <div className="mt-6">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-[var(--primary)]" />
+            <p className="text-[var(--gray-600)] mt-2 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     )
@@ -361,17 +237,24 @@ export default function UploadDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-blue-50 to-white">
-        <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6">
-          <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-red-900 text-center mb-2">Error</h2>
-          <p className="text-red-700 text-center mb-4">{error}</p>
-          <button
-            onClick={() => router.push('/')}
-            className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Go Home
-          </button>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-6">
+            <OwlMascot mood="encouraging" size="lg" message="Oops! Something went wrong" />
+          </div>
+          <div className="card-story p-6 border-2 border-[var(--coral)]">
+            <XCircle className="w-12 h-12 text-[var(--coral)] mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-[var(--gray-800)] text-center mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              Error
+            </h2>
+            <p className="text-[var(--gray-600)] text-center mb-4">{error}</p>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="btn-primary w-full"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -379,8 +262,14 @@ export default function UploadDetailPage() {
 
   if (!upload) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white">
-        <p className="text-gray-600">Upload not found</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="text-center">
+          <OwlMascot mood="thinking" size="lg" message="Where did it go?" />
+          <p className="text-[var(--gray-600)] mt-4">Upload not found</p>
+          <Link href="/dashboard" className="btn-primary inline-block mt-4">
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     )
   }
@@ -389,35 +278,35 @@ export default function UploadDetailPage() {
     switch (upload.analysisStatus) {
       case 'pending':
         return (
-          <span className="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gold)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--gold-dark)]">
             <Clock className="h-4 w-4" />
             Pending
           </span>
         )
       case 'processing':
         return (
-          <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--primary)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--primary-dark)]">
             <Loader2 className="h-4 w-4 animate-spin" />
             Processing
           </span>
         )
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--success)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--success-dark)]">
             <CheckCircle className="h-4 w-4" />
             Completed
           </span>
         )
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-2 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--coral)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--coral)]">
             <AlertCircle className="h-4 w-4" />
             Failed
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gray-200)] px-4 py-1.5 text-sm font-semibold text-[var(--gray-600)]">
             Unknown
           </span>
         )
@@ -425,32 +314,37 @@ export default function UploadDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-[var(--background)]">
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-full bg-red-100 p-3">
-                <Trash2 className="h-6 w-6 text-red-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Delete Test?</h2>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-bounce-in">
+            <div className="text-center mb-4">
+              <OwlMascot mood="thinking" size="md" message="Are you sure?" showMessage={false} />
             </div>
-            <p className="mb-6 text-gray-600">
+            <div className="mb-4 flex items-center gap-3 justify-center">
+              <div className="rounded-full bg-[var(--coral)]/20 p-3">
+                <Trash2 className="h-6 w-6 text-[var(--coral)]" />
+              </div>
+              <h2 className="text-xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                Delete Test?
+              </h2>
+            </div>
+            <p className="mb-6 text-[var(--gray-600)] text-center">
               Are you sure you want to delete this test? This action cannot be undone and will permanently remove the test and its analysis.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                className="btn-secondary flex-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-red-700 disabled:bg-red-400 flex items-center justify-center gap-2"
+                className="btn-coral flex-1 flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -466,45 +360,84 @@ export default function UploadDetailPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Back Link */}
-        <Link
-          href="/dashboard"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Link>
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-br from-[var(--primary)] via-[var(--primary-dark)] to-[var(--lavender)] text-white">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+          {/* Back Link */}
+          <Link
+            href={upload.childId ? `/dashboard/children/${upload.childId}` : '/dashboard'}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-white/80 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to {upload.child?.name || 'Dashboard'}
+          </Link>
 
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="mb-4 flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-              Test Upload
-            </h1>
-            <StatusBadge />
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <StatusBadge />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                Test Analysis
+              </h1>
+              <p className="text-white/80 text-lg">
+                {upload.subject ? (
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    {upload.subject}
+                  </span>
+                ) : (
+                  'View details and analysis for this test'
+                )}
+              </p>
+
+              {/* Quick info */}
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-white/70 text-sm">
+                <span className="flex items-center gap-1">
+                  <User className="h-4 w-4" />
+                  {upload.child.name}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  {formatDate(upload.uploadedAt)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  {formatFileSize(upload.fileSize)}
+                </span>
+              </div>
+            </div>
+
+            {/* Mascot */}
+            <div className="flex-shrink-0">
+              <OwlMascot
+                mood={getMascotMood()}
+                size="lg"
+                message={getMascotMessage()}
+              />
+            </div>
           </div>
-          <p className="text-lg text-gray-600">
-            View details and analysis for this test
-          </p>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Duplicate Detection Message */}
         {showDuplicateMessage && (
-          <div className="mb-6 rounded-xl bg-blue-50 border-2 border-blue-200 p-4 shadow-sm">
+          <div className="mb-6 rounded-2xl bg-[var(--primary-soft)] border-2 border-[var(--primary)]/30 p-4 shadow-sm animate-bounce-in">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="h-5 w-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                <h3 className="text-sm font-semibold text-[var(--primary-dark)] mb-1">
                   Duplicate Upload Detected
                 </h3>
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-[var(--gray-700)]">
                   {duplicateMessage}
                 </p>
               </div>
               <button
                 onClick={() => setShowDuplicateMessage(false)}
-                className="text-blue-600 hover:text-blue-800 transition-colors"
+                className="text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors"
                 aria-label="Dismiss message"
               >
                 <XCircle className="h-5 w-5" />
@@ -515,75 +448,51 @@ export default function UploadDetailPage() {
 
         {/* Progress Indicator for pending/processing */}
         {(upload.analysisStatus === 'pending' || upload.analysisStatus === 'processing') && (
-          <div className="mb-6 rounded-xl bg-white p-6 shadow-md">
-            <div className="mb-4">
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: '60%' }} />
+          <div className="mb-6 card-story p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-[var(--primary-soft)] flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-[var(--primary)] animate-pulse" />
               </div>
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                {upload.analysisStatus === 'pending'
-                  ? 'Waiting to start analysis...'
-                  : 'Analyzing document... This page will refresh automatically.'}
-              </p>
+              <div className="flex-1">
+                <h3 className="font-semibold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  {upload.analysisStatus === 'pending' ? 'Preparing Analysis' : 'Analyzing Your Test'}
+                </h3>
+                <p className="text-sm text-[var(--gray-600)]">
+                  {upload.analysisStatus === 'pending'
+                    ? 'Your test will be analyzed shortly...'
+                    : 'AI is reading and analyzing the test. This page will refresh automatically.'}
+                </p>
+              </div>
+            </div>
+            <div className="w-full bg-[var(--gray-200)] rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--lavender)] rounded-full animate-pulse"
+                style={{ width: upload.analysisStatus === 'pending' ? '30%' : '60%' }}
+              />
             </div>
           </div>
         )}
 
-        {/* Upload Details Card */}
-        <div className="mb-6 rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Upload Details
-          </h2>
-          <dl className="space-y-3">
-            <div className="flex justify-between">
-              <dt className="font-medium text-gray-600">Student:</dt>
-              <dd className="text-gray-900">{upload.child.name}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-gray-600">Grade:</dt>
-              <dd className="text-gray-900">
-                {upload.child.grade} • {upload.child.schoolType}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-gray-600">File Name:</dt>
-              <dd className="truncate text-gray-900">{upload.fileName}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-gray-600">File Size:</dt>
-              <dd className="text-gray-900">{formatFileSize(upload.fileSize)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="font-medium text-gray-600">Uploaded:</dt>
-              <dd className="text-gray-900">{formatDate(upload.uploadedAt)}</dd>
-            </div>
-            {upload.processedAt && (
-              <div className="flex justify-between">
-                <dt className="font-medium text-gray-600">Processed:</dt>
-                <dd className="text-gray-900">{formatDate(upload.processedAt)}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
-
         {/* Error Message with Retry Button */}
         {upload.analysisStatus === 'failed' && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="mb-6 card-story p-6 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-[var(--coral)]/20 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-[var(--coral)]" />
+              </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                <h3 className="text-lg font-semibold text-[var(--coral)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                   Analysis Failed
                 </h3>
-                <p className="text-red-700">
-                  {upload.errorMessage || 'An error occurred while analyzing the test.'}
+                <p className="text-[var(--gray-700)]">
+                  {upload.errorMessage || 'An error occurred while analyzing the test. Please try again.'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleRetry}
               disabled={retrying}
-              className="w-full py-3 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center justify-center gap-2 font-semibold"
+              className="btn-coral w-full flex items-center justify-center gap-2"
             >
               {retrying ? (
                 <>
@@ -606,32 +515,32 @@ export default function UploadDetailPage() {
             {/* Quick Summary Card */}
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
               {upload.subject && (
-                <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                    <p className="text-sm font-medium text-blue-600">Subject</p>
+                <div className="card-story p-4 border-l-4 border-[var(--primary)]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-5 w-5 text-[var(--primary)]" />
+                    <p className="text-sm font-medium text-[var(--gray-600)]">Subject</p>
                   </div>
-                  <p className="text-xl font-bold text-blue-900">{upload.subject}</p>
+                  <SubjectTag subject={upload.subject} size="lg" />
                 </div>
               )}
 
               {upload.grade !== null && (
-                <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <GraduationCap className="h-5 w-5 text-green-600" />
-                    <p className="text-sm font-medium text-green-600">Grade Received</p>
+                <div className="card-story p-4 border-l-4 border-[var(--success)]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GraduationCap className="h-5 w-5 text-[var(--success)]" />
+                    <p className="text-sm font-medium text-[var(--gray-600)]">Grade Received</p>
                   </div>
-                  <p className="text-xl font-bold text-green-900">{upload.grade.toFixed(1)}</p>
+                  <GradeBadge grade={Math.round(upload.grade)} size="lg" showLabel />
                 </div>
               )}
 
-              <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-5 w-5 text-purple-600" />
-                  <p className="text-sm font-medium text-purple-600">Uploaded</p>
+              <div className="card-story p-4 border-l-4 border-[var(--lavender)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-5 w-5 text-[var(--lavender)]" />
+                  <p className="text-sm font-medium text-[var(--gray-600)]">Analyzed</p>
                 </div>
-                <p className="text-sm font-semibold text-purple-900">
-                  {formatDate(upload.uploadedAt)}
+                <p className="text-lg font-bold text-[var(--gray-800)]">
+                  {upload.processedAt ? formatDate(upload.processedAt) : formatDate(upload.uploadedAt)}
                 </p>
               </div>
             </div>
@@ -641,27 +550,25 @@ export default function UploadDetailPage() {
               <div className="mb-6">
                 {(() => {
                   // Check if we have new structured analysis data
-                  const analysisData = upload.analysis ? 
+                  const analysisData = upload.analysis ?
                     (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis) : null;
 
                   if (analysisData && typeof analysisData === 'object' && !Array.isArray(analysisData)) {
-                    // Use new ParentReport component for structured data
-                    console.log('[Uploads Page] Rendering new ParentReport with structured data')
                     return (
                       <ErrorBoundary
                         fallback={
-                          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
+                          <div className="card-story p-6 border-2 border-[var(--coral)]/30">
                             <div className="flex items-start gap-3">
-                              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                              <AlertCircle className="h-6 w-6 text-[var(--coral)] flex-shrink-0 mt-0.5" />
                               <div>
-                                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                                <h3 className="text-lg font-semibold text-[var(--coral)] mb-2">
                                   Report Display Error
                                 </h3>
-                                <p className="text-red-800 mb-3">
+                                <p className="text-[var(--gray-700)] mb-3">
                                   The analysis completed successfully, but there was an error displaying the report.
                                 </p>
-                                <p className="text-sm text-red-700">
-                                  Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
+                                <p className="text-sm text-[var(--gray-600)]">
+                                  Raw analysis data is available below. Please try refreshing the page.
                                 </p>
                               </div>
                             </div>
@@ -676,25 +583,19 @@ export default function UploadDetailPage() {
                       </ErrorBoundary>
                     );
                   } else if (upload.analysis?.ai) {
-                    // Fallback to old component for legacy data
-                    console.log('[Uploads Page] Rendering GradeAIParentReport with legacy data:', upload.analysis.ai)
                     const transformedData = transformToReportFormat(upload.analysis.ai)
-                    console.log('[Uploads Page] Transformed data:', transformedData)
                     return (
                       <ErrorBoundary
                         fallback={
-                          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6">
+                          <div className="card-story p-6 border-2 border-[var(--coral)]/30">
                             <div className="flex items-start gap-3">
-                              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+                              <AlertCircle className="h-6 w-6 text-[var(--coral)] flex-shrink-0 mt-0.5" />
                               <div>
-                                <h3 className="text-lg font-semibold text-red-900 mb-2">
+                                <h3 className="text-lg font-semibold text-[var(--coral)] mb-2">
                                   Report Display Error
                                 </h3>
-                                <p className="text-red-800 mb-3">
+                                <p className="text-[var(--gray-700)] mb-3">
                                   The analysis completed successfully, but there was an error displaying the report.
-                                </p>
-                                <p className="text-sm text-red-700">
-                                  Raw analysis data is available below. Please try refreshing the page or contact support if the issue persists.
                                 </p>
                               </div>
                             </div>
@@ -707,20 +608,16 @@ export default function UploadDetailPage() {
                       </ErrorBoundary>
                     );
                   } else if (upload.extractedText) {
-                    // Show extracted text if no structured analysis yet
                     return (
-                      <div className="rounded-xl bg-yellow-50 border-2 border-yellow-200 p-6">
+                      <div className="card-story p-6 border-2 border-[var(--gold)]/30 bg-[var(--gold)]/5">
                         <div className="flex items-start gap-3">
-                          <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                          <Sparkles className="h-6 w-6 text-[var(--gold)] flex-shrink-0 mt-0.5" />
                           <div>
-                            <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                            <h3 className="text-lg font-semibold text-[var(--gold-dark)] mb-2">
                               Report Generation in Progress
                             </h3>
-                            <p className="text-yellow-800 mb-3">
+                            <p className="text-[var(--gray-700)] mb-3">
                               Text extraction completed successfully. The structured report is being generated.
-                            </p>
-                            <p className="text-sm text-yellow-700">
-                              Raw extracted text is available below.
                             </p>
                           </div>
                         </div>
@@ -731,21 +628,19 @@ export default function UploadDetailPage() {
               </div>
             )}
 
-
-
             {/* Show AI Error if present but analysis still completed */}
             {upload.analysis?.aiError && !upload.analysis?.ai && (
-              <div className="mb-6 rounded-xl border-2 border-yellow-200 bg-yellow-50 p-6">
+              <div className="mb-6 card-story p-6 border-2 border-[var(--gold)]/30 bg-[var(--gold)]/5">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-6 w-6 text-[var(--gold)] flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                    <h3 className="text-lg font-semibold text-[var(--gold-dark)] mb-2">
                       AI Analysis Unavailable
                     </h3>
-                    <p className="text-yellow-800 mb-3">
+                    <p className="text-[var(--gray-700)] mb-3">
                       The text was extracted successfully, but AI analysis could not be completed.
                     </p>
-                    <p className="text-sm text-yellow-700">
+                    <p className="text-sm text-[var(--gray-600)]">
                       Error: {upload.analysis.aiError}
                     </p>
                   </div>
@@ -753,61 +648,59 @@ export default function UploadDetailPage() {
               </div>
             )}
 
-            {/* Debug: Raw Analysis JSON - Collapsible */}
-            {upload.analysis && (() => {
-              const data = upload.analysis as any;
-              return (
-                <details className="mb-6 rounded-xl bg-white p-6 shadow-md">
-                  <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2 hover:text-blue-600">
-                    <Info className="h-5 w-5" />
-                    Debug: View Raw Analysis JSON
-                  </summary>
-                  <div className="mt-4">
-                    {/* Quick check of required fields */}
-                    <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
-                      <p className="font-semibold mb-2">Field Check:</p>
-                      <ul className="space-y-1 text-xs">
-                        <li className={data?.weaknesses?.length ? 'text-green-600' : 'text-red-600'}>
-                          weaknesses: {data?.weaknesses?.length || 0} items {!data?.weaknesses?.length && '⚠️ MISSING'}
-                        </li>
-                        <li className={data?.fairnessCheck?.verdict ? 'text-green-600' : 'text-red-600'}>
-                          fairnessCheck.verdict: {data?.fairnessCheck?.verdict || 'MISSING ⚠️'}
-                        </li>
-                        <li className={data?.exercises?.length ? 'text-green-600' : 'text-red-600'}>
-                          exercises: {data?.exercises?.length || 0} items {!data?.exercises?.length && '⚠️ MISSING'}
-                        </li>
-                        <li className={data?.flashcards?.length ? 'text-green-600' : 'text-red-600'}>
-                          flashcards: {data?.flashcards?.length || 0} items {!data?.flashcards?.length && '⚠️ MISSING'}
-                        </li>
-                        <li className={data?.weeklyPlan ? 'text-green-600' : 'text-red-600'}>
-                          weeklyPlan: {data?.weeklyPlan ? 'Present' : 'MISSING ⚠️'}
-                        </li>
-                        <li className={data?.parentTips ? 'text-green-600' : 'text-red-600'}>
-                          parentTips: {data?.parentTips ? 'Present' : 'MISSING ⚠️'}
-                        </li>
-                      </ul>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-4">
-                      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-                        {JSON.stringify(data, null, 2)}
-                      </pre>
-                    </div>
+            {/* Upload Details - Collapsible */}
+            <details className="mb-6 card-story overflow-hidden">
+              <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
+                <FileText className="h-5 w-5 text-[var(--primary)]" />
+                Upload Details
+              </summary>
+              <div className="px-4 pb-4 border-t border-[var(--gray-200)]">
+                <dl className="space-y-3 mt-4">
+                  <div className="flex justify-between">
+                    <dt className="font-medium text-[var(--gray-600)]">Student:</dt>
+                    <dd className="text-[var(--gray-800)]">{upload.child.name}</dd>
                   </div>
-                </details>
-              );
-            })()}
+                  <div className="flex justify-between">
+                    <dt className="font-medium text-[var(--gray-600)]">Class:</dt>
+                    <dd className="text-[var(--gray-800)]">
+                      {upload.child.grade} • {upload.child.schoolType}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-medium text-[var(--gray-600)]">File Name:</dt>
+                    <dd className="truncate text-[var(--gray-800)]">{upload.fileName}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-medium text-[var(--gray-600)]">File Size:</dt>
+                    <dd className="text-[var(--gray-800)]">{formatFileSize(upload.fileSize)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-medium text-[var(--gray-600)]">Uploaded:</dt>
+                    <dd className="text-[var(--gray-800)]">{formatDate(upload.uploadedAt)}</dd>
+                  </div>
+                  {upload.processedAt && (
+                    <div className="flex justify-between">
+                      <dt className="font-medium text-[var(--gray-600)]">Processed:</dt>
+                      <dd className="text-[var(--gray-800)]">{formatDate(upload.processedAt)}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            </details>
 
             {/* Raw Extracted Text - Collapsible */}
             {upload.extractedText && (
-              <details className="mb-6 rounded-xl bg-white p-6 shadow-md">
-                <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2 hover:text-blue-600">
-                  <FileText className="h-5 w-5" />
-                  View Raw Extracted Text
+              <details className="mb-6 card-story overflow-hidden">
+                <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
+                  <FileText className="h-5 w-5 text-[var(--lavender)]" />
+                  View Extracted Text
                 </summary>
-                <div className="mt-4 max-h-96 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                    {upload.extractedText}
-                  </p>
+                <div className="px-4 pb-4 border-t border-[var(--gray-200)]">
+                  <div className="mt-4 max-h-96 overflow-y-auto rounded-xl border border-[var(--gray-200)] bg-[var(--gray-100)] p-4">
+                    <p className="text-sm text-[var(--gray-700)] whitespace-pre-wrap font-mono">
+                      {upload.extractedText}
+                    </p>
+                  </div>
                 </div>
               </details>
             )}
@@ -815,38 +708,38 @@ export default function UploadDetailPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 pt-4 border-t border-[var(--gray-200)]">
           <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-200"
+            href={upload.childId ? `/dashboard/children/${upload.childId}` : '/dashboard'}
+            className="btn-secondary inline-flex items-center gap-2"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back to Dashboard
+            Back
           </Link>
           <Link
             href="/uploads"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+            className="btn-primary inline-flex items-center gap-2"
           >
+            <Sparkles className="h-5 w-5" />
             Upload Another Test
           </Link>
           {upload.analysisStatus === 'completed' && (upload.analysis || upload.extractedText) && (
             <button
               onClick={() => {
-                // Use browser print for now - can implement proper PDF generation later
                 window.print();
               }}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700"
+              className="btn-gold inline-flex items-center gap-2"
             >
               <Download className="h-5 w-5" />
-              Download PDF Report
+              Download PDF
             </button>
           )}
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-red-700"
+            className="btn-ghost inline-flex items-center gap-2 text-[var(--coral)] hover:bg-[var(--coral)]/10"
           >
             <Trash2 className="h-5 w-5" />
-            Delete Test
+            Delete
           </button>
         </div>
       </div>

@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Mail, Lock, User, Phone, Globe, AlertCircle, GraduationCap, CheckCircle } from 'lucide-react'
+import { Loader2, Mail, Lock, User, Phone, Globe, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
+import { OwlMascot } from '@/components/mascots'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -91,36 +92,38 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo/Header */}
+        {/* Logo/Header with Mascot */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 mb-4 shadow-lg">
-            <GraduationCap className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-4">
+            <OwlMascot mood="celebrating" size="lg" message="Join us!" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join GradeAI and start tracking your grades</p>
+          <h1 className="text-3xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+            Create Account
+          </h1>
+          <p className="text-[var(--gray-600)]">Join GradeAI and start supporting your child's learning</p>
         </div>
 
         {/* Signup Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
+        <div className="card-story p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Message */}
             {error && (
-              <div className="rounded-lg bg-red-50 border-2 border-red-200 p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800 font-medium">{error}</p>
+              <div className="rounded-xl bg-[var(--coral)]/10 border-2 border-[var(--coral)]/30 p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-[var(--coral)] font-medium">{error}</p>
               </div>
             )}
 
             {/* Name Field */}
             <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Full Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="name"
@@ -129,7 +132,7 @@ export default function SignUpPage() {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="John Doe"
                   disabled={isLoading}
                 />
@@ -138,12 +141,12 @@ export default function SignUpPage() {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="email"
@@ -152,7 +155,7 @@ export default function SignUpPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="you@example.com"
                   disabled={isLoading}
                 />
@@ -161,12 +164,12 @@ export default function SignUpPage() {
 
             {/* Phone Field */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+              <label htmlFor="phone" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
+                Phone Number <span className="text-[var(--gray-400)] font-normal">(optional)</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
+                  <Phone className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="phone"
@@ -174,7 +177,7 @@ export default function SignUpPage() {
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="+49 123 456789"
                   disabled={isLoading}
                 />
@@ -183,19 +186,19 @@ export default function SignUpPage() {
 
             {/* Language Dropdown */}
             <div>
-              <label htmlFor="language" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="language" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Preferred Language
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Globe className="h-5 w-5 text-gray-400" />
+                  <Globe className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <select
                   id="language"
                   name="language"
                   value={formData.language}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors appearance-none bg-white"
                   disabled={isLoading}
                 >
                   <option value="de">German (Deutsch)</option>
@@ -209,12 +212,12 @@ export default function SignUpPage() {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="password"
@@ -223,7 +226,7 @@ export default function SignUpPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="At least 8 characters"
                   disabled={isLoading}
                 />
@@ -232,12 +235,12 @@ export default function SignUpPage() {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
                 Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <CheckCircle className="h-5 w-5 text-gray-400" />
+                  <CheckCircle className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -246,7 +249,7 @@ export default function SignUpPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
                   placeholder="Re-enter your password"
                   disabled={isLoading}
                 />
@@ -257,7 +260,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -265,7 +268,10 @@ export default function SignUpPage() {
                   Creating Account...
                 </>
               ) : (
-                'Create Account'
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Create Account
+                </>
               )}
             </button>
           </form>
@@ -273,30 +279,30 @@ export default function SignUpPage() {
           {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 font-medium">Already have an account?</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Already have an account?</span>
             </div>
           </div>
 
           {/* Login Link */}
           <Link
             href="/login"
-            className="block w-full text-center px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+            className="btn-secondary w-full block text-center"
           >
             Sign In
           </Link>
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-sm text-gray-600">
+        <p className="mt-8 text-center text-sm text-[var(--gray-600)]">
           By creating an account, you agree to our{' '}
-          <Link href="/terms" className="text-blue-600 hover:underline font-medium">
+          <Link href="/terms" className="text-[var(--primary)] hover:underline font-medium">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/privacy" className="text-blue-600 hover:underline font-medium">
+          <Link href="/privacy" className="text-[var(--primary)] hover:underline font-medium">
             Privacy Policy
           </Link>
         </p>

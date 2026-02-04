@@ -6,8 +6,8 @@ import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import LanguageSelector from '@/components/LanguageSelector'
+import { OwlMascot } from '@/components/mascots'
 import {
-  GraduationCap,
   Upload,
   LayoutDashboard,
   Users,
@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -43,13 +44,10 @@ export default function DashboardLayout({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <GraduationCap className="w-6 h-6 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+          <OwlMascot mood="thinking" size="lg" message="Loading..." />
+          <p className="text-[var(--gray-600)] font-medium mt-4">Loading your dashboard...</p>
         </div>
       </div>
     )
@@ -75,25 +73,23 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-[var(--background)]">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto">
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
+        <div className="flex flex-col flex-grow bg-white border-r border-[var(--gray-200)] overflow-y-auto shadow-sm">
+          {/* Logo with Owl */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--gray-200)]">
+            <OwlMascot mood="happy" size="sm" showMessage={false} />
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
                 GradeAI
               </h1>
-              <p className="text-xs text-gray-500">Test Analysis</p>
+              <p className="text-xs text-[var(--gray-500)]">Learning Companion</p>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1">
+          <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon
               const active = isActive(item.href)
@@ -103,8 +99,8 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
                     active
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                      : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -115,36 +111,36 @@ export default function DashboardLayout({
           </nav>
 
           {/* User Menu - Desktop */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-[var(--gray-200)] p-4">
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 hover:bg-[var(--gray-100)] transition-colors"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white shadow-md">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--lavender)] text-sm font-bold text-white shadow-md">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <p className="text-sm font-semibold text-[var(--gray-800)] truncate">{user?.name}</p>
+                  <p className="text-xs text-[var(--gray-500)] truncate">{user?.email}</p>
                 </div>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-[var(--gray-400)] transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* User Dropdown */}
               {userMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-[var(--gray-200)] overflow-hidden">
                   <Link
-                    href="/settings"
+                    href="/dashboard/settings"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--gray-700)] hover:bg-[var(--gray-100)] transition-colors"
                   >
                     <Settings className="h-4 w-4" />
                     Settings
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-700 hover:bg-red-50 transition-colors border-t border-gray-100"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--coral)] hover:bg-[var(--coral)]/10 transition-colors border-t border-[var(--gray-200)]"
                   >
                     <LogOut className="h-4 w-4" />
                     Log Out
@@ -157,15 +153,13 @@ export default function DashboardLayout({
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+      <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-[var(--gray-200)] shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </div>
+          <div className="flex items-center gap-2">
+            <OwlMascot mood="happy" size="sm" showMessage={false} />
             <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
                 GradeAI
               </h1>
             </div>
@@ -176,7 +170,7 @@ export default function DashboardLayout({
             <LanguageSelector />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-lg p-2 text-gray-700 hover:bg-gray-100 transition-colors"
+              className="rounded-lg p-2 text-[var(--gray-700)] hover:bg-[var(--gray-100)] transition-colors"
             >
               {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -187,7 +181,7 @@ export default function DashboardLayout({
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -200,20 +194,20 @@ export default function DashboardLayout({
       >
         <div className="flex flex-col h-full">
           {/* User Info - Mobile */}
-          <div className="border-b border-gray-200 p-4">
+          <div className="border-b border-[var(--gray-200)] p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-base font-bold text-white shadow-md">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--lavender)] text-base font-bold text-white shadow-md">
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-sm font-semibold text-[var(--gray-800)] truncate">{user?.name}</p>
+                <p className="text-xs text-[var(--gray-500)] truncate">{user?.email}</p>
               </div>
             </div>
           </div>
 
           {/* Navigation - Mobile */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon
               const active = isActive(item.href)
@@ -224,8 +218,8 @@ export default function DashboardLayout({
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
                     active
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                      : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -236,10 +230,10 @@ export default function DashboardLayout({
           </nav>
 
           {/* Sign Out - Mobile */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-[var(--gray-200)] p-4">
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[var(--coral)] bg-[var(--coral)]/10 hover:bg-[var(--coral)]/20 transition-colors"
             >
               <LogOut className="h-5 w-5" />
               Log Out
@@ -251,7 +245,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="lg:pl-64">
         {/* Desktop Header with Language Selector */}
-        <div className="hidden lg:block sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="hidden lg:block sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-[var(--gray-200)] shadow-sm">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-end">
             <LanguageSelector />
           </div>
@@ -262,20 +256,20 @@ export default function DashboardLayout({
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 bg-white/80 backdrop-blur-sm">
+        <footer className="border-t border-[var(--gray-200)] bg-white/80 backdrop-blur-sm">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-600">
-                © 2026 GradeAI. All rights reserved.
+              <p className="text-sm text-[var(--gray-600)]">
+                © 2026 GradeAI. Made with love for parents and children.
               </p>
               <div className="flex gap-6">
-                <Link href="/terms" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/terms" className="text-sm text-[var(--gray-600)] hover:text-[var(--primary)] transition-colors">
                   Terms
                 </Link>
-                <Link href="/privacy" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/privacy" className="text-sm text-[var(--gray-600)] hover:text-[var(--primary)] transition-colors">
                   Privacy
                 </Link>
-                <Link href="/support" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/support" className="text-sm text-[var(--gray-600)] hover:text-[var(--primary)] transition-colors">
                   Support
                 </Link>
               </div>

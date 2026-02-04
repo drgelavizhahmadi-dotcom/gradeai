@@ -149,7 +149,7 @@ interface ParentReportProps {
   childName?: string;
 }
 
-function Section({ title, icon: Icon, children, defaultOpen = true, color = 'blue' }: {
+function Section({ title, icon: Icon, children, defaultOpen = true, color = 'primary' }: {
   title: string;
   icon: any;
   children: React.ReactNode;
@@ -158,41 +158,54 @@ function Section({ title, icon: Icon, children, defaultOpen = true, color = 'blu
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
+  // Using warm theme colors with CSS variables
   const colorClasses: Record<string, string> = {
-    blue: 'border-blue-200 bg-blue-50',
-    green: 'border-green-200 bg-green-50',
-    red: 'border-red-200 bg-red-50',
-    yellow: 'border-yellow-200 bg-yellow-50',
-    purple: 'border-purple-200 bg-purple-50',
-    orange: 'border-orange-200 bg-orange-50',
+    primary: 'border-[var(--primary)]/30 bg-[var(--primary-soft)]',
+    success: 'border-[var(--success)]/30 bg-[var(--success)]/10',
+    coral: 'border-[var(--coral)]/30 bg-[var(--coral)]/10',
+    gold: 'border-[var(--gold)]/30 bg-[var(--gold)]/10',
+    lavender: 'border-[var(--lavender)]/30 bg-[var(--lavender)]/10',
     pink: 'border-pink-200 bg-pink-50',
-    gray: 'border-gray-200 bg-gray-50',
+    gray: 'border-[var(--gray-200)] bg-[var(--gray-100)]',
+    // Legacy color mappings
+    blue: 'border-[var(--primary)]/30 bg-[var(--primary-soft)]',
+    green: 'border-[var(--success)]/30 bg-[var(--success)]/10',
+    red: 'border-[var(--coral)]/30 bg-[var(--coral)]/10',
+    yellow: 'border-[var(--gold)]/30 bg-[var(--gold)]/10',
+    purple: 'border-[var(--lavender)]/30 bg-[var(--lavender)]/10',
+    orange: 'border-[var(--coral)]/30 bg-[var(--coral)]/10',
   };
 
   const iconColors: Record<string, string> = {
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    red: 'text-red-600',
-    yellow: 'text-yellow-600',
-    purple: 'text-purple-600',
-    orange: 'text-orange-600',
+    primary: 'text-[var(--primary)]',
+    success: 'text-[var(--success)]',
+    coral: 'text-[var(--coral)]',
+    gold: 'text-[var(--gold)]',
+    lavender: 'text-[var(--lavender)]',
     pink: 'text-pink-600',
-    gray: 'text-gray-600',
+    gray: 'text-[var(--gray-600)]',
+    // Legacy color mappings
+    blue: 'text-[var(--primary)]',
+    green: 'text-[var(--success)]',
+    red: 'text-[var(--coral)]',
+    yellow: 'text-[var(--gold)]',
+    purple: 'text-[var(--lavender)]',
+    orange: 'text-[var(--coral)]',
   };
 
   return (
-    <div className={`rounded-lg border-2 ${colorClasses[color]} overflow-hidden`}>
+    <div className={`rounded-2xl border-2 ${colorClasses[color] || colorClasses.primary} overflow-hidden shadow-sm`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/50 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/50 transition-colors"
       >
-        <div className="flex items-center gap-2">
-          <Icon className={`w-5 h-5 ${iconColors[color]}`} />
-          <h2 className="font-semibold text-gray-800">{title}</h2>
+        <div className="flex items-center gap-3">
+          <Icon className={`w-5 h-5 ${iconColors[color] || iconColors.primary}`} />
+          <h2 className="font-semibold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>{title}</h2>
         </div>
-        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+        {isOpen ? <ChevronUp className="w-5 h-5 text-[var(--gray-500)]" /> : <ChevronDown className="w-5 h-5 text-[var(--gray-500)]" />}
       </button>
-      {isOpen && <div className="px-4 pb-4 bg-white/80">{children}</div>}
+      {isOpen && <div className="px-5 pb-5 bg-white/80">{children}</div>}
     </div>
   );
 }
@@ -233,30 +246,30 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
     : reportData.summary?.oneSentence;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header with Grade */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-xl shadow-lg">
+      <div className="bg-gradient-to-br from-[var(--primary)] via-[var(--primary-dark)] to-[var(--lavender)] text-white p-6 rounded-2xl shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Elternbericht - {subject}</h1>
-            <p className="text-blue-100 mt-1">
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>Elternbericht - {subject}</h1>
+            <p className="text-white/80 mt-1">
               {studentName} {reportData.student?.class && `• ${reportData.student.class}`}
             </p>
             {reportData.test?.topic && (
-              <p className="text-blue-200 text-sm mt-1">Thema: {reportData.test.topic}</p>
+              <p className="text-white/60 text-sm mt-1">Thema: {reportData.test.topic}</p>
             )}
           </div>
-          <div className={`text-center rounded-lg px-6 py-3 ${isGradeUnknown ? 'bg-yellow-500/30' : 'bg-white/20'}`}>
+          <div className={`text-center rounded-xl px-6 py-4 ${isGradeUnknown ? 'bg-[var(--gold)]/30' : 'bg-white/20'}`}>
             {isGradeUnknown ? (
               <>
                 <div className="text-2xl font-bold">?</div>
-                <div className="text-yellow-100 text-sm">Note nicht erkennbar</div>
+                <div className="text-[var(--gold)]/80 text-sm">Note nicht erkennbar</div>
               </>
             ) : (
               <>
-                <div className="text-4xl font-bold">{grade}</div>
-                <div className="text-blue-100 text-sm">{gradeDesc}</div>
-                {percentage && <div className="text-blue-200 text-xs">{percentage}%</div>}
+                <div className="text-5xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>{grade}</div>
+                <div className="text-white/80 text-sm font-medium">{gradeDesc}</div>
+                {percentage && <div className="text-white/60 text-xs">{percentage}%</div>}
               </>
             )}
           </div>
@@ -265,12 +278,12 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Key Message to Parents */}
       {reportData.messages?.toParents && (
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5">
+        <div className="bg-gradient-to-r from-[var(--lavender)]/20 to-pink-50 border-2 border-[var(--lavender)]/30 rounded-2xl p-5">
           <div className="flex items-start gap-3">
-            <Heart className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
+            <Heart className="w-6 h-6 text-[var(--lavender)] flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-purple-900 mb-2">Liebe Eltern,</h3>
-              <p className="text-gray-700 leading-relaxed">{reportData.messages.toParents}</p>
+              <h3 className="font-semibold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>Liebe Eltern,</h3>
+              <p className="text-[var(--gray-700)] leading-relaxed">{reportData.messages.toParents}</p>
             </div>
           </div>
         </div>
@@ -278,25 +291,25 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Quick Summary */}
       {(summaryText || (typeof reportData.summary === 'object' && reportData.summary?.keyTakeaways)) && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
-          <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+        <div className="bg-[var(--primary-soft)] border-2 border-[var(--primary)]/30 rounded-2xl p-5">
+          <h3 className="font-semibold text-[var(--primary-dark)] mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <Target className="w-5 h-5" />
             Das Wichtigste auf einen Blick
           </h3>
-          {summaryText && <p className="text-gray-700 mb-3 font-medium">{summaryText}</p>}
+          {summaryText && <p className="text-[var(--gray-700)] mb-3 font-medium">{summaryText}</p>}
           {typeof reportData.summary === 'object' && reportData.summary?.keyTakeaways && (
-            <ul className="space-y-1">
+            <ul className="space-y-2">
               {reportData.summary.keyTakeaways.map((point, i) => (
-                <li key={i} className="flex items-start gap-2 text-gray-700">
-                  <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" />
+                <li key={i} className="flex items-start gap-2 text-[var(--gray-700)]">
+                  <CheckCircle className="w-4 h-4 text-[var(--primary)] flex-shrink-0 mt-1" />
                   <span>{point}</span>
                 </li>
               ))}
             </ul>
           )}
           {typeof reportData.summary === 'object' && reportData.summary?.nextStep && (
-            <div className="mt-3 p-3 bg-blue-100 rounded-lg">
-              <p className="text-blue-900 font-medium">
+            <div className="mt-4 p-3 bg-[var(--primary)]/20 rounded-xl">
+              <p className="text-[var(--primary-dark)] font-medium">
                 👉 Nächster Schritt: {reportData.summary.nextStep}
               </p>
             </div>
@@ -901,12 +914,12 @@ export function ParentReport({ data, extractedText, childName }: ParentReportPro
 
       {/* Message to Student */}
       {reportData.messages?.toStudent && (
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-5">
+        <div className="bg-gradient-to-r from-[var(--success)]/20 to-[var(--primary-soft)] border-2 border-[var(--success)]/30 rounded-2xl p-5">
           <div className="flex items-start gap-3">
             <span className="text-2xl">🌟</span>
             <div>
-              <h3 className="font-semibold text-green-900 mb-2">Nachricht an {studentName}:</h3>
-              <p className="text-gray-700 leading-relaxed italic">"{reportData.messages.toStudent}"</p>
+              <h3 className="font-semibold text-[var(--success-dark)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>Nachricht an {studentName}:</h3>
+              <p className="text-[var(--gray-700)] leading-relaxed italic">"{reportData.messages.toStudent}"</p>
             </div>
           </div>
         </div>
