@@ -8,6 +8,11 @@ import {
   GraduationCap, FileText, ClipboardCheck, ChevronDown, ChevronUp,
   Brain, Target, Lightbulb, PlayCircle
 } from 'lucide-react'
+import {
+  generateFlashcardsPDF,
+  generateFairnessPDF,
+  generateLearningMaterialPDF
+} from '@/lib/pdf/generate-pdf'
 
 // FOMO Statistics (can be fetched from API in production)
 const FOMO_STATS = {
@@ -368,11 +373,20 @@ export function FlashcardsPremiumSection({
 
           {/* Actions */}
           <div className="flex gap-3 justify-end">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
               <Printer className="h-4 w-4" />
               Drucken
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => generateFlashcardsPDF(flashcards, {
+                childName,
+                subject: analysisData?.test?.subject,
+              })}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
               <Download className="h-4 w-4" />
               PDF herunterladen
             </button>
@@ -624,6 +638,27 @@ export function FairnessCheckPremiumSection({
               <span className="text-xl font-bold text-green-600">{fairnessData.potentialPointsRecoverable}</span>
             </div>
           )}
+
+          {/* Actions */}
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
+              <Printer className="h-4 w-4" />
+              Drucken
+            </button>
+            <button
+              onClick={() => generateFairnessPDF(fairnessData, {
+                childName,
+                subject: analysisData?.test?.subject,
+              })}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              PDF herunterladen
+            </button>
+          </div>
 
           {/* Disclaimer */}
           <p className="text-xs text-gray-400 text-center">
@@ -1171,11 +1206,20 @@ export function LearningMaterialPremiumSection({
 
           {/* Actions */}
           <div className="flex gap-3 justify-end">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
               <Printer className="h-4 w-4" />
               Drucken
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+            <button
+              onClick={() => generateLearningMaterialPDF(learningMaterial, {
+                childName,
+                subject: analysisData?.test?.subject,
+              })}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            >
               <Download className="h-4 w-4" />
               PDF herunterladen
             </button>
