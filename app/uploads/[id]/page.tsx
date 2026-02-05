@@ -16,7 +16,7 @@ import { ParentReport } from '@/components/ParentReport'
 import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { FlashcardsPremiumSection, FairnessCheckPremiumSection, UpgradeModal } from '@/components/PremiumFeatures'
+import { FlashcardsPremiumSection, FairnessCheckPremiumSection, LearningMaterialPremiumSection, UpgradeModal } from '@/components/PremiumFeatures'
 
 // Supported languages for report translation
 const REPORT_LANGUAGES = {
@@ -81,12 +81,12 @@ export default function UploadDetailPage() {
 
   // Premium features state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [upgradeFeature, setUpgradeFeature] = useState<'flashcards' | 'fairness' | undefined>()
+  const [upgradeFeature, setUpgradeFeature] = useState<'flashcards' | 'fairness' | 'learning' | undefined>()
 
   // TODO: Get this from user session/subscription status
   const isPremiumUser = false // Set to true to test premium features
 
-  const handleUpgrade = (feature?: 'flashcards' | 'fairness') => {
+  const handleUpgrade = (feature?: 'flashcards' | 'fairness' | 'learning') => {
     setUpgradeFeature(feature)
     setShowUpgradeModal(true)
   }
@@ -841,6 +841,14 @@ export default function UploadDetailPage() {
                   childName={upload.child.name}
                   analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
                   onUpgrade={() => handleUpgrade('fairness')}
+                />
+
+                {/* Learning Material Section */}
+                <LearningMaterialPremiumSection
+                  isPremium={isPremiumUser}
+                  childName={upload.child.name}
+                  analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
+                  onUpgrade={() => handleUpgrade('learning')}
                 />
               </div>
             )}
