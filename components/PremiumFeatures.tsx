@@ -340,11 +340,11 @@ export function FlashcardsPremiumSection({
               <div
                 key={i}
                 onClick={() => toggleCard(i)}
-                className="cursor-pointer perspective-1000"
+                className="cursor-pointer"
               >
-                <div className={`relative transition-transform duration-500 transform-style-preserve-3d ${flippedCards.has(i) ? 'rotate-y-180' : ''}`}>
-                  {/* Front */}
-                  <div className={`bg-white rounded-xl p-5 border-2 border-amber-200 shadow-md ${flippedCards.has(i) ? 'hidden' : ''}`}>
+                {/* Front */}
+                {!flippedCards.has(i) && (
+                  <div className="bg-white rounded-xl p-5 border-2 border-amber-200 shadow-md transition-all hover:shadow-lg">
                     <div className="flex items-start justify-between mb-3">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         card.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
@@ -362,9 +362,11 @@ export function FlashcardsPremiumSection({
                       </p>
                     )}
                   </div>
+                )}
 
-                  {/* Back */}
-                  <div className={`bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-md ${!flippedCards.has(i) ? 'hidden' : ''}`}>
+                {/* Back */}
+                {flippedCards.has(i) && (
+                  <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-md transition-all hover:shadow-lg">
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Antwort</span>
                       <span className="text-xs opacity-70">Klicken zum Umdrehen</span>
@@ -372,11 +374,11 @@ export function FlashcardsPremiumSection({
                     <p className="text-lg font-medium">{card.back}</p>
                     {card.tip && (
                       <p className="mt-3 text-sm bg-white/10 rounded-lg p-2">
-                        💡 {card.tip}
+                        {card.tip}
                       </p>
                     )}
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

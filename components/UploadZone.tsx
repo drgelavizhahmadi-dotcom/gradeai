@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
-import { Upload, X, FileImage, FileText, Loader2, AlertCircle } from "lucide-react";
+import { Upload, X, FileImage, FileText, Loader2, AlertCircle, Plus, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -23,9 +23,9 @@ interface UploadResponse {
 type ProcessingStep = "idle" | "uploading" | "extracting" | "analyzing" | "complete" | "error";
 
 const fileSchema = z.object({
-  size: z.number().max(4718592, "File must be less than 4.5MB"),
+  size: z.number().max(4718592, "Datei muss kleiner als 4,5 MB sein"),
   type: z.enum(["image/jpeg", "image/png", "application/pdf"], {
-    message: "Only JPG, PNG, and PDF files are allowed"
+    message: "Nur JPG, PNG und PDF Dateien sind erlaubt"
   }),
 });
 
@@ -52,7 +52,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
   // Configure PDF.js worker
   useEffect(() => {
     pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-    
+
     // Clean up preview URLs on unmount
     return () => {
       previews.forEach(preview => {
@@ -92,10 +92,10 @@ export default function UploadZone({ childId }: UploadZoneProps) {
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       console.log(`[PDF Convert] Processing page ${pageNum}/${pdf.numPages}`);
       const page = await pdf.getPage(pageNum);
-      
+
       // Use moderate scale for good quality without huge file size (2.0 = ~150 DPI)
       const viewport = page.getViewport({ scale: 2.0 });
-      
+
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d', { willReadFrequently: false })!;
       canvas.height = viewport.height;
@@ -123,8 +123,8 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             } else {
               reject(new Error('Failed to create image blob'));
             }
-          }, 
-          'image/jpeg', 
+          },
+          'image/jpeg',
           0.85 // Good quality but smaller files
         );
       });
@@ -140,7 +140,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       const fileName = pdfFile.name.replace('.pdf', `_page${pageNum}.jpg`);
       const imageFile = new File([blob], fileName, { type: 'image/jpeg' });
       imageFiles.push(imageFile);
-      
+
       console.log(`[PDF Convert] Added file: ${fileName}`);
     }
 
@@ -168,13 +168,13 @@ export default function UploadZone({ childId }: UploadZoneProps) {
             newPreviews.push(previewUrl);
           }
         } catch (err) {
-          setError(`Failed to convert PDF: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          setError(`PDF-Konvertierung fehlgeschlagen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
           setIsConverting(false);
           return;
         }
       } else {
         validFiles.push(selectedFile);
-        
+
         // Generate preview for images
         if (selectedFile.type.startsWith("image/")) {
           const previewUrl = URL.createObjectURL(selectedFile);
@@ -241,7 +241,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
-      setError(`Total file size (${(totalSize / 1024 / 1024).toFixed(1)}MB) exceeds 50MB limit. Please reduce image quality or number of pages.`);
+      setError(`Gesamtgr\u00f6\u00dfe (${(totalSize / 1024 / 1024).toFixed(1)} MB) \u00fcberschreitet das 50-MB-Limit. Bitte reduzieren Sie die Bildqualit\u00e4t oder Seitenzahl.`);
       return;
     }
 
@@ -267,19 +267,19 @@ export default function UploadZone({ childId }: UploadZoneProps) {
         const text = await uploadRes.text();
         throw new Error(
           text.includes("Request Entity Too Large") || text.includes("413")
-            ? "Files are too large. Vercel free tier allows max 4MB."
-            : "Server error. Please try again later."
+            ? "Dateien sind zu gro\u00df. Vercel Free Tier erlaubt max. 4 MB."
+            : "Serverfehler. Bitte versuchen Sie es sp\u00e4ter erneut."
         );
       }
 
       const uploadData: UploadResponse = await uploadRes.json();
       if (!uploadRes.ok || !uploadData.success) {
-        throw new Error(uploadData.error || "Upload failed");
+        throw new Error(uploadData.error || "Upload fehlgeschlagen");
       }
 
       const { uploadId, images } = uploadData;
       if (!images || images.length === 0) {
-        throw new Error("No images returned from upload");
+        throw new Error("Keine Bilder vom Upload erhalten");
       }
 
       console.log(`[UploadZone] Step 1 complete: uploadId=${uploadId}, ${images.length} images`);
@@ -296,7 +296,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
       const extractData = await extractRes.json();
       if (!extractRes.ok || !extractData.success) {
-        throw new Error(extractData.error || "Extraction failed");
+        throw new Error(extractData.error || "Textextraktion fehlgeschlagen");
       }
 
       console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
@@ -313,7 +313,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
       const reportData = await reportRes.json();
       if (!reportRes.ok || !reportData.success) {
-        throw new Error(reportData.error || "Report generation failed");
+        throw new Error(reportData.error || "Berichterstellung fehlgeschlagen");
       }
 
       console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
@@ -327,19 +327,33 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       router.push(`/uploads/${uploadId}`);
     } catch (err) {
       console.error("[UploadZone] Error:", err);
-      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+      setError(err instanceof Error ? err.message : "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.");
       setProcessingStep("error");
       setIsUploading(false);
     }
   };
 
+  const processingSteps = [
+    { step: "uploading" as const, label: "Dateien hochladen" },
+    { step: "extracting" as const, label: "Text extrahieren (KI-Vision)" },
+    { step: "analyzing" as const, label: "Bericht erstellen (KI-Analyse)" },
+    { step: "complete" as const, label: "Fertig!" },
+  ];
+
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full">
       {/* Error Message */}
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-4 text-red-800">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <p className="text-sm">{error}</p>
+        <div className="mb-6 card-story p-4 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-[var(--coral)] mb-1">
+                Fehler
+              </p>
+              <p className="text-sm text-[var(--gray-700)]">{error}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -352,24 +366,34 @@ export default function UploadZone({ childId }: UploadZoneProps) {
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
           className={`
-            cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all
+            card-story cursor-pointer border-2 border-dashed p-10 md:p-14 text-center transition-all
             ${
               isDragging
-                ? "border-blue-400 bg-blue-50"
-                : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
+                ? "border-[var(--primary)] bg-[var(--primary-soft)] shadow-lg scale-[1.01]"
+                : "border-[var(--gray-300)] hover:border-[var(--primary)] hover:bg-[var(--primary-soft)]/50 hover:shadow-md"
             }
           `}
         >
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="mb-2 text-lg font-semibold text-gray-900">
-            Upload Test Pages
+          <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${isDragging ? 'bg-[var(--primary)]/20' : 'bg-[var(--primary-soft)]'}`}>
+            <Upload className={`h-8 w-8 transition-colors ${isDragging ? 'text-[var(--primary)]' : 'text-[var(--primary)]/70'}`} />
+          </div>
+          <h3 className="mb-2 text-xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+            Testseiten hochladen
           </h3>
-          <p className="mb-4 text-sm text-gray-600">
-            Upload all pages of ONE test together (drag multiple files or click to browse)
+          <p className="mb-4 text-[var(--gray-600)]">
+            Laden Sie alle Seiten eines Tests zusammen hoch &ndash; per Drag &amp; Drop oder Klick
           </p>
-          <p className="text-xs text-gray-500">
-            Accepts JPG, PNG, PDF • Max 4MB per file • PDFs auto-converted to images • All pages analyzed as one test
-          </p>
+          <div className="flex flex-wrap justify-center gap-3 text-xs text-[var(--gray-500)]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gray-100)] px-3 py-1">
+              <FileImage className="h-3 w-3" /> JPG, PNG
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gray-100)] px-3 py-1">
+              <FileText className="h-3 w-3" /> PDF
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gray-100)] px-3 py-1">
+              Max. 4,5 MB pro Datei
+            </span>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -380,93 +404,98 @@ export default function UploadZone({ childId }: UploadZoneProps) {
           />
         </div>
       ) : (
-        <div className="rounded-xl bg-white p-6 shadow-md space-y-4">
+        <div className="card-story p-6 space-y-4">
           {/* File List */}
-          {files.map((file, index) => (
-            <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              {/* Preview */}
-              <div className="flex-shrink-0">
-                {previews[index] ? (
-                  <img
-                    src={previews[index]}
-                    alt="Preview"
-                    className="h-20 w-20 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-red-50">
-                    <FileText className="h-8 w-8 text-red-600" />
-                  </div>
-                )}
-              </div>
+          <div className="space-y-3">
+            {files.map((file, index) => (
+              <div key={index} className="flex items-start gap-4 p-3 bg-[var(--primary-soft)]/50 rounded-xl border border-[var(--gray-200)]">
+                {/* Preview */}
+                <div className="flex-shrink-0">
+                  {previews[index] ? (
+                    <img
+                      src={previews[index]}
+                      alt="Vorschau"
+                      className="h-16 w-16 rounded-xl object-cover border border-[var(--gray-200)]"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[var(--coral)]/10 border border-[var(--coral)]/20">
+                      <FileText className="h-7 w-7 text-[var(--coral)]" />
+                    </div>
+                  )}
+                </div>
 
-              {/* File Info */}
-              <div className="flex-1 min-w-0">
-                <h4 className="text-base font-semibold text-gray-900 truncate">
-                  {file.name}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {formatFileSize(file.size)}
-                </p>
-              </div>
+                {/* File Info */}
+                <div className="flex-1 min-w-0 py-1">
+                  <h4 className="text-sm font-semibold text-[var(--gray-800)] truncate">
+                    {file.name}
+                  </h4>
+                  <p className="text-xs text-[var(--gray-500)] mt-0.5">
+                    {formatFileSize(file.size)}
+                  </p>
+                </div>
 
-              {/* Remove Button */}
-              <button
-                onClick={() => removeFile(index)}
-                disabled={isUploading}
-                className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 disabled:opacity-50"
-                aria-label="Remove file"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          ))}
+                {/* Remove Button */}
+                <button
+                  onClick={() => removeFile(index)}
+                  disabled={isUploading}
+                  className="flex-shrink-0 rounded-lg p-1.5 text-[var(--gray-400)] transition-colors hover:bg-[var(--coral)]/10 hover:text-[var(--coral)] disabled:opacity-50"
+                  aria-label="Datei entfernen"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
 
           {/* Add More Button */}
           {!isUploading && !isConverting && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-100"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--gray-300)] bg-[var(--primary-soft)]/30 px-4 py-3 text-sm font-medium text-[var(--primary)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary-soft)]"
             >
-              <Upload className="h-4 w-4" />
-              Add More Pages
+              <Plus className="h-4 w-4" />
+              Weitere Seiten hinzuf&uuml;gen
             </button>
           )}
 
           {/* Converting indicator */}
           {isConverting && (
-            <div className="flex items-center justify-center gap-2 text-blue-600 py-3">
+            <div className="flex items-center justify-center gap-2 text-[var(--primary)] py-3">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Converting PDF to images...</span>
+              <span className="text-sm font-medium">PDF wird konvertiert...</span>
             </div>
           )}
 
           {/* Processing Steps Indicator */}
           {processingStep !== "idle" && processingStep !== "error" && (
-            <div className="space-y-2 p-4 bg-blue-50 rounded-lg">
-              {[
-                { step: "uploading", label: "Hochladen..." },
-                { step: "extracting", label: "Text wird extrahiert (KI-Vision)..." },
-                { step: "analyzing", label: "Bericht wird erstellt (KI-Analyse)..." },
-                { step: "complete", label: "Fertig!" },
-              ].map(({ step, label }) => {
-                const isActive = processingStep === step;
-                const isDone =
-                  (step === "uploading" && ["extracting", "analyzing", "complete"].includes(processingStep)) ||
-                  (step === "extracting" && ["analyzing", "complete"].includes(processingStep)) ||
-                  (step === "analyzing" && processingStep === "complete");
-                return (
-                  <div key={step} className={`flex items-center gap-2 text-sm ${isActive ? "text-blue-700 font-medium" : isDone ? "text-green-600" : "text-gray-400"}`}>
-                    {isActive ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : isDone ? (
-                      <span className="h-4 w-4 flex items-center justify-center">&#10003;</span>
-                    ) : (
-                      <span className="h-4 w-4 flex items-center justify-center">&#9679;</span>
-                    )}
-                    {label}
-                  </div>
-                );
-              })}
+            <div className="rounded-xl bg-gradient-to-br from-[var(--primary-soft)] to-[var(--lavender)]/20 p-5 border border-[var(--primary)]/10">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-4 w-4 text-[var(--primary)]" />
+                <span className="text-sm font-semibold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  KI-Analyse l&auml;uft
+                </span>
+              </div>
+              <div className="space-y-3">
+                {processingSteps.map(({ step, label }) => {
+                  const isActive = processingStep === step;
+                  const isDone =
+                    (step === "uploading" && ["extracting", "analyzing", "complete"].includes(processingStep)) ||
+                    (step === "extracting" && ["analyzing", "complete"].includes(processingStep)) ||
+                    (step === "analyzing" && processingStep === "complete");
+                  return (
+                    <div key={step} className={`flex items-center gap-3 text-sm transition-all ${isActive ? "text-[var(--primary)] font-semibold" : isDone ? "text-[var(--sage)]" : "text-[var(--gray-400)]"}`}>
+                      {isActive ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-[var(--primary)]" />
+                      ) : isDone ? (
+                        <CheckCircle2 className="h-5 w-5 text-[var(--sage)]" />
+                      ) : (
+                        <Circle className="h-5 w-5" />
+                      )}
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -474,7 +503,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
           <button
             onClick={handleUpload}
             disabled={isUploading || isConverting}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary w-full inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-lg font-semibold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isUploading ? (
               <>
@@ -486,11 +515,20 @@ export default function UploadZone({ childId }: UploadZoneProps) {
               </>
             ) : (
               <>
-                <Upload className="h-5 w-5" />
-                Analyze {files.length} {files.length === 1 ? 'page' : 'pages'}
+                <Sparkles className="h-5 w-5" />
+                {files.length === 1 ? '1 Seite analysieren' : `${files.length} Seiten analysieren`}
               </>
             )}
           </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,application/pdf"
+            onChange={handleFileInputChange}
+            multiple
+            className="hidden"
+          />
         </div>
       )}
     </div>

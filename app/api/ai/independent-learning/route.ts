@@ -238,6 +238,26 @@ Output ONLY valid JSON:
 
 // === Helper Functions ===
 
+function repairJson(raw: string): string {
+  // Strip any leading/trailing non-JSON text
+  let s = raw.trim()
+
+  // Find the first { and last }
+  const firstBrace = s.indexOf('{')
+  const lastBrace = s.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    s = s.slice(firstBrace, lastBrace + 1)
+  }
+
+  // Fix common issues: trailing commas before } or ]
+  s = s.replace(/,\s*([}\]])/g, '$1')
+
+  // Fix unescaped newlines inside string values
+  s = s.replace(/:\s*"([^"]*)\n([^"]*?)"/g, (_, a, b) => `: "${a}\\n${b}"`)
+
+  return s
+}
+
 async function runAgent(
   agentPrompt: string,
   userContext: string,
@@ -265,7 +285,17 @@ async function runAgent(
                       textBlock.text.match(/```\n?([\s\S]*?)\n?```/)
     const jsonString = jsonMatch ? jsonMatch[1] : textBlock.text
 
-    const result = JSON.parse(jsonString.trim())
+    // Try parsing directly first, then attempt repair
+    let result: Record<string, unknown>
+    try {
+      result = JSON.parse(jsonString.trim())
+    } catch (parseError) {
+      console.warn(`[Independent Learning] ${agentName} JSON parse failed, attempting repair...`)
+      const repaired = repairJson(jsonString)
+      result = JSON.parse(repaired)
+      console.log(`[Independent Learning] ${agentName} JSON repaired successfully`)
+    }
+
     console.log(`[Independent Learning] ${agentName} agent completed in ${Date.now() - startTime}ms`)
     return result
   } catch (error) {

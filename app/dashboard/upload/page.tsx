@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import UploadZone from "@/components/UploadZone";
-import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, GraduationCap, User, ChevronDown } from "lucide-react";
+import { OwlMascot } from "@/components/mascots";
 
 interface Child {
   id: string;
@@ -39,7 +40,6 @@ export default function UploadPage() {
 
       setChildren(sortedChildren);
 
-      // Pre-select the first child (most recently added)
       if (sortedChildren.length > 0) {
         setSelectedChildId(sortedChildren[0].id);
       }
@@ -50,38 +50,49 @@ export default function UploadPage() {
     }
   };
 
+  const selectedChild = children.find(c => c.id === selectedChildId);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Back to Dashboard Link */}
-        <Link
-          href="/dashboard"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Link>
+    <div className="min-h-screen bg-[var(--background)]">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-br from-[var(--primary)] via-[var(--primary-dark)] to-[var(--lavender)] text-white">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <Link
+            href="/dashboard"
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-white/80 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Zurück zum Dashboard
+          </Link>
 
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            Upload Test
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Upload a photo or PDF of your child&apos;s test for AI analysis
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                Test hochladen
+              </h1>
+              <p className="text-white/80 text-lg">
+                Laden Sie ein Foto oder PDF des Tests hoch &ndash; unsere KI analysiert ihn sofort
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <OwlMascot mood="happy" size="lg" message="Ich bin bereit!" />
+            </div>
+          </div>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Error Message */}
         {error && (
-          <div className="mb-6 rounded-lg bg-red-50 border-2 border-red-200 p-4">
+          <div className="mb-6 card-story p-4 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-red-800 mb-1">
-                  Error Loading Children
+                <p className="font-semibold text-[var(--coral)] mb-1">
+                  Fehler beim Laden
                 </p>
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-sm text-[var(--gray-700)]">{error}</p>
               </div>
             </div>
           </div>
@@ -89,33 +100,46 @@ export default function UploadPage() {
 
         {/* Loading State */}
         {loading && (
-          <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
-            <div className="flex items-center justify-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-              <p className="text-gray-600">Loading children...</p>
-            </div>
+          <div className="card-story p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[var(--primary)] mb-3" />
+            <p className="text-[var(--gray-600)] font-medium">Kinder werden geladen...</p>
           </div>
         )}
 
         {/* Child Selection Card */}
         {!loading && !error && children.length > 0 && (
-          <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Select Child
-            </h2>
+          <div className="mb-8 card-story p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-[var(--primary-soft)] rounded-xl">
+                <User className="h-5 w-5 text-[var(--primary)]" />
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
+                Kind auswählen
+              </h2>
+            </div>
 
-            <select
-              value={selectedChildId}
-              onChange={(e) => setSelectedChildId(e.target.value)}
-              className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-              <option value="">Select a child...</option>
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>
-                  {child.name} - Grade {child.grade}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedChildId}
+                onChange={(e) => setSelectedChildId(e.target.value)}
+                className="w-full appearance-none rounded-xl border-2 border-[var(--gray-200)] bg-white px-4 py-3 pr-10 text-[var(--gray-800)] font-medium focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
+              >
+                <option value="">Kind auswählen...</option>
+                {children.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name} &ndash; Klasse {child.grade} ({child.schoolType})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--gray-400)] pointer-events-none" />
+            </div>
+
+            {selectedChild && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-[var(--primary)]">
+                <GraduationCap className="h-4 w-4" />
+                <span>{selectedChild.name} &bull; Klasse {selectedChild.grade} &bull; {selectedChild.schoolType}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -126,15 +150,17 @@ export default function UploadPage() {
 
         {/* No Children State */}
         {!loading && !error && children.length === 0 && (
-          <div className="rounded-xl bg-white p-8 text-center shadow-md">
-            <p className="mb-4 text-gray-600">
-              You haven't added any children yet.
+          <div className="card-story p-8 text-center">
+            <OwlMascot mood="thinking" size="md" message="Noch kein Kind angelegt?" showMessage={false} />
+            <p className="mt-4 text-[var(--gray-600)] mb-6">
+              Sie haben noch kein Kind angelegt. Fügen Sie zuerst ein Kind hinzu.
             </p>
             <Link
               href="/dashboard/children/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+              className="btn-primary inline-flex items-center gap-2"
             >
-              Add Your First Child
+              <User className="h-5 w-5" />
+              Erstes Kind hinzufügen
             </Link>
           </div>
         )}
