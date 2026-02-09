@@ -828,12 +828,17 @@ export default function UploadDetailPage() {
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
               <div className="space-y-6 mb-6">
-                {/* Flashcards Section */}
+                {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}
                   childName={upload.child.name}
                   analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
                   onUpgrade={() => handleUpgrade('flashcards')}
+                  extractedText={upload.extractedText}
+                  grade={upload.child.grade}
+                  subject={upload.subject || undefined}
+                  schoolType={upload.child.schoolType}
+                  language={reportLanguage as any}
                 />
 
                 {/* Fairness Check Section - Independent AI Analysis */}
@@ -846,6 +851,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
+                  language={reportLanguage as any}
                 />
 
                 {/* Learning Material Section - Independent AI Analysis */}
@@ -858,6 +864,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
+                  language={reportLanguage as any}
                 />
               </div>
             )}

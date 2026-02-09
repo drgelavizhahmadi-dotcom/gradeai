@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
 import { findRelevantTopics, getPrerequisites, CurriculumTopic } from '@/lib/curriculum/german-lehrplan'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const deepseek = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
 })
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: 'German (Deutsch)',
+  en: 'English',
+  ar: 'Arabic (العربية)',
+  tr: 'Turkish (Türkçe)',
+  ro: 'Romanian (Română)',
+  ru: 'Russian (Русский)',
+  fa: 'Persian/Farsi (فارسی)',
+  ku: 'Kurdish Sorani (کوردی)',
+  kmr: 'Kurdish Kurmanji (Kurmancî)',
+}
+
+function getLanguageInstruction(lang: string): string {
+  const name = LANGUAGE_NAMES[lang] || LANGUAGE_NAMES['de']
+  return `IMPORTANT: Write ALL your analysis and responses in ${name}. All text values in the JSON output must be in ${name}.`
+}
 
 // === STEP 1: Independent Analysis Agent ===
 // This agent works directly from raw test text - no dependency on the main analysis pipeline
 
-const ANALYSIS_AGENT_PROMPT = `You are an expert educational analyst for German schools. Your task is to independently analyze a student's test (from raw extracted text) and identify:
+const ANALYSIS_AGENT_PROMPT = `You are an expert educational analyst for schools. Your task is to independently analyze a student's test (from raw extracted text) and identify:
 
 1. ALL weaknesses and knowledge gaps
 2. Teacher feedback and correction patterns
@@ -24,7 +42,6 @@ RULES:
 - Identify the root cause behind each weakness (not just the symptom)
 - Extract teacher comments, margin notes, and correction marks
 - Determine the difficulty level and curriculum alignment
-- Write your analysis in German
 
 Output ONLY valid JSON:
 {
@@ -62,7 +79,7 @@ Output ONLY valid JSON:
 
 // === STEP 2: Targeted Lesson Generator ===
 
-const LESSON_GENERATOR_PROMPT = `You are a master teacher creating TARGETED lessons for German school students.
+const LESSON_GENERATOR_PROMPT = `You are a master teacher creating TARGETED lessons for school students.
 
 You receive an independent analysis of a student's test weaknesses. Your job is to create lessons that DIRECTLY address each weakness with:
 - Clear, step-by-step explanations
@@ -76,8 +93,7 @@ RULES:
 - Each lesson should be self-contained and actionable
 - Include prerequisite checks
 - Build from foundation to mastery
-- Write in GERMAN
-- Reference the German Lehrplan where applicable
+- Reference the curriculum where applicable
 
 Output ONLY valid JSON:
 {
@@ -126,13 +142,12 @@ Output ONLY valid JSON:
 
 // === STEP 3: Practice Worksheet Generator ===
 
-const WORKSHEET_GENERATOR_PROMPT = `You are an educational worksheet designer creating TARGETED practice materials for German school students.
+const WORKSHEET_GENERATOR_PROMPT = `You are an educational worksheet designer creating TARGETED practice materials for school students.
 
 You receive an independent analysis of a student's test weaknesses. Create worksheets that:
 - Start easy and get progressively harder
 - Focus specifically on identified weaknesses
 - Include varied problem types
-- Have clear instructions in German
 - Provide answer keys with explanations
 
 RULES:
@@ -142,7 +157,6 @@ RULES:
 - Include point values
 - Provide hints for struggling students
 - Add bonus challenges for fast learners
-- Write in GERMAN
 
 Output ONLY valid JSON:
 {
@@ -184,7 +198,7 @@ Output ONLY valid JSON:
 
 // === STEP 4: Diagnostic Quiz Generator ===
 
-const QUIZ_GENERATOR_PROMPT = `You are an assessment specialist creating DIAGNOSTIC quizzes for German school students.
+const QUIZ_GENERATOR_PROMPT = `You are an assessment specialist creating DIAGNOSTIC quizzes for school students.
 
 You receive an independent analysis of a student's test weaknesses. Create quizzes that:
 - Assess whether the student has overcome their weaknesses
@@ -199,7 +213,6 @@ RULES:
 - Include questions that specifically test the identified weak areas
 - Provide detailed feedback for both correct and incorrect answers
 - Include a scoring guide with actionable next steps
-- Write in GERMAN
 
 Output ONLY valid JSON:
 {
@@ -241,21 +254,18 @@ Output ONLY valid JSON:
 function extractJson(raw: string): string {
   let s = raw.trim()
 
-  // Try to extract from code fences first
   const jsonMatch = s.match(/```json\n?([\s\S]*?)\n?```/) ||
                     s.match(/```\n?([\s\S]*?)\n?```/)
   if (jsonMatch) {
     s = jsonMatch[1].trim()
   }
 
-  // Find the outermost JSON object
   const firstBrace = s.indexOf('{')
   const lastBrace = s.lastIndexOf('}')
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     s = s.slice(firstBrace, lastBrace + 1)
   }
 
-  // Fix trailing commas before } or ]
   s = s.replace(/,\s*([}\]])/g, '$1')
 
   return s
@@ -263,18 +273,21 @@ function extractJson(raw: string): string {
 
 async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown>> {
   console.log('[Independent Learning] Using AI to fix broken JSON...')
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+  const response = await deepseek.chat.completions.create({
+    model: 'deepseek-chat',
     max_tokens: 4096,
     temperature: 0,
-    system: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.',
-    messages: [{ role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` }],
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.' },
+      { role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` },
+    ],
   })
 
-  const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
-  if (!textBlock) throw new Error('No response from JSON repair')
+  const text = response.choices[0]?.message?.content
+  if (!text) throw new Error('No response from JSON repair')
 
-  const cleaned = extractJson(textBlock.text)
+  const cleaned = extractJson(text)
   return JSON.parse(cleaned)
 }
 
@@ -287,28 +300,30 @@ async function runAgent(
   const startTime = Date.now()
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
       max_tokens: 4096,
       temperature: agentName === 'Analysis' ? 0.3 : 0.7,
-      system: agentPrompt,
-      messages: [{ role: 'user', content: userContext }],
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: agentPrompt },
+        { role: 'user', content: userContext },
+      ],
     })
 
-    const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
-    if (!textBlock) {
+    const text = response.choices[0]?.message?.content
+    if (!text) {
       throw new Error(`No text content from ${agentName} agent`)
     }
 
-    const jsonString = extractJson(textBlock.text)
+    const jsonString = extractJson(text)
 
-    // Try parsing directly first, then use AI to repair
     let result: Record<string, unknown>
     try {
       result = JSON.parse(jsonString)
     } catch (parseError) {
       console.warn(`[Independent Learning] ${agentName} JSON parse failed, using AI repair...`)
-      result = await fixJsonWithAI(textBlock.text)
+      result = await fixJsonWithAI(text)
       console.log(`[Independent Learning] ${agentName} JSON repaired via AI`)
     }
 
@@ -325,9 +340,12 @@ function buildRawTextContext(
   childName: string,
   grade: number,
   subject: string,
-  schoolType: string
+  schoolType: string,
+  languageInstruction: string
 ): string {
   return `
+${languageInstruction}
+
 === STUDENT INFORMATION ===
 Name: ${childName || 'Schüler'}
 Grade/Class: ${grade}
@@ -341,14 +359,14 @@ ${extractedText}
 Analyze the above test text independently. Identify ALL weaknesses, errors, teacher feedback, and knowledge gaps.
 Focus on finding the ROOT CAUSES behind each mistake, not just surface-level errors.
 Your analysis should be thorough enough to generate targeted learning materials.
-Write your analysis in GERMAN.
 `
 }
 
 function buildLearningContext(
   analysis: Record<string, unknown>,
   curriculumTopics: CurriculumTopic[],
-  childName: string
+  childName: string,
+  languageInstruction: string
 ): string {
   const curriculumContext = curriculumTopics.map(topic => `
 - ${topic.name} (${topic.nameEn})
@@ -358,6 +376,8 @@ function buildLearningContext(
 `).join('\n')
 
   return `
+${languageInstruction}
+
 === INDEPENDENT ANALYSIS RESULTS ===
 ${JSON.stringify(analysis, null, 2)}
 
@@ -370,8 +390,7 @@ Name: ${childName || 'Schüler'}
 === INSTRUCTIONS ===
 Based on the independent analysis above, create learning content that DIRECTLY addresses the identified weaknesses.
 Prioritize the most critical weaknesses first.
-Align content with the German Lehrplan topics listed above.
-Write all content in GERMAN.
+Align content with the curriculum topics listed above.
 `
 }
 
@@ -390,6 +409,7 @@ export async function POST(request: NextRequest) {
       grade,
       subject,
       schoolType,
+      language = 'de',
       contentTypes = ['lessons', 'worksheets', 'quizzes'],
     } = await request.json()
 
@@ -397,7 +417,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
     }
 
-    console.log('[Independent Learning API] Starting independent analysis for:', childName)
+    const languageInstruction = getLanguageInstruction(language)
+    console.log('[Independent Learning API] Starting independent analysis for:', childName, 'language:', language)
     const overallStart = Date.now()
 
     // ============================================
@@ -408,7 +429,8 @@ export async function POST(request: NextRequest) {
       childName || 'Schüler',
       grade || 5,
       subject || 'Unknown',
-      schoolType || 'Unknown'
+      schoolType || 'Unknown',
+      languageInstruction
     )
 
     const analysisResult = await runAgent(
@@ -451,7 +473,8 @@ export async function POST(request: NextRequest) {
     const learningContext = buildLearningContext(
       independentAnalysis,
       allTopics,
-      childName || 'Schüler'
+      childName || 'Schüler',
+      languageInstruction
     )
 
     const agentPromises: Promise<{ type: string; result: Record<string, unknown> }>[] = []
@@ -515,6 +538,7 @@ export async function POST(request: NextRequest) {
         isIndependent: true,
         weaknessesFound: independentAnalysis.detectedWeaknesses?.length || 0,
         curriculumTopicsMatched: allTopics.length,
+        language,
       }
     })
 

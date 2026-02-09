@@ -36,6 +36,7 @@ interface IndependentFeatureProps extends PremiumFeatureProps {
   grade?: number | undefined
   subject?: string | undefined
   schoolType?: string | undefined
+  language?: string | undefined
 }
 
 // Keep backward compat alias
@@ -186,8 +187,13 @@ export function FlashcardsPremiumSection({
   isPremium,
   childName,
   analysisData,
-  onUpgrade
-}: PremiumFeatureProps) {
+  onUpgrade,
+  extractedText,
+  grade,
+  subject,
+  schoolType,
+  language = 'de',
+}: IndependentFeatureProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [flashcards, setFlashcards] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -202,9 +208,12 @@ export function FlashcardsPremiumSection({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          analysisData,
+          extractedText: extractedText || '',
           childName,
-          targetLanguage: 'de',
+          grade: grade || analysisData?.student?.class || 5,
+          subject: subject || analysisData?.test?.subject || 'Unknown',
+          schoolType: schoolType || 'Gymnasium',
+          language,
         }),
       })
 
@@ -419,6 +428,7 @@ export function FairnessCheckPremiumSection({
   grade,
   subject,
   schoolType,
+  language = 'de',
 }: IndependentFeatureProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [fairnessData, setFairnessData] = useState<any>(null)
@@ -451,6 +461,7 @@ export function FairnessCheckPremiumSection({
           grade: grade || analysisData?.student?.class || 5,
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
+          language,
         }),
       })
 
@@ -1102,6 +1113,7 @@ export function LearningMaterialPremiumSection({
   grade,
   subject,
   schoolType,
+  language = 'de',
 }: LearningMaterialProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [learningMaterial, setLearningMaterial] = useState<any>(null)
@@ -1126,6 +1138,7 @@ export function LearningMaterialPremiumSection({
           grade: grade || analysisData?.student?.class || 5,
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
+          language,
           contentTypes: ['lessons', 'worksheets', 'quizzes'],
         }),
       })

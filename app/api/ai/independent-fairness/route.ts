@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const deepseek = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
 })
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: 'German (Deutsch)',
+  en: 'English',
+  ar: 'Arabic (العربية)',
+  tr: 'Turkish (Türkçe)',
+  ro: 'Romanian (Română)',
+  ru: 'Russian (Русский)',
+  fa: 'Persian/Farsi (فارسی)',
+  ku: 'Kurdish Sorani (کوردی)',
+  kmr: 'Kurdish Kurmanji (Kurmancî)',
+}
+
+function getLanguageInstruction(lang: string): string {
+  const name = LANGUAGE_NAMES[lang] || LANGUAGE_NAMES['de']
+  return `IMPORTANT: Write ALL your analysis and responses in ${name}. All text values in the JSON output must be in ${name}.`
+}
 
 // === STEP 1: Independent Test Reconstruction Agent ===
 // Reads raw OCR text and reconstructs what the test looked like, what the student wrote,
 // and how the teacher graded it - completely independent from the main analysis pipeline.
 
-const TEST_RECONSTRUCTION_PROMPT = `You are an expert at analyzing scanned school test documents. You receive raw OCR-extracted text from a German school test and must reconstruct:
+const TEST_RECONSTRUCTION_PROMPT = `You are an expert at analyzing scanned school test documents. You receive raw OCR-extracted text from a school test and must reconstruct:
 
 1. The original test questions and their point values
 2. What the student wrote as answers
@@ -27,7 +45,6 @@ RULES:
 - Note partial credit given or denied
 - Record ALL teacher comments, even small margin notes
 - Calculate point totals yourself to verify the teacher's math
-- Write your analysis in GERMAN
 
 Output ONLY valid JSON:
 {
@@ -70,7 +87,7 @@ Output ONLY valid JSON:
 // === STEP 2: Independent Fairness Analysis Agent ===
 // Takes the reconstructed test and performs a thorough fairness evaluation
 
-const FAIRNESS_ANALYSIS_PROMPT = `You are an independent educational fairness auditor with expertise in German school grading standards (Notengebung), educational law, and student rights.
+const FAIRNESS_ANALYSIS_PROMPT = `You are an independent educational fairness auditor with expertise in school grading standards, educational law, and student rights.
 
 You receive a detailed reconstruction of a student's test. Your job is to perform a THOROUGH, INDEPENDENT fairness analysis.
 
@@ -82,16 +99,14 @@ EVALUATION DIMENSIONS:
 5. **Feedback Quality**: Is teacher feedback constructive and helpful?
 6. **Mathematical Accuracy**: Do the points add up correctly?
 7. **Grade Threshold Fairness**: Is the student near a grade boundary? Could recovered points change the grade?
-8. **Comparison with Standards**: Does grading align with typical German school standards?
+8. **Comparison with Standards**: Does grading align with typical school grading standards?
 
 RULES:
 - Be OBJECTIVE - base everything on evidence
 - Be FAIR to both teacher and student
 - Identify specific examples for every claim
 - Calculate potential point recovery
-- Consider the German grading system (1-6, Notenspiegel)
 - Provide actionable recommendations
-- Write in GERMAN
 
 Output ONLY valid JSON:
 {
@@ -191,21 +206,18 @@ Output ONLY valid JSON:
 function extractJson(raw: string): string {
   let s = raw.trim()
 
-  // Try to extract from code fences first
   const jsonMatch = s.match(/```json\n?([\s\S]*?)\n?```/) ||
                     s.match(/```\n?([\s\S]*?)\n?```/)
   if (jsonMatch) {
     s = jsonMatch[1].trim()
   }
 
-  // Find the outermost JSON object
   const firstBrace = s.indexOf('{')
   const lastBrace = s.lastIndexOf('}')
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     s = s.slice(firstBrace, lastBrace + 1)
   }
 
-  // Fix trailing commas before } or ]
   s = s.replace(/,\s*([}\]])/g, '$1')
 
   return s
@@ -213,18 +225,21 @@ function extractJson(raw: string): string {
 
 async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown>> {
   console.log('[Independent Fairness] Using AI to fix broken JSON...')
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+  const response = await deepseek.chat.completions.create({
+    model: 'deepseek-chat',
     max_tokens: 4096,
     temperature: 0,
-    system: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.',
-    messages: [{ role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` }],
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.' },
+      { role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` },
+    ],
   })
 
-  const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
-  if (!textBlock) throw new Error('No response from JSON repair')
+  const text = response.choices[0]?.message?.content
+  if (!text) throw new Error('No response from JSON repair')
 
-  const cleaned = extractJson(textBlock.text)
+  const cleaned = extractJson(text)
   return JSON.parse(cleaned)
 }
 
@@ -238,28 +253,30 @@ async function runAgent(
   const startTime = Date.now()
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
       max_tokens: 4096,
       temperature,
-      system: agentPrompt,
-      messages: [{ role: 'user', content: userContext }],
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: agentPrompt },
+        { role: 'user', content: userContext },
+      ],
     })
 
-    const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
-    if (!textBlock) {
+    const text = response.choices[0]?.message?.content
+    if (!text) {
       throw new Error(`No text content from ${agentName} agent`)
     }
 
-    const jsonString = extractJson(textBlock.text)
+    const jsonString = extractJson(text)
 
-    // Try parsing directly first, then use AI to repair
     let result: Record<string, unknown>
     try {
       result = JSON.parse(jsonString)
     } catch (parseError) {
       console.warn(`[Independent Fairness] ${agentName} JSON parse failed, using AI repair...`)
-      result = await fixJsonWithAI(textBlock.text)
+      result = await fixJsonWithAI(text)
       console.log(`[Independent Fairness] ${agentName} JSON repaired via AI`)
     }
 
@@ -286,19 +303,23 @@ export async function POST(request: NextRequest) {
       grade,
       subject,
       schoolType,
+      language = 'de',
     } = await request.json()
 
     if (!extractedText) {
       return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
     }
 
-    console.log('[Independent Fairness API] Starting independent fairness analysis for:', childName)
+    const languageInstruction = getLanguageInstruction(language)
+    console.log('[Independent Fairness API] Starting independent fairness analysis for:', childName, 'language:', language)
     const overallStart = Date.now()
 
     // ============================================
     // STEP 1: Reconstruct the test from raw text
     // ============================================
     const reconstructionContext = `
+${languageInstruction}
+
 === STUDENT INFORMATION ===
 Name: ${childName || 'Schüler'}
 Grade/Class: ${grade || 'Unknown'}
@@ -312,7 +333,6 @@ ${extractedText}
 Reconstruct this test in detail. Identify every question, student answer, teacher correction, and point value.
 Be forensic - look for correction marks, margin notes, crossed-out text, and anything that indicates grading decisions.
 Verify the point calculation yourself.
-Write your analysis in GERMAN.
 `
 
     const reconstructionResult = await runAgent(
@@ -329,6 +349,8 @@ Write your analysis in GERMAN.
     // STEP 2: Run fairness analysis on reconstruction
     // ============================================
     const fairnessContext = `
+${languageInstruction}
+
 === RECONSTRUCTED TEST ===
 ${JSON.stringify(testReconstruction, null, 2)}
 
@@ -343,7 +365,6 @@ Perform a thorough, independent fairness analysis of this test grading.
 Check every dimension: consistency, proportionality, partial credit, clarity, feedback quality, mathematical accuracy.
 Be objective and evidence-based. Reference specific questions and point deductions.
 Calculate if recovering points could change the grade.
-Write your analysis in GERMAN.
 `
 
     const fairnessResult = await runAgent(
@@ -370,6 +391,7 @@ Write your analysis in GERMAN.
         isIndependent: true,
         questionsAnalyzed: testReconstruction.questions?.length || 0,
         concernsFound: fairnessAnalysis.concerns?.length || 0,
+        language,
       }
     })
 

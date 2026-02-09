@@ -1,18 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const deepseek = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
 })
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: 'German (Deutsch)',
+  en: 'English',
+  ar: 'Arabic (العربية)',
+  tr: 'Turkish (Türkçe)',
+  ro: 'Romanian (Română)',
+  ru: 'Russian (Русский)',
+  fa: 'Persian/Farsi (فارسی)',
+  ku: 'Kurdish Sorani (کوردی)',
+  kmr: 'Kurdish Kurmanji (Kurmancî)',
+}
+
+function getLanguageInstruction(lang: string): string {
+  const name = LANGUAGE_NAMES[lang] || LANGUAGE_NAMES['de']
+  return `IMPORTANT: Write ALL your analysis and responses in ${name}. All text values in the JSON output must be in ${name}.`
+}
+
+// === STEP 1: Independent Test Analysis Agent ===
+
+const TEST_ANALYSIS_PROMPT = `You are an expert at analyzing school test documents. You receive raw OCR-extracted text from a school test and must identify:
+
+1. The subject, topic, and grade level
+2. All questions and their point values
+3. What the student answered
+4. Teacher corrections, marks, and feedback
+5. Student weaknesses and knowledge gaps
+6. Key concepts that were tested
+
+Be thorough - find every weakness, even subtle ones. Identify the root cause behind each mistake.
+
+Output ONLY valid JSON:
+{
+  "testAnalysis": {
+    "subject": "Detected subject",
+    "topic": "Main topic of the test",
+    "gradeLevel": "Detected grade level",
+    "maxPoints": 0,
+    "achievedPoints": 0,
+    "gradeGiven": "The grade",
+    "keyConceptsTested": ["concept1", "concept2"],
+    "weaknesses": [
+      {
+        "id": "w1",
+        "title": "Short title",
+        "description": "What went wrong",
+        "rootCause": "Why this happened",
+        "severity": "critical|high|medium|low",
+        "relatedConcept": "The concept this relates to"
+      }
+    ],
+    "strengths": [
+      {
+        "title": "What went well",
+        "evidence": "Specific reference"
+      }
+    ],
+    "teacherFeedback": ["Comment 1", "Comment 2"]
+  }
+}`
+
+// === STEP 2: Flashcard Generation Agent ===
 
 const FLASHCARD_PROMPT = `You are an expert educational content creator specializing in creating effective learning flashcards for students.
 
-Based on the test analysis provided, create personalized flashcards that:
-1. Target the SPECIFIC weaknesses identified in the test
+Based on the independent test analysis provided, create personalized flashcards that:
+1. Target the SPECIFIC weaknesses identified in the analysis
 2. Use age-appropriate language for the student's grade level
 3. Include memory tricks and mnemonics where helpful
-4. Cover the exact topics from the test
+4. Cover the exact topics and concepts from the test
+5. Help the student master material they struggled with
 
 IMPORTANT RULES:
 - Create exactly 8-10 flashcards
@@ -21,8 +85,9 @@ IMPORTANT RULES:
 - Back: Concise, memorable answer
 - Tip: A memory trick, mnemonic, or study hint
 - Make them SPECIFIC to the test content, not generic
+- Prioritize critical and high-severity weaknesses
 
-Output ONLY valid JSON in this exact format:
+Output ONLY valid JSON:
 {
   "flashcards": [
     {
@@ -41,6 +106,95 @@ Output ONLY valid JSON in this exact format:
   "printInstructions": "Brief instructions for printing and using the cards"
 }`
 
+// === Helper Functions ===
+
+function extractJson(raw: string): string {
+  let s = raw.trim()
+
+  const jsonMatch = s.match(/```json\n?([\s\S]*?)\n?```/) ||
+                    s.match(/```\n?([\s\S]*?)\n?```/)
+  if (jsonMatch) {
+    s = jsonMatch[1].trim()
+  }
+
+  const firstBrace = s.indexOf('{')
+  const lastBrace = s.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    s = s.slice(firstBrace, lastBrace + 1)
+  }
+
+  s = s.replace(/,\s*([}\]])/g, '$1')
+
+  return s
+}
+
+async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown>> {
+  console.log('[Flashcards API] Using AI to fix broken JSON...')
+  const response = await deepseek.chat.completions.create({
+    model: 'deepseek-chat',
+    max_tokens: 4096,
+    temperature: 0,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.' },
+      { role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` },
+    ],
+  })
+
+  const text = response.choices[0]?.message?.content
+  if (!text) throw new Error('No response from JSON repair')
+
+  const cleaned = extractJson(text)
+  return JSON.parse(cleaned)
+}
+
+async function runAgent(
+  agentPrompt: string,
+  userContext: string,
+  agentName: string,
+  temperature: number = 0.5
+): Promise<Record<string, unknown>> {
+  console.log(`[Flashcards API] Running ${agentName} agent...`)
+  const startTime = Date.now()
+
+  try {
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      max_tokens: 4096,
+      temperature,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: agentPrompt },
+        { role: 'user', content: userContext },
+      ],
+    })
+
+    const text = response.choices[0]?.message?.content
+    if (!text) {
+      throw new Error(`No text content from ${agentName} agent`)
+    }
+
+    const jsonString = extractJson(text)
+
+    let result: Record<string, unknown>
+    try {
+      result = JSON.parse(jsonString)
+    } catch (parseError) {
+      console.warn(`[Flashcards API] ${agentName} JSON parse failed, using AI repair...`)
+      result = await fixJsonWithAI(text)
+      console.log(`[Flashcards API] ${agentName} JSON repaired via AI`)
+    }
+
+    console.log(`[Flashcards API] ${agentName} agent completed in ${Date.now() - startTime}ms`)
+    return result
+  } catch (error) {
+    console.error(`[Flashcards API] ${agentName} agent error:`, error)
+    throw error
+  }
+}
+
+// === Main API Handler ===
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -48,73 +202,97 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { analysisData, childName, targetLanguage = 'de' } = await request.json()
+    const {
+      extractedText,
+      childName,
+      grade,
+      subject,
+      schoolType,
+      language = 'de',
+    } = await request.json()
 
-    if (!analysisData) {
-      return NextResponse.json({ error: 'Missing analysis data' }, { status: 400 })
+    if (!extractedText) {
+      return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
     }
 
-    // Extract relevant context for flashcard generation
-    const context = {
-      student: analysisData.student || { name: childName || 'Student' },
-      test: analysisData.test || {},
-      weaknesses: analysisData.weaknesses || [],
-      errorAnalysis: analysisData.errorAnalysis || {},
-      grade: analysisData.grade || {},
-    }
+    const languageInstruction = getLanguageInstruction(language)
+    console.log('[Flashcards API] Starting independent flashcard generation for:', childName, 'language:', language)
+    const overallStart = Date.now()
 
-    const userPrompt = `Create flashcards for this student based on their test performance:
+    // ============================================
+    // STEP 1: Analyze the test from raw text
+    // ============================================
+    const analysisContext = `
+${languageInstruction}
 
-STUDENT: ${context.student.name || childName || 'Student'}
-SUBJECT: ${context.test.subject || 'Unknown'}
-TOPIC: ${context.test.topic || 'Unknown'}
-GRADE LEVEL: ${context.student.class || 'Unknown'}
+=== STUDENT INFORMATION ===
+Name: ${childName || 'Schüler'}
+Grade/Class: ${grade || 'Unknown'}
+School Type: ${schoolType || 'Unknown'}
+Subject: ${subject || 'Unknown'}
 
-IDENTIFIED WEAKNESSES:
-${JSON.stringify(context.weaknesses, null, 2)}
+=== RAW TEST TEXT (OCR Extracted) ===
+${extractedText}
 
-ERROR ANALYSIS:
-${JSON.stringify(context.errorAnalysis, null, 2)}
+=== INSTRUCTIONS ===
+Analyze this test independently. Identify ALL weaknesses, errors, knowledge gaps, and key concepts tested.
+Focus on finding specific topics the student needs to practice.
+`
 
-TEST PERFORMANCE:
-Grade: ${context.grade.value || 'Unknown'}
-Points: ${context.grade.points || 'Unknown'}
+    const analysisResult = await runAgent(
+      TEST_ANALYSIS_PROMPT,
+      analysisContext,
+      'TestAnalysis',
+      0.3
+    )
 
-Create flashcards in ${targetLanguage === 'de' ? 'GERMAN' : targetLanguage.toUpperCase()} language that specifically address these weaknesses and help the student master the material they struggled with.`
+    const testAnalysis = (analysisResult as any).testAnalysis || analysisResult
+    console.log('[Flashcards API] Test analyzed:', testAnalysis.weaknesses?.length || 0, 'weaknesses found')
 
-    console.log('[Flashcards API] Generating flashcards for:', context.student.name)
+    // ============================================
+    // STEP 2: Generate flashcards from analysis
+    // ============================================
+    const flashcardContext = `
+${languageInstruction}
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      temperature: 0.7,
-      system: FLASHCARD_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
-    })
+=== INDEPENDENT TEST ANALYSIS ===
+${JSON.stringify(testAnalysis, null, 2)}
 
-    const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
-    if (!textBlock) {
-      throw new Error('No text content in response')
-    }
+=== STUDENT CONTEXT ===
+Name: ${childName || 'Schüler'}
+Grade/Class: ${grade || 'Unknown'}
+School Type: ${schoolType || 'Unknown'}
+Subject: ${testAnalysis.subject || subject || 'Unknown'}
 
-    // Parse JSON response
-    let flashcardData
-    try {
-      const jsonMatch = textBlock.text.match(/```json\n?([\s\S]*?)\n?```/) ||
-                        textBlock.text.match(/```\n?([\s\S]*?)\n?```/)
-      const jsonString = jsonMatch ? jsonMatch[1] : textBlock.text
-      flashcardData = JSON.parse(jsonString.trim())
-    } catch (parseError) {
-      console.error('[Flashcards API] Parse error:', parseError)
-      return NextResponse.json({ error: 'Failed to parse flashcard data' }, { status: 500 })
-    }
+=== INSTRUCTIONS ===
+Create 8-10 targeted flashcards that help this student overcome their specific weaknesses.
+Each flashcard should directly address a weakness found in the analysis.
+Use age-appropriate language and include helpful memory tricks.
+`
 
-    console.log('[Flashcards API] Generated', flashcardData.flashcards?.length || 0, 'flashcards')
+    const flashcardResult = await runAgent(
+      FLASHCARD_PROMPT,
+      flashcardContext,
+      'FlashcardGeneration',
+      0.7
+    )
+
+    const totalTime = Date.now() - overallStart
+    console.log(`[Flashcards API] Complete in ${totalTime}ms. Generated ${(flashcardResult as any).flashcards?.length || 0} flashcards`)
 
     return NextResponse.json({
       success: true,
-      ...flashcardData,
+      ...flashcardResult,
       generatedAt: new Date().toISOString(),
+      metadata: {
+        studentName: childName,
+        subject: testAnalysis.subject || subject,
+        generatedAt: new Date().toISOString(),
+        totalGenerationTime: `${(totalTime / 1000).toFixed(1)}s`,
+        isIndependent: true,
+        weaknessesFound: testAnalysis.weaknesses?.length || 0,
+        language,
+      }
     })
 
   } catch (error) {
