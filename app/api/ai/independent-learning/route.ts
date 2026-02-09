@@ -238,24 +238,44 @@ Output ONLY valid JSON:
 
 // === Helper Functions ===
 
-function repairJson(raw: string): string {
-  // Strip any leading/trailing non-JSON text
+function extractJson(raw: string): string {
   let s = raw.trim()
 
-  // Find the first { and last }
+  // Try to extract from code fences first
+  const jsonMatch = s.match(/```json\n?([\s\S]*?)\n?```/) ||
+                    s.match(/```\n?([\s\S]*?)\n?```/)
+  if (jsonMatch) {
+    s = jsonMatch[1].trim()
+  }
+
+  // Find the outermost JSON object
   const firstBrace = s.indexOf('{')
   const lastBrace = s.lastIndexOf('}')
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     s = s.slice(firstBrace, lastBrace + 1)
   }
 
-  // Fix common issues: trailing commas before } or ]
+  // Fix trailing commas before } or ]
   s = s.replace(/,\s*([}\]])/g, '$1')
 
-  // Fix unescaped newlines inside string values
-  s = s.replace(/:\s*"([^"]*)\n([^"]*?)"/g, (_, a, b) => `: "${a}\\n${b}"`)
-
   return s
+}
+
+async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown>> {
+  console.log('[Independent Learning] Using AI to fix broken JSON...')
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 4096,
+    temperature: 0,
+    system: 'You are a JSON repair tool. You receive broken or malformed JSON and output ONLY the repaired, valid JSON. Fix any syntax errors (unescaped quotes, missing commas, trailing commas, unescaped newlines in strings, etc). Output NOTHING except the valid JSON object.',
+    messages: [{ role: 'user', content: `Fix this broken JSON and output ONLY valid JSON:\n\n${brokenJson}` }],
+  })
+
+  const textBlock = response.content.find((block): block is Anthropic.TextBlock => block.type === 'text')
+  if (!textBlock) throw new Error('No response from JSON repair')
+
+  const cleaned = extractJson(textBlock.text)
+  return JSON.parse(cleaned)
 }
 
 async function runAgent(
@@ -280,20 +300,16 @@ async function runAgent(
       throw new Error(`No text content from ${agentName} agent`)
     }
 
-    // Parse JSON response - handle both wrapped and unwrapped JSON
-    const jsonMatch = textBlock.text.match(/```json\n?([\s\S]*?)\n?```/) ||
-                      textBlock.text.match(/```\n?([\s\S]*?)\n?```/)
-    const jsonString = jsonMatch ? jsonMatch[1] : textBlock.text
+    const jsonString = extractJson(textBlock.text)
 
-    // Try parsing directly first, then attempt repair
+    // Try parsing directly first, then use AI to repair
     let result: Record<string, unknown>
     try {
-      result = JSON.parse(jsonString.trim())
+      result = JSON.parse(jsonString)
     } catch (parseError) {
-      console.warn(`[Independent Learning] ${agentName} JSON parse failed, attempting repair...`)
-      const repaired = repairJson(jsonString)
-      result = JSON.parse(repaired)
-      console.log(`[Independent Learning] ${agentName} JSON repaired successfully`)
+      console.warn(`[Independent Learning] ${agentName} JSON parse failed, using AI repair...`)
+      result = await fixJsonWithAI(textBlock.text)
+      console.log(`[Independent Learning] ${agentName} JSON repaired via AI`)
     }
 
     console.log(`[Independent Learning] ${agentName} agent completed in ${Date.now() - startTime}ms`)
