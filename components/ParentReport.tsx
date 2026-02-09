@@ -157,8 +157,9 @@ interface ReportData {
 
 interface ParentReportProps {
   data: ReportData;
-  extractedText?: string | null;
-  childName?: string;
+  extractedText?: string | null | undefined;
+  childName?: string | undefined;
+  language?: Language | undefined;  // Override language for section titles
 }
 
 function Section({ title, icon: Icon, children, defaultOpen = true, color = 'primary' }: {
@@ -239,9 +240,11 @@ function SeverityBadge({ severity }: { severity: string | undefined }) {
   );
 }
 
-export function ParentReport({ data, extractedText, childName }: ParentReportProps) {
+export function ParentReport({ data, extractedText, childName, language: propLanguage }: ParentReportProps) {
   const [showRaw, setShowRaw] = useState(false);
-  const { language } = useLanguage();
+  const { language: contextLanguage } = useLanguage();
+  // Use prop language if provided, otherwise fall back to context
+  const language = propLanguage || contextLanguage;
   const t = getReportTranslations(language);
   const reportData = data || {};
 

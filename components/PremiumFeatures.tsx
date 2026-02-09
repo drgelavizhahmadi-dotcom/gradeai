@@ -31,6 +31,16 @@ interface PremiumFeatureProps {
   onUpgrade?: (() => void) | undefined
 }
 
+interface IndependentFeatureProps extends PremiumFeatureProps {
+  extractedText?: string | null | undefined
+  grade?: number | undefined
+  subject?: string | undefined
+  schoolType?: string | undefined
+}
+
+// Keep backward compat alias
+type LearningMaterialProps = IndependentFeatureProps
+
 // Animated counter for FOMO effect
 function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; duration?: number | undefined; suffix?: string | undefined }) {
   const [count, setCount] = useState(0)
@@ -402,24 +412,43 @@ export function FairnessCheckPremiumSection({
   isPremium,
   childName,
   analysisData,
-  onUpgrade
-}: PremiumFeatureProps) {
+  onUpgrade,
+  extractedText,
+  grade,
+  subject,
+  schoolType,
+}: IndependentFeatureProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [fairnessData, setFairnessData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+
+  const toggleExpand = (id: string) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedItems(newExpanded)
+  }
 
   const analyzeFairness = async () => {
     setIsAnalyzing(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/ai/generate-fairness', {
+      // Use independent fairness API that works from raw text
+      const response = await fetch('/api/ai/independent-fairness', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          analysisData,
+          extractedText: extractedText || '',
           childName,
-          targetLanguage: 'de',
+          grade: grade || analysisData?.student?.class || 5,
+          subject: subject || analysisData?.test?.subject || 'Unknown',
+          schoolType: schoolType || 'Gymnasium',
         }),
       })
 
@@ -441,6 +470,7 @@ export function FairnessCheckPremiumSection({
     switch (verdict) {
       case 'fair': return 'text-green-600 bg-green-50 border-green-200'
       case 'mostly_fair': return 'text-green-600 bg-green-50 border-green-200'
+      case 'some_concerns': return 'text-amber-600 bg-amber-50 border-amber-200'
       case 'questionable': return 'text-amber-600 bg-amber-50 border-amber-200'
       case 'needs_review': return 'text-red-600 bg-red-50 border-red-200'
       default: return 'text-gray-600 bg-gray-50 border-gray-200'
@@ -451,10 +481,27 @@ export function FairnessCheckPremiumSection({
     switch (verdict) {
       case 'fair': return 'Bewertung ist fair'
       case 'mostly_fair': return 'Überwiegend fair'
-      case 'questionable': return 'Einige Fragen offen'
+      case 'some_concerns': return 'Einige Bedenken'
+      case 'questionable': return 'Fragwürdig'
       case 'needs_review': return 'Überprüfung empfohlen'
       default: return 'Nicht bewertbar'
     }
+  }
+
+  const getDimensionLabel = (key: string) => {
+    const labels: Record<string, string> = {
+      gradingConsistency: 'Bewertungskonsistenz',
+      pointProportionality: 'Punktverhältnismäßigkeit',
+      partialCredit: 'Teilpunkte-Vergabe',
+      clarityOfExpectations: 'Klarheit der Erwartungen',
+      feedbackQuality: 'Feedback-Qualität',
+      mathematicalAccuracy: 'Rechnerische Korrektheit',
+      // Old format fallbacks
+      consistency: 'Konsistenz',
+      clarity: 'Klarheit',
+      proportionality: 'Verhältnismäßigkeit',
+    }
+    return labels[key] || key
   }
 
   if (!isPremium) {
@@ -483,6 +530,10 @@ export function FairnessCheckPremiumSection({
     )
   }
 
+  // Resolve the analysis data - support both independent (new) and old format
+  const analysis = fairnessData?.fairnessAnalysis || fairnessData
+  const testRecon = fairnessData?.testReconstruction
+
   // Premium user - full feature
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
@@ -496,7 +547,7 @@ export function FairnessCheckPremiumSection({
               Fairness-Check
               <PremiumBadge size="sm" />
             </h3>
-            <p className="text-sm text-gray-600">Objektive Analyse der Bewertung</p>
+            <p className="text-sm text-gray-600">Unabhängige Analyse der Bewertung</p>
           </div>
         </div>
 
@@ -509,7 +560,7 @@ export function FairnessCheckPremiumSection({
             {isAnalyzing ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Analysiere...
+                Analysiere unabhängig...
               </>
             ) : (
               <>
@@ -530,99 +581,468 @@ export function FairnessCheckPremiumSection({
 
       {fairnessData && (
         <div className="space-y-6">
-          {/* Main score and verdict */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-6 border border-blue-200 text-center">
-              <div className="text-5xl font-bold text-blue-600 mb-2">{fairnessData.fairnessScore}%</div>
-              <div className="text-gray-600">Fairness-Score</div>
-            </div>
-            <div className={`rounded-xl p-6 border ${getVerdictColor(fairnessData.verdict)} text-center`}>
-              <div className="text-2xl font-bold mb-2">{getVerdictText(fairnessData.verdict)}</div>
-              <div className="text-sm opacity-80">{fairnessData.verdictExplanation}</div>
-            </div>
-          </div>
-
-          {/* Analysis breakdown */}
-          {fairnessData.analysis && (
-            <div className="bg-white rounded-xl p-5 border border-blue-200">
-              <h4 className="font-bold text-gray-800 mb-4">Detailanalyse</h4>
-              <div className="space-y-3">
-                {Object.entries(fairnessData.analysis).map(([key, value]: [string, any]) => (
-                  <div key={key} className="flex items-center gap-4">
-                    <div className="w-32 text-sm text-gray-600 capitalize">
-                      {key === 'consistency' ? 'Konsistenz' :
-                       key === 'clarity' ? 'Klarheit' :
-                       key === 'proportionality' ? 'Verhältnismäßigkeit' :
-                       key === 'feedbackQuality' ? 'Feedback-Qualität' :
-                       key === 'partialCredit' ? 'Teilpunkte' : key}
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full ${value.score >= 80 ? 'bg-green-500' : value.score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
-                        style={{ width: `${value.score}%` }}
-                      />
-                    </div>
-                    <div className="w-12 text-right font-medium">{value.score}%</div>
-                  </div>
-                ))}
+          {/* Independent analysis metadata */}
+          {fairnessData.metadata?.isIndependent && (
+            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl p-4 border border-blue-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Brain className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-800">Unabhängige KI-Analyse</p>
+                  <p className="text-sm text-blue-600">
+                    {fairnessData.metadata.questionsAnalyzed} Aufgaben analysiert
+                    {' '}&bull;{' '}
+                    {fairnessData.metadata.concernsFound} Bedenken gefunden
+                    {' '}&bull;{' '}
+                    Generiert in {fairnessData.metadata.totalGenerationTime}
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Concerns */}
-          {fairnessData.concerns && fairnessData.concerns.length > 0 && (
-            <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
-              <h4 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Mögliche Bedenken
-              </h4>
-              <ul className="space-y-2">
-                {fairnessData.concerns.map((concern: any, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-amber-700">
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      concern.severity === 'significant' ? 'bg-red-100 text-red-700' :
-                      concern.severity === 'moderate' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {concern.severity === 'significant' ? 'Wichtig' :
-                       concern.severity === 'moderate' ? 'Moderat' : 'Gering'}
+          {/* Main score and verdict */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl p-6 border border-blue-200 text-center">
+              <div className="text-5xl font-bold text-blue-600 mb-2">{analysis?.overallScore || analysis?.fairnessScore || '—'}%</div>
+              <div className="text-gray-600">Fairness-Score</div>
+            </div>
+            <div className={`rounded-xl p-6 border ${getVerdictColor(analysis?.verdict || '')} text-center`}>
+              <div className="text-2xl font-bold mb-2">{getVerdictText(analysis?.verdict || '')}</div>
+              <div className="text-sm opacity-80">{analysis?.verdictSummary || analysis?.verdictExplanation || ''}</div>
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex gap-2 border-b border-blue-200 pb-2 overflow-x-auto">
+            {[
+              { id: 'overview' as const, label: 'Übersicht' },
+              ...(testRecon ? [{ id: 'reconstruction' as const, label: 'Test-Rekonstruktion' }] : []),
+              { id: 'details' as const, label: 'Detailanalyse' },
+              ...(analysis?.pointRecoveryOpportunities?.length ? [{ id: 'recovery' as const, label: 'Punkte-Rückgewinnung' }] : []),
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                className={`px-4 py-2 rounded-t-lg font-medium transition-colors text-sm ${
+                  activeView === tab.id
+                    ? 'bg-white text-blue-600 border border-blue-200 border-b-white -mb-[1px]'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Overview Tab */}
+          {activeView === 'overview' && (
+            <div className="space-y-5">
+              {/* Dimension bars */}
+              {analysis?.dimensions && (
+                <div className="bg-white rounded-xl p-5 border border-blue-200">
+                  <h4 className="font-bold text-gray-800 mb-4">Bewertungsdimensionen</h4>
+                  <div className="space-y-3">
+                    {Object.entries(analysis.dimensions).map(([key, value]: [string, any]) => (
+                      <div key={key}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-44 text-sm text-gray-600">{getDimensionLabel(key)}</div>
+                          <div className="flex-1 bg-gray-100 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all ${value.score >= 80 ? 'bg-green-500' : value.score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+                              style={{ width: `${value.score}%` }}
+                            />
+                          </div>
+                          <div className="w-12 text-right font-medium">{value.score}%</div>
+                        </div>
+                        {value.concern && (
+                          <p className="text-xs text-amber-600 ml-44 pl-4 mt-1">⚠️ {value.concern}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Old format analysis bars fallback */}
+              {!analysis?.dimensions && analysis?.analysis && (
+                <div className="bg-white rounded-xl p-5 border border-blue-200">
+                  <h4 className="font-bold text-gray-800 mb-4">Detailanalyse</h4>
+                  <div className="space-y-3">
+                    {Object.entries(analysis.analysis).map(([key, value]: [string, any]) => (
+                      <div key={key} className="flex items-center gap-4">
+                        <div className="w-32 text-sm text-gray-600">{getDimensionLabel(key)}</div>
+                        <div className="flex-1 bg-gray-100 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full ${value.score >= 80 ? 'bg-green-500' : value.score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+                            style={{ width: `${value.score}%` }}
+                          />
+                        </div>
+                        <div className="w-12 text-right font-medium">{value.score}%</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Positive findings */}
+              {analysis?.positiveFindings?.length > 0 && (
+                <div className="bg-green-50 rounded-xl p-5 border border-green-200">
+                  <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Positiv aufgefallen
+                  </h4>
+                  <ul className="space-y-2">
+                    {analysis.positiveFindings.map((item: any, i: number) => (
+                      <li key={i} className="text-green-700">
+                        <span className="font-medium">{item.title || item}</span>
+                        {item.detail && <p className="text-sm text-green-600 mt-0.5">{item.detail}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Concerns */}
+              {analysis?.concerns?.length > 0 && (
+                <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
+                  <h4 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Bedenken ({analysis.concerns.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {analysis.concerns.map((concern: any, i: number) => (
+                      <div key={i} className="bg-white rounded-lg p-3 border border-amber-200">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="font-medium text-gray-800">{concern.title || concern.issue}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${
+                            concern.severity === 'critical' || concern.severity === 'significant' ? 'bg-red-100 text-red-700' :
+                            concern.severity === 'moderate' ? 'bg-amber-100 text-amber-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {concern.severity === 'critical' ? 'Kritisch' :
+                             concern.severity === 'significant' ? 'Wichtig' :
+                             concern.severity === 'moderate' ? 'Moderat' : 'Gering'}
+                          </span>
+                        </div>
+                        {concern.detail && <p className="text-sm text-gray-600">{concern.detail}</p>}
+                        {concern.evidence && (
+                          <p className="text-xs text-gray-500 mt-1 italic">Beleg: "{concern.evidence}"</p>
+                        )}
+                        {concern.pointsAffected && (
+                          <p className="text-xs text-amber-600 mt-1 font-medium">Betroffene Punkte: {concern.pointsAffected}</p>
+                        )}
+                        {concern.recommendation && (
+                          <p className="text-xs text-blue-600 mt-1">💡 {concern.recommendation}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Grade Boundary Analysis */}
+              {analysis?.gradeBoundaryAnalysis && (
+                <div className="bg-white rounded-xl p-5 border border-blue-200">
+                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    Notengrenzen-Analyse
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-blue-600">{analysis.gradeBoundaryAnalysis.currentGrade}</div>
+                      <div className="text-xs text-gray-500">Aktuelle Note</div>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-blue-600">{analysis.gradeBoundaryAnalysis.percentage}%</div>
+                      <div className="text-xs text-gray-500">Erreicht</div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-green-600">{analysis.gradeBoundaryAnalysis.potentialRecoverablePoints}</div>
+                      <div className="text-xs text-gray-500">Rückgewinnbar</div>
+                    </div>
+                    <div className={`rounded-lg p-3 text-center ${analysis.gradeBoundaryAnalysis.couldChangeGrade ? 'bg-green-50' : 'bg-gray-50'}`}>
+                      <div className={`text-2xl font-bold ${analysis.gradeBoundaryAnalysis.couldChangeGrade ? 'text-green-600' : 'text-gray-500'}`}>
+                        {analysis.gradeBoundaryAnalysis.couldChangeGrade ? 'Ja' : 'Nein'}
+                      </div>
+                      <div className="text-xs text-gray-500">Notenänderung möglich?</div>
+                    </div>
+                  </div>
+                  {analysis.gradeBoundaryAnalysis.analysis && (
+                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{analysis.gradeBoundaryAnalysis.analysis}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Test Reconstruction Tab */}
+          {activeView === 'reconstruction' && testRecon && (
+            <div className="space-y-5">
+              {/* Test overview */}
+              <div className="bg-white rounded-xl p-5 border border-blue-200">
+                <h4 className="font-bold text-gray-800 mb-3">Test-Übersicht (rekonstruiert)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Fach</div>
+                    <div className="font-medium">{testRecon.subject || '—'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Art</div>
+                    <div className="font-medium">{testRecon.testType || '—'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Punkte</div>
+                    <div className="font-medium">{testRecon.achievedPoints || '?'} / {testRecon.maxPoints || '?'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Note</div>
+                    <div className="font-medium">{testRecon.gradeGiven || '—'}</div>
+                  </div>
+                </div>
+
+                {/* Point calculation check */}
+                {testRecon.pointCalculationCheck?.discrepancy && (
+                  <div className="bg-red-50 rounded-lg p-3 border border-red-200 mb-4">
+                    <p className="text-sm text-red-700 font-medium">⚠️ Punktabweichung gefunden!</p>
+                    <p className="text-sm text-red-600">
+                      Lehrer: {testRecon.pointCalculationCheck.teacherTotal} Punkte &bull;
+                      Berechnet: {testRecon.pointCalculationCheck.myCalculatedTotal} Punkte
+                    </p>
+                    {testRecon.pointCalculationCheck.discrepancyDetails && (
+                      <p className="text-xs text-red-500 mt-1">{testRecon.pointCalculationCheck.discrepancyDetails}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Questions breakdown */}
+              {testRecon.questions?.length > 0 && (
+                <div className="bg-white rounded-xl border border-blue-200 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h4 className="font-bold text-gray-800">Aufgaben-Rekonstruktion ({testRecon.questions.length})</h4>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {testRecon.questions.map((q: any, i: number) => (
+                      <div key={i} className="p-4">
+                        <button
+                          onClick={() => toggleExpand(`q-${i}`)}
+                          className="w-full flex items-center justify-between text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              q.isCorrect ? 'bg-green-100 text-green-700' :
+                              q.isPartiallyCorrect ? 'bg-amber-100 text-amber-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {q.number}
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-800 text-sm line-clamp-1">{q.questionText}</span>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span>{q.pointsGiven}/{q.maxPoints} Punkte</span>
+                                {q.isCorrect && <span className="text-green-600">✓ Korrekt</span>}
+                                {q.isPartiallyCorrect && <span className="text-amber-600">~ Teilweise</span>}
+                                {!q.isCorrect && !q.isPartiallyCorrect && <span className="text-red-600">✗ Falsch</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {expandedItems.has(`q-${i}`) ? (
+                            <ChevronUp className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                        {expandedItems.has(`q-${i}`) && (
+                          <div className="mt-3 ml-11 space-y-2 text-sm">
+                            {q.studentAnswer && (
+                              <div className="bg-gray-50 rounded p-2">
+                                <span className="text-xs font-medium text-gray-500">Schülerantwort: </span>
+                                <span className="text-gray-700">{q.studentAnswer}</span>
+                              </div>
+                            )}
+                            {q.teacherMarks && (
+                              <div className="bg-blue-50 rounded p-2">
+                                <span className="text-xs font-medium text-blue-600">Lehrerkorrektur: </span>
+                                <span className="text-gray-700">{q.teacherMarks}</span>
+                              </div>
+                            )}
+                            {q.deductionReason && (
+                              <div className="bg-amber-50 rounded p-2">
+                                <span className="text-xs font-medium text-amber-600">Abzugsgrund: </span>
+                                <span className="text-gray-700">{q.deductionReason}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Teacher comments */}
+              {testRecon.teacherComments && (
+                <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                  <h4 className="font-bold text-blue-800 mb-3">Lehrerkommentare</h4>
+                  {testRecon.teacherComments.finalComment && (
+                    <blockquote className="border-l-4 border-blue-400 pl-4 py-2 italic text-gray-700 bg-white rounded-r-lg mb-3">
+                      "{testRecon.teacherComments.finalComment}"
+                    </blockquote>
+                  )}
+                  {testRecon.teacherComments.marginNotes?.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-sm font-medium text-blue-700">Randnotizen:</p>
+                      <ul className="text-sm text-gray-600 space-y-1 mt-1">
+                        {testRecon.teacherComments.marginNotes.map((note: string, i: number) => (
+                          <li key={i}>• {note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {testRecon.teacherComments.overallTone && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm font-medium text-blue-700">Gesamtton:</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        testRecon.teacherComments.overallTone === 'encouraging' ? 'bg-green-100 text-green-700' :
+                        testRecon.teacherComments.overallTone === 'critical' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {testRecon.teacherComments.overallTone === 'encouraging' ? 'Ermutigend' :
+                         testRecon.teacherComments.overallTone === 'critical' ? 'Kritisch' :
+                         testRecon.teacherComments.overallTone === 'mixed' ? 'Gemischt' : 'Neutral'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Details Tab */}
+          {activeView === 'details' && (
+            <div className="space-y-5">
+              {analysis?.dimensions && Object.entries(analysis.dimensions).map(([key, dim]: [string, any]) => (
+                <div key={key} className="bg-white rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold text-gray-800">{getDimensionLabel(key)}</h4>
+                    <span className={`text-lg font-bold ${dim.score >= 80 ? 'text-green-600' : dim.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {dim.score}%
                     </span>
-                    <span>{concern.issue}</span>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2">{dim.finding}</p>
+                  {dim.examples?.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      {dim.examples.map((ex: string, i: number) => (
+                        <p key={i} className="text-xs text-gray-500 bg-gray-50 p-2 rounded">"{ex}"</p>
+                      ))}
+                    </div>
+                  )}
+                  {dim.concern && (
+                    <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">⚠️ {dim.concern}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Point Recovery Tab */}
+          {activeView === 'recovery' && analysis?.pointRecoveryOpportunities && (
+            <div className="space-y-5">
+              <div className="bg-green-50 rounded-xl p-5 border border-green-200">
+                <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Potenzielle Punkte-Rückgewinnung
+                </h4>
+                <p className="text-lg font-bold text-green-600 mb-4">
+                  Geschätztes Potenzial: {analysis.totalPotentialRecovery || '—'}
+                </p>
+
+                <div className="space-y-3">
+                  {analysis.pointRecoveryOpportunities.map((opp: any, i: number) => (
+                    <div key={i} className="bg-white rounded-lg p-4 border border-green-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-medium text-gray-800">{opp.question}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          opp.strength === 'strong' ? 'bg-green-100 text-green-700' :
+                          opp.strength === 'moderate' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {opp.strength === 'strong' ? 'Starkes Argument' :
+                           opp.strength === 'moderate' ? 'Moderates Argument' : 'Schwaches Argument'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm mb-2">
+                        <span className="text-gray-500">Aktuell: {opp.currentPoints}P</span>
+                        <span className="text-gray-400">→</span>
+                        <span className="text-green-600 font-medium">Möglich: {opp.possiblePoints}P</span>
+                        <span className="text-green-500">(+{opp.possiblePoints - opp.currentPoints})</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{opp.argument}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
           {/* Recommendation */}
-          {fairnessData.recommendation && (
+          {analysis?.recommendation && (
             <div className="bg-white rounded-xl p-5 border border-blue-200">
               <h4 className="font-bold text-gray-800 mb-3">Empfehlung</h4>
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {fairnessData.recommendation.shouldDiscussWithTeacher ? (
-                    <span className="flex items-center gap-2 text-blue-600">
+                <div className="flex items-center gap-3">
+                  {analysis.recommendation.shouldContactTeacher ? (
+                    <span className="flex items-center gap-2 text-blue-600 font-medium">
                       <CheckCircle className="h-5 w-5" />
-                      Gespräch mit Lehrer empfohlen
+                      Gespräch mit Lehrkraft empfohlen
                     </span>
                   ) : (
-                    <span className="flex items-center gap-2 text-green-600">
+                    <span className="flex items-center gap-2 text-green-600 font-medium">
                       <CheckCircle className="h-5 w-5" />
                       Kein Gespräch nötig
                     </span>
                   )}
+                  {analysis.recommendation.urgency && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      analysis.recommendation.urgency === 'high' ? 'bg-red-100 text-red-700' :
+                      analysis.recommendation.urgency === 'medium' ? 'bg-amber-100 text-amber-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {analysis.recommendation.urgency === 'high' ? 'Dringend' :
+                       analysis.recommendation.urgency === 'medium' ? 'Zeitnah' : 'Bei Gelegenheit'}
+                    </span>
+                  )}
                 </div>
-                {fairnessData.recommendation.suggestedApproach && (
-                  <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    💡 {fairnessData.recommendation.suggestedApproach}
+
+                {/* Sample opener */}
+                {analysis.recommendation.sampleOpener && (
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <p className="text-xs font-medium text-blue-700 mb-1">Gesprächseinstieg:</p>
+                    <p className="text-sm text-gray-700 italic">"{analysis.recommendation.sampleOpener}"</p>
+                  </div>
+                )}
+
+                {analysis.recommendation.approach && (
+                  <p className="text-gray-600 bg-gray-50 p-3 rounded-lg text-sm">
+                    💡 {analysis.recommendation.approach}
                   </p>
                 )}
-                {fairnessData.recommendation.questionsToAsk && (
+                {(analysis.recommendation.specificPoints || analysis.recommendation.questionsToAsk) && (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Fragen für das Gespräch:</p>
-                    <ul className="list-disc list-inside text-gray-600 space-y-1">
-                      {fairnessData.recommendation.questionsToAsk.map((q: string, i: number) => (
+                    <p className="text-sm font-medium text-gray-700 mb-2">Gesprächspunkte:</p>
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
+                      {(analysis.recommendation.specificPoints || analysis.recommendation.questionsToAsk || []).map((q: string, i: number) => (
                         <li key={i}>{q}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {analysis.recommendation.whatToAvoid?.length > 0 && (
+                  <div className="bg-red-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-red-700 mb-1">Vermeiden Sie:</p>
+                    <ul className="text-sm text-red-600 space-y-1">
+                      {analysis.recommendation.whatToAvoid.map((item: string, i: number) => (
+                        <li key={i}>✕ {item}</li>
                       ))}
                     </ul>
                   </div>
@@ -631,11 +1051,11 @@ export function FairnessCheckPremiumSection({
             </div>
           )}
 
-          {/* Recoverable points */}
-          {fairnessData.potentialPointsRecoverable && (
+          {/* Recoverable points (old format fallback) */}
+          {!analysis?.gradeBoundaryAnalysis && analysis?.potentialPointsRecoverable && (
             <div className="bg-green-50 rounded-xl p-4 border border-green-200 flex items-center justify-between">
               <span className="text-green-800">Möglicherweise erreichbare Punkte:</span>
-              <span className="text-xl font-bold text-green-600">{fairnessData.potentialPointsRecoverable}</span>
+              <span className="text-xl font-bold text-green-600">{analysis.potentialPointsRecoverable}</span>
             </div>
           )}
 
@@ -662,7 +1082,7 @@ export function FairnessCheckPremiumSection({
 
           {/* Disclaimer */}
           <p className="text-xs text-gray-400 text-center">
-            {fairnessData.disclaimer || 'Diese Analyse dient nur zur Orientierung. Im Zweifel sprechen Sie direkt mit dem Lehrer.'}
+            {analysis?.disclaimer || 'Diese Analyse dient nur zur Orientierung und basiert auf OCR-extrahiertem Text. Im Zweifel sprechen Sie direkt mit der Lehrkraft.'}
           </p>
         </div>
       )}
@@ -675,26 +1095,35 @@ export function LearningMaterialPremiumSection({
   isPremium,
   childName,
   analysisData,
-  onUpgrade
-}: PremiumFeatureProps) {
+  onUpgrade,
+  extractedText,
+  grade,
+  subject,
+  schoolType,
+}: LearningMaterialProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [learningMaterial, setLearningMaterial] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'lessons' | 'worksheets' | 'quizzes'>('lessons')
+  const [activeTab, setActiveTab] = useState<'analysis' | 'lessons' | 'worksheets' | 'quizzes'>('analysis')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [generationProgress, setGenerationProgress] = useState<string>('')
 
   const generateLearningMaterial = async () => {
     setIsGenerating(true)
     setError(null)
+    setGenerationProgress('Analysiere Test unabhängig...')
 
     try {
-      const response = await fetch('/api/ai/generate-learning-material', {
+      // Use the independent learning API that works from raw extracted text
+      const response = await fetch('/api/ai/independent-learning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          analysisData,
+          extractedText: extractedText || '',
           childName,
-          targetLanguage: 'de',
+          grade: grade || analysisData?.student?.class || 5,
+          subject: subject || analysisData?.test?.subject || 'Unknown',
+          schoolType: schoolType || 'Gymnasium',
           contentTypes: ['lessons', 'worksheets', 'quizzes'],
         }),
       })
@@ -706,10 +1135,12 @@ export function LearningMaterialPremiumSection({
       }
 
       setLearningMaterial(data)
+      setActiveTab('analysis') // Start with the independent analysis view
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
     } finally {
       setIsGenerating(false)
+      setGenerationProgress('')
     }
   }
 
@@ -794,7 +1225,7 @@ export function LearningMaterialPremiumSection({
             {isGenerating ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Erstelle Material...
+                {generationProgress || 'Erstelle Material...'}
               </>
             ) : (
               <>
@@ -855,9 +1286,29 @@ export function LearningMaterialPremiumSection({
             </div>
           )}
 
+          {/* Generation metadata */}
+          {learningMaterial.metadata?.isIndependent && (
+            <div className="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-xl p-4 border border-purple-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Brain className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="font-medium text-purple-800">Unabhängige KI-Analyse</p>
+                  <p className="text-sm text-purple-600">
+                    {learningMaterial.metadata.weaknessesFound} Schwächen erkannt
+                    {' '}&bull;{' '}
+                    {learningMaterial.metadata.curriculumTopicsMatched} Lehrplan-Themen zugeordnet
+                    {' '}&bull;{' '}
+                    Generiert in {learningMaterial.metadata.totalGenerationTime}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tab Navigation */}
-          <div className="flex gap-2 border-b border-purple-200 pb-2">
+          <div className="flex gap-2 border-b border-purple-200 pb-2 overflow-x-auto">
             {[
+              ...(learningMaterial.independentAnalysis ? [{ id: 'analysis' as const, icon: Brain, label: 'Analyse', count: learningMaterial.independentAnalysis?.detectedWeaknesses?.length || 0 }] : []),
               { id: 'lessons' as const, icon: BookOpen, label: 'Lektionen', count: learningMaterial.lessons?.lessons?.length || 0 },
               { id: 'worksheets' as const, icon: FileText, label: 'Arbeitsblätter', count: learningMaterial.worksheets?.worksheets?.length || 0 },
               { id: 'quizzes' as const, icon: ClipboardCheck, label: 'Quizze', count: learningMaterial.quizzes?.quizzes?.length || 0 },
@@ -880,6 +1331,175 @@ export function LearningMaterialPremiumSection({
 
           {/* Tab Content */}
           <div className="bg-white rounded-xl border border-purple-200 overflow-hidden">
+            {/* Independent Analysis Tab */}
+            {activeTab === 'analysis' && learningMaterial.independentAnalysis && (
+              <div className="p-5 space-y-5">
+                {/* Overall Assessment */}
+                {learningMaterial.independentAnalysis.overallAssessment && (
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      Gesamtbewertung
+                    </h4>
+                    <p className="text-gray-700">{learningMaterial.independentAnalysis.overallAssessment}</p>
+                  </div>
+                )}
+
+                {/* Detected Weaknesses */}
+                {learningMaterial.independentAnalysis.detectedWeaknesses?.length > 0 && (
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      Erkannte Schwächen ({learningMaterial.independentAnalysis.detectedWeaknesses.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {learningMaterial.independentAnalysis.detectedWeaknesses.map((w: any, i: number) => (
+                        <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => toggleExpand(`weakness-${i}`)}
+                            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                w.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                                w.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                                w.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {w.severity === 'critical' ? 'Kritisch' :
+                                 w.severity === 'high' ? 'Hoch' :
+                                 w.severity === 'medium' ? 'Mittel' : 'Gering'}
+                              </span>
+                              <span className="font-medium text-gray-800">{w.title}</span>
+                            </div>
+                            {expandedItems.has(`weakness-${i}`) ? (
+                              <ChevronUp className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                          {expandedItems.has(`weakness-${i}`) && (
+                            <div className="px-4 pb-4 space-y-2 border-t border-gray-100">
+                              <p className="text-sm text-gray-700 mt-3">{w.description}</p>
+                              {w.rootCause && (
+                                <div className="bg-red-50 rounded p-2">
+                                  <span className="text-xs font-medium text-red-700">Ursache: </span>
+                                  <span className="text-sm text-red-600">{w.rootCause}</span>
+                                </div>
+                              )}
+                              {w.evidenceFromTest && (
+                                <div className="bg-gray-50 rounded p-2">
+                                  <span className="text-xs font-medium text-gray-500">Beleg aus dem Test: </span>
+                                  <span className="text-sm text-gray-600 italic">"{w.evidenceFromTest}"</span>
+                                </div>
+                              )}
+                              {w.affectedSkills?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {w.affectedSkills.map((skill: string, j: number) => (
+                                    <span key={j} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{skill}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Teacher Feedback Analysis */}
+                {learningMaterial.independentAnalysis.teacherFeedback && (
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5 text-blue-500" />
+                      Lehrerkommentar-Analyse
+                    </h4>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 space-y-3">
+                      {learningMaterial.independentAnalysis.teacherFeedback.mainComments?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">Hauptkommentare:</p>
+                          <ul className="space-y-1">
+                            {learningMaterial.independentAnalysis.teacherFeedback.mainComments.map((c: string, i: number) => (
+                              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                <span className="text-blue-500 mt-0.5">&#8226;</span> {c}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {learningMaterial.independentAnalysis.teacherFeedback.correctionPatterns?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 mb-1">Korrekturmuster:</p>
+                          <ul className="space-y-1">
+                            {learningMaterial.independentAnalysis.teacherFeedback.correctionPatterns.map((p: string, i: number) => (
+                              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                <span className="text-blue-500 mt-0.5">&#8226;</span> {p}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {learningMaterial.independentAnalysis.teacherFeedback.overallTone && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-blue-800">Ton:</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            learningMaterial.independentAnalysis.teacherFeedback.overallTone === 'encouraging' ? 'bg-green-100 text-green-700' :
+                            learningMaterial.independentAnalysis.teacherFeedback.overallTone === 'critical' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {learningMaterial.independentAnalysis.teacherFeedback.overallTone === 'encouraging' ? 'Ermutigend' :
+                             learningMaterial.independentAnalysis.teacherFeedback.overallTone === 'critical' ? 'Kritisch' :
+                             learningMaterial.independentAnalysis.teacherFeedback.overallTone === 'mixed' ? 'Gemischt' : 'Neutral'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strengths found */}
+                {learningMaterial.independentAnalysis.strengths?.length > 0 && (
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      Erkannte Stärken
+                    </h4>
+                    <div className="space-y-2">
+                      {learningMaterial.independentAnalysis.strengths.map((s: any, i: number) => (
+                        <div key={i} className="bg-green-50 rounded-lg p-3 border border-green-200">
+                          <p className="font-medium text-green-800">{s.title}</p>
+                          {s.evidence && (
+                            <p className="text-sm text-green-600 mt-1">Beleg: {s.evidence}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Prioritized Learning Needs */}
+                {learningMaterial.independentAnalysis.prioritizedLearningNeeds?.length > 0 && (
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+                    <h4 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Priorisierte Lernbedürfnisse
+                    </h4>
+                    <ol className="space-y-2">
+                      {learningMaterial.independentAnalysis.prioritizedLearningNeeds.map((need: string, i: number) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-sm font-bold">
+                            {i + 1}
+                          </span>
+                          <span className="text-gray-700">{need}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Lessons Tab */}
             {activeTab === 'lessons' && learningMaterial.lessons?.lessons && (
               <div className="divide-y divide-gray-100">
@@ -907,25 +1527,65 @@ export function LearningMaterialPremiumSection({
 
                     {expandedItems.has(`lesson-${i}`) && (
                       <div className="mt-4 space-y-4 pl-14">
-                        {/* Prerequisite Check */}
-                        {lesson.prerequisiteCheck && (
-                          <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                            <div className="text-sm font-medium text-amber-700 mb-1">📝 Voraussetzungsprüfung:</div>
-                            <p className="text-sm text-amber-600">{lesson.prerequisiteCheck}</p>
+                        {/* Difficulty & Time */}
+                        {(lesson.difficulty || lesson.estimatedTime) && (
+                          <div className="flex gap-2">
+                            {lesson.difficulty && (
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                lesson.difficulty === 'foundation' ? 'bg-green-100 text-green-700' :
+                                lesson.difficulty === 'mastery' ? 'bg-red-100 text-red-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                                {lesson.difficulty === 'foundation' ? 'Grundlagen' :
+                                 lesson.difficulty === 'mastery' ? 'Meisterung' : 'Aufbau'}
+                              </span>
+                            )}
+                            {lesson.estimatedTime && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                ⏱️ {lesson.estimatedTime}
+                              </span>
+                            )}
                           </div>
                         )}
 
-                        {/* Explanation */}
+                        {/* Prerequisite Check - support both old and new format */}
+                        {lesson.prerequisiteCheck && (
+                          <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                            <div className="text-sm font-medium text-amber-700 mb-1">📝 Voraussetzungsprüfung:</div>
+                            <p className="text-sm text-amber-600">
+                              {typeof lesson.prerequisiteCheck === 'string'
+                                ? lesson.prerequisiteCheck
+                                : lesson.prerequisiteCheck.question}
+                            </p>
+                            {lesson.prerequisiteCheck.expectedAnswer && (
+                              <p className="text-xs text-amber-500 mt-1">Erwartete Antwort: {lesson.prerequisiteCheck.expectedAnswer}</p>
+                            )}
+                            {lesson.prerequisiteCheck.ifFailed && (
+                              <p className="text-xs text-red-500 mt-1">Falls nicht bestanden: {lesson.prerequisiteCheck.ifFailed}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Introduction (new format) */}
+                        {lesson.content?.introduction && (
+                          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                            <p className="text-sm text-purple-700">{lesson.content.introduction}</p>
+                          </div>
+                        )}
+
+                        {/* Explanation - support both old and new format */}
                         <div className="prose prose-sm max-w-none">
-                          <div className="text-gray-700 whitespace-pre-wrap">{lesson.explanation}</div>
+                          <div className="text-gray-700 whitespace-pre-wrap">
+                            {lesson.content?.explanation || lesson.explanation}
+                          </div>
                         </div>
 
-                        {/* Key Points */}
-                        {lesson.keyPoints && (
+                        {/* Key Rules / Key Points */}
+                        {(lesson.content?.keyRules || lesson.keyPoints) && (
                           <div className="bg-purple-50 rounded-lg p-3">
-                            <div className="text-sm font-medium text-purple-700 mb-2">🔑 Wichtige Punkte:</div>
+                            <div className="text-sm font-medium text-purple-700 mb-2">🔑 Wichtige Regeln:</div>
                             <ul className="space-y-1">
-                              {lesson.keyPoints.map((point: string, j: number) => (
+                              {(lesson.content?.keyRules || lesson.keyPoints).map((point: string, j: number) => (
                                 <li key={j} className="text-sm text-gray-600 flex items-start gap-2">
                                   <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
                                   {point}
@@ -935,8 +1595,29 @@ export function LearningMaterialPremiumSection({
                           </div>
                         )}
 
-                        {/* Example Walkthrough */}
-                        {lesson.exampleWalkthrough && (
+                        {/* Worked Examples (new format) */}
+                        {lesson.content?.workedExamples?.map((example: any, j: number) => (
+                          <div key={j} className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <div className="text-sm font-medium text-blue-700 mb-2">📖 Beispiel {j + 1}:</div>
+                            <p className="text-sm text-gray-700 mb-2"><strong>Aufgabe:</strong> {example.problem}</p>
+                            <div className="space-y-1 mb-2">
+                              {example.steps?.map((step: string, k: number) => (
+                                <p key={k} className="text-sm text-gray-600">
+                                  <span className="font-medium">Schritt {k + 1}:</span> {step}
+                                </p>
+                              ))}
+                            </div>
+                            <p className="text-sm text-green-700"><strong>Lösung:</strong> {example.solution}</p>
+                            {example.commonMistake && (
+                              <p className="text-xs text-red-500 mt-2 bg-red-50 p-2 rounded">
+                                ⚠️ Häufiger Fehler: {example.commonMistake}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* Example Walkthrough (old format fallback) */}
+                        {!lesson.content?.workedExamples && lesson.exampleWalkthrough && (
                           <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                             <div className="text-sm font-medium text-blue-700 mb-2">📖 Beispiel durchgehen:</div>
                             <p className="text-sm text-gray-700 mb-2"><strong>Aufgabe:</strong> {lesson.exampleWalkthrough.problem}</p>
@@ -951,18 +1632,68 @@ export function LearningMaterialPremiumSection({
                           </div>
                         )}
 
-                        {/* Memory Trick */}
-                        {lesson.memoryTrick && (
+                        {/* Practice Problems (new format) */}
+                        {lesson.content?.practiceProblems?.length > 0 && (
+                          <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <div className="text-sm font-medium text-green-700 mb-2">✏️ Übungsaufgaben:</div>
+                            <div className="space-y-2">
+                              {lesson.content.practiceProblems.map((prob: any, j: number) => (
+                                <div key={j} className="bg-white rounded p-2 border border-green-100">
+                                  <p className="text-sm text-gray-700">{j + 1}. {prob.question}</p>
+                                  {prob.hint && (
+                                    <p className="text-xs text-amber-600 mt-1">💡 Tipp: {prob.hint}</p>
+                                  )}
+                                  <button
+                                    onClick={() => toggleExpand(`practice-${i}-${j}`)}
+                                    className="text-xs text-blue-600 hover:underline mt-1"
+                                  >
+                                    {expandedItems.has(`practice-${i}-${j}`) ? 'Antwort verbergen' : 'Antwort zeigen'}
+                                  </button>
+                                  {expandedItems.has(`practice-${i}-${j}`) && (
+                                    <p className="text-sm text-green-700 mt-1 bg-green-50 p-1 rounded">✅ {prob.answer}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Memory Aids (new format) */}
+                        {lesson.memoryAids && (
+                          <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200 space-y-2">
+                            <div className="text-sm font-medium text-yellow-700">💡 Merkhilfen:</div>
+                            {lesson.memoryAids.mnemonic && (
+                              <p className="text-sm text-gray-600">🧠 {lesson.memoryAids.mnemonic}</p>
+                            )}
+                            {lesson.memoryAids.visualAid && (
+                              <p className="text-sm text-gray-600">📊 {lesson.memoryAids.visualAid}</p>
+                            )}
+                            {lesson.memoryAids.realWorldExample && (
+                              <p className="text-sm text-gray-600">🌍 {lesson.memoryAids.realWorldExample}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Memory Trick (old format fallback) */}
+                        {!lesson.memoryAids && lesson.memoryTrick && (
                           <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
                             <div className="text-sm font-medium text-yellow-700">💡 Merkhilfe:</div>
                             <p className="text-sm text-gray-600">{lesson.memoryTrick}</p>
                           </div>
                         )}
 
-                        {/* Real World Connection */}
-                        {lesson.realWorldConnection && (
+                        {/* Real World Connection (old format fallback) */}
+                        {!lesson.memoryAids && lesson.realWorldConnection && (
                           <div className="text-sm text-gray-500">
                             <span className="font-medium">🌍 Im Alltag:</span> {lesson.realWorldConnection}
+                          </div>
+                        )}
+
+                        {/* Parent Guidance (new format) */}
+                        {lesson.parentGuidance && (
+                          <div className="bg-pink-50 rounded-lg p-3 border border-pink-200">
+                            <div className="text-sm font-medium text-pink-700 mb-1">👨‍👩‍👧 Tipp für Eltern:</div>
+                            <p className="text-sm text-gray-600">{lesson.parentGuidance}</p>
                           </div>
                         )}
                       </div>

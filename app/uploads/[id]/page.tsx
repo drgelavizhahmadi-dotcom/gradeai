@@ -84,7 +84,7 @@ export default function UploadDetailPage() {
   const [upgradeFeature, setUpgradeFeature] = useState<'flashcards' | 'fairness' | 'learning' | undefined>()
 
   // TODO: Get this from user session/subscription status
-  const isPremiumUser = false // Set to true to test premium features
+  const isPremiumUser = true // Set to true to test premium features
 
   const handleUpgrade = (feature?: 'flashcards' | 'fairness' | 'learning') => {
     setUpgradeFeature(feature)
@@ -755,6 +755,7 @@ export default function UploadDetailPage() {
                           data={analysisData}
                           extractedText={upload.extractedText}
                           childName={upload.child?.name}
+                          language={reportLanguage as any}
                         />
                       </ErrorBoundary>
                     );
@@ -835,20 +836,28 @@ export default function UploadDetailPage() {
                   onUpgrade={() => handleUpgrade('flashcards')}
                 />
 
-                {/* Fairness Check Section */}
+                {/* Fairness Check Section - Independent AI Analysis */}
                 <FairnessCheckPremiumSection
                   isPremium={isPremiumUser}
                   childName={upload.child.name}
                   analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
                   onUpgrade={() => handleUpgrade('fairness')}
+                  extractedText={upload.extractedText}
+                  grade={upload.child.grade}
+                  subject={upload.subject || undefined}
+                  schoolType={upload.child.schoolType}
                 />
 
-                {/* Learning Material Section */}
+                {/* Learning Material Section - Independent AI Analysis */}
                 <LearningMaterialPremiumSection
                   isPremium={isPremiumUser}
                   childName={upload.child.name}
                   analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
                   onUpgrade={() => handleUpgrade('learning')}
+                  extractedText={upload.extractedText}
+                  grade={upload.child.grade}
+                  subject={upload.subject || undefined}
+                  schoolType={upload.child.schoolType}
                 />
               </div>
             )}
