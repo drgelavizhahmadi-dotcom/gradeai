@@ -21,71 +21,25 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 function getLanguageInstruction(lang: string): string {
   const name = LANGUAGE_NAMES[lang] || LANGUAGE_NAMES['de']
-  return `IMPORTANT: Write ALL your analysis and responses in ${name}. All text values in the JSON output must be in ${name}.`
+  return `IMPORTANT: Write ALL your responses in ${name}. All text values in the JSON output must be in ${name}.`
 }
 
-// === STEP 1: Independent Test Analysis Agent ===
+// === Single-Step Flashcard Generator ===
+// Analyzes the test AND generates flashcards in one call to avoid Vercel 60s timeout
 
-const TEST_ANALYSIS_PROMPT = `You are an expert at analyzing school test documents. You receive raw OCR-extracted text from a school test and must identify:
+const FLASHCARD_PROMPT = `You are an expert educational content creator. You receive raw OCR-extracted text from a school test and must:
 
-1. The subject, topic, and grade level
-2. All questions and their point values
-3. What the student answered
-4. Teacher corrections, marks, and feedback
-5. Student weaknesses and knowledge gaps
-6. Key concepts that were tested
+1. Analyze the test to identify the student's weaknesses and knowledge gaps
+2. Create 8-10 targeted flashcards that address those specific weaknesses
 
-Be thorough - find every weakness, even subtle ones. Identify the root cause behind each mistake.
-
-Output ONLY valid JSON:
-{
-  "testAnalysis": {
-    "subject": "Detected subject",
-    "topic": "Main topic of the test",
-    "gradeLevel": "Detected grade level",
-    "maxPoints": 0,
-    "achievedPoints": 0,
-    "gradeGiven": "The grade",
-    "keyConceptsTested": ["concept1", "concept2"],
-    "weaknesses": [
-      {
-        "id": "w1",
-        "title": "Short title",
-        "description": "What went wrong",
-        "rootCause": "Why this happened",
-        "severity": "critical|high|medium|low",
-        "relatedConcept": "The concept this relates to"
-      }
-    ],
-    "strengths": [
-      {
-        "title": "What went well",
-        "evidence": "Specific reference"
-      }
-    ],
-    "teacherFeedback": ["Comment 1", "Comment 2"]
-  }
-}`
-
-// === STEP 2: Flashcard Generation Agent ===
-
-const FLASHCARD_PROMPT = `You are an expert educational content creator specializing in creating effective learning flashcards for students.
-
-Based on the independent test analysis provided, create personalized flashcards that:
-1. Target the SPECIFIC weaknesses identified in the analysis
-2. Use age-appropriate language for the student's grade level
-3. Include memory tricks and mnemonics where helpful
-4. Cover the exact topics and concepts from the test
-5. Help the student master material they struggled with
-
-IMPORTANT RULES:
-- Create exactly 8-10 flashcards
-- Each flashcard should address a specific weakness or knowledge gap
+FLASHCARD RULES:
+- Each flashcard should address a specific weakness or knowledge gap from the test
 - Front: Clear question or concept to recall
 - Back: Concise, memorable answer
 - Tip: A memory trick, mnemonic, or study hint
+- Use age-appropriate language for the student's grade level
+- Prioritize critical weaknesses first
 - Make them SPECIFIC to the test content, not generic
-- Prioritize critical and high-severity weaknesses
 
 Output ONLY valid JSON:
 {
@@ -148,51 +102,6 @@ async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown
   return JSON.parse(cleaned)
 }
 
-async function runAgent(
-  agentPrompt: string,
-  userContext: string,
-  agentName: string,
-  temperature: number = 0.5
-): Promise<Record<string, unknown>> {
-  console.log(`[Flashcards API] Running ${agentName} agent...`)
-  const startTime = Date.now()
-
-  try {
-    const response = await deepseek.chat.completions.create({
-      model: 'deepseek-chat',
-      max_tokens: 4096,
-      temperature,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: agentPrompt },
-        { role: 'user', content: userContext },
-      ],
-    })
-
-    const text = response.choices[0]?.message?.content
-    if (!text) {
-      throw new Error(`No text content from ${agentName} agent`)
-    }
-
-    const jsonString = extractJson(text)
-
-    let result: Record<string, unknown>
-    try {
-      result = JSON.parse(jsonString)
-    } catch (parseError) {
-      console.warn(`[Flashcards API] ${agentName} JSON parse failed, using AI repair...`)
-      result = await fixJsonWithAI(text)
-      console.log(`[Flashcards API] ${agentName} JSON repaired via AI`)
-    }
-
-    console.log(`[Flashcards API] ${agentName} agent completed in ${Date.now() - startTime}ms`)
-    return result
-  } catch (error) {
-    console.error(`[Flashcards API] ${agentName} agent error:`, error)
-    throw error
-  }
-}
-
 // === Main API Handler ===
 
 export async function POST(request: NextRequest) {
@@ -216,13 +125,11 @@ export async function POST(request: NextRequest) {
     }
 
     const languageInstruction = getLanguageInstruction(language)
-    console.log('[Flashcards API] Starting independent flashcard generation for:', childName, 'language:', language)
-    const overallStart = Date.now()
+    console.log('[Flashcards API] Starting single-step flashcard generation for:', childName, 'language:', language)
+    const startTime = Date.now()
 
-    // ============================================
-    // STEP 1: Analyze the test from raw text
-    // ============================================
-    const analysisContext = `
+    // Single AI call: analyze test + generate flashcards
+    const userContext = `
 ${languageInstruction}
 
 === STUDENT INFORMATION ===
@@ -235,62 +142,51 @@ Subject: ${subject || 'Unknown'}
 ${extractedText}
 
 === INSTRUCTIONS ===
-Analyze this test independently. Identify ALL weaknesses, errors, knowledge gaps, and key concepts tested.
-Focus on finding specific topics the student needs to practice.
-`
-
-    const analysisResult = await runAgent(
-      TEST_ANALYSIS_PROMPT,
-      analysisContext,
-      'TestAnalysis',
-      0.3
-    )
-
-    const testAnalysis = (analysisResult as any).testAnalysis || analysisResult
-    console.log('[Flashcards API] Test analyzed:', testAnalysis.weaknesses?.length || 0, 'weaknesses found')
-
-    // ============================================
-    // STEP 2: Generate flashcards from analysis
-    // ============================================
-    const flashcardContext = `
-${languageInstruction}
-
-=== INDEPENDENT TEST ANALYSIS ===
-${JSON.stringify(testAnalysis, null, 2)}
-
-=== STUDENT CONTEXT ===
-Name: ${childName || 'Schüler'}
-Grade/Class: ${grade || 'Unknown'}
-School Type: ${schoolType || 'Unknown'}
-Subject: ${testAnalysis.subject || subject || 'Unknown'}
-
-=== INSTRUCTIONS ===
-Create 8-10 targeted flashcards that help this student overcome their specific weaknesses.
-Each flashcard should directly address a weakness found in the analysis.
+Analyze this test to find the student's weaknesses, then create 8-10 targeted flashcards that help them overcome those weaknesses.
+Each flashcard should directly address a specific error or knowledge gap from the test.
 Use age-appropriate language and include helpful memory tricks.
 `
 
-    const flashcardResult = await runAgent(
-      FLASHCARD_PROMPT,
-      flashcardContext,
-      'FlashcardGeneration',
-      0.7
-    )
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      max_tokens: 4096,
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: FLASHCARD_PROMPT },
+        { role: 'user', content: userContext },
+      ],
+    })
 
-    const totalTime = Date.now() - overallStart
-    console.log(`[Flashcards API] Complete in ${totalTime}ms. Generated ${(flashcardResult as any).flashcards?.length || 0} flashcards`)
+    const text = response.choices[0]?.message?.content
+    if (!text) {
+      throw new Error('No response from flashcard generation')
+    }
+
+    const jsonString = extractJson(text)
+
+    let result: Record<string, unknown>
+    try {
+      result = JSON.parse(jsonString)
+    } catch (parseError) {
+      console.warn('[Flashcards API] JSON parse failed, using AI repair...')
+      result = await fixJsonWithAI(text)
+      console.log('[Flashcards API] JSON repaired via AI')
+    }
+
+    const totalTime = Date.now() - startTime
+    console.log(`[Flashcards API] Complete in ${totalTime}ms. Generated ${(result as any).flashcards?.length || 0} flashcards`)
 
     return NextResponse.json({
       success: true,
-      ...flashcardResult,
+      ...result,
       generatedAt: new Date().toISOString(),
       metadata: {
         studentName: childName,
-        subject: testAnalysis.subject || subject,
+        subject: subject,
         generatedAt: new Date().toISOString(),
         totalGenerationTime: `${(totalTime / 1000).toFixed(1)}s`,
         isIndependent: true,
-        weaknessesFound: testAnalysis.weaknesses?.length || 0,
         language,
       }
     })

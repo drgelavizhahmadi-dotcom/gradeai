@@ -24,27 +24,30 @@ function getLanguageInstruction(lang: string): string {
   return `IMPORTANT: Write ALL your analysis and responses in ${name}. All text values in the JSON output must be in ${name}.`
 }
 
-// === STEP 1: Independent Test Reconstruction Agent ===
-// Reads raw OCR text and reconstructs what the test looked like, what the student wrote,
-// and how the teacher graded it - completely independent from the main analysis pipeline.
+// === Single-Step Fairness Analyzer ===
+// Reconstructs the test AND performs fairness analysis in one call to avoid Vercel 60s timeout
 
-const TEST_RECONSTRUCTION_PROMPT = `You are an expert at analyzing scanned school test documents. You receive raw OCR-extracted text from a school test and must reconstruct:
+const FAIRNESS_PROMPT = `You are an independent educational fairness auditor with expertise in school grading standards, educational law, and student rights.
 
-1. The original test questions and their point values
-2. What the student wrote as answers
-3. How the teacher marked/corrected each answer
-4. Point deductions and their reasons
-5. Teacher comments (margin notes, final comments, correction symbols)
-6. The final grade and total points
+You receive raw OCR-extracted text from a school test. Your job is to:
+1. Reconstruct the test (questions, student answers, teacher corrections, points)
+2. Perform a thorough fairness analysis of the grading
 
-You work INDEPENDENTLY - you only have the raw text. Be meticulous and forensic in your analysis.
+EVALUATION DIMENSIONS:
+1. **Grading Consistency**: Are similar errors penalized the same way throughout?
+2. **Point Proportionality**: Are deductions proportional to the severity of errors?
+3. **Partial Credit Fairness**: Is partial credit given where the student showed understanding?
+4. **Clarity of Expectations**: Were questions clear and unambiguous?
+5. **Feedback Quality**: Is teacher feedback constructive and helpful?
+6. **Mathematical Accuracy**: Do the points add up correctly?
+7. **Grade Threshold Fairness**: Is the student near a grade boundary? Could recovered points change the grade?
 
 RULES:
-- Distinguish between printed test questions and handwritten student answers
-- Identify teacher correction marks (checkmarks, crosses, circles, underlines, etc.)
-- Note partial credit given or denied
-- Record ALL teacher comments, even small margin notes
-- Calculate point totals yourself to verify the teacher's math
+- Be OBJECTIVE - base everything on evidence from the test
+- Be FAIR to both teacher and student
+- Identify specific examples for every claim
+- Calculate potential point recovery
+- Provide actionable recommendations
 
 Output ONLY valid JSON:
 {
@@ -72,44 +75,9 @@ Output ONLY valid JSON:
     "teacherComments": {
       "finalComment": "Teacher's final comment if any",
       "marginNotes": ["Note 1", "Note 2"],
-      "correctionSymbols": ["Symbol and meaning"],
       "overallTone": "encouraging|neutral|critical|mixed"
-    },
-    "pointCalculationCheck": {
-      "teacherTotal": 0,
-      "myCalculatedTotal": 0,
-      "discrepancy": false,
-      "discrepancyDetails": "If points don't add up, explain"
     }
-  }
-}`
-
-// === STEP 2: Independent Fairness Analysis Agent ===
-// Takes the reconstructed test and performs a thorough fairness evaluation
-
-const FAIRNESS_ANALYSIS_PROMPT = `You are an independent educational fairness auditor with expertise in school grading standards, educational law, and student rights.
-
-You receive a detailed reconstruction of a student's test. Your job is to perform a THOROUGH, INDEPENDENT fairness analysis.
-
-EVALUATION DIMENSIONS:
-1. **Grading Consistency**: Are similar errors penalized the same way throughout?
-2. **Point Proportionality**: Are deductions proportional to the severity of errors?
-3. **Partial Credit Fairness**: Is partial credit given where the student showed understanding?
-4. **Clarity of Expectations**: Were questions clear and unambiguous?
-5. **Feedback Quality**: Is teacher feedback constructive and helpful?
-6. **Mathematical Accuracy**: Do the points add up correctly?
-7. **Grade Threshold Fairness**: Is the student near a grade boundary? Could recovered points change the grade?
-8. **Comparison with Standards**: Does grading align with typical school grading standards?
-
-RULES:
-- Be OBJECTIVE - base everything on evidence
-- Be FAIR to both teacher and student
-- Identify specific examples for every claim
-- Calculate potential point recovery
-- Provide actionable recommendations
-
-Output ONLY valid JSON:
-{
+  },
   "fairnessAnalysis": {
     "overallScore": 85,
     "verdict": "fair|mostly_fair|some_concerns|questionable|needs_review",
@@ -243,51 +211,6 @@ async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown
   return JSON.parse(cleaned)
 }
 
-async function runAgent(
-  agentPrompt: string,
-  userContext: string,
-  agentName: string,
-  temperature: number = 0.3
-): Promise<Record<string, unknown>> {
-  console.log(`[Independent Fairness] Running ${agentName} agent...`)
-  const startTime = Date.now()
-
-  try {
-    const response = await deepseek.chat.completions.create({
-      model: 'deepseek-chat',
-      max_tokens: 4096,
-      temperature,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: agentPrompt },
-        { role: 'user', content: userContext },
-      ],
-    })
-
-    const text = response.choices[0]?.message?.content
-    if (!text) {
-      throw new Error(`No text content from ${agentName} agent`)
-    }
-
-    const jsonString = extractJson(text)
-
-    let result: Record<string, unknown>
-    try {
-      result = JSON.parse(jsonString)
-    } catch (parseError) {
-      console.warn(`[Independent Fairness] ${agentName} JSON parse failed, using AI repair...`)
-      result = await fixJsonWithAI(text)
-      console.log(`[Independent Fairness] ${agentName} JSON repaired via AI`)
-    }
-
-    console.log(`[Independent Fairness] ${agentName} agent completed in ${Date.now() - startTime}ms`)
-    return result
-  } catch (error) {
-    console.error(`[Independent Fairness] ${agentName} agent error:`, error)
-    throw error
-  }
-}
-
 // === Main API Handler ===
 
 export async function POST(request: NextRequest) {
@@ -311,13 +234,11 @@ export async function POST(request: NextRequest) {
     }
 
     const languageInstruction = getLanguageInstruction(language)
-    console.log('[Independent Fairness API] Starting independent fairness analysis for:', childName, 'language:', language)
-    const overallStart = Date.now()
+    console.log('[Independent Fairness API] Starting single-step fairness analysis for:', childName, 'language:', language)
+    const startTime = Date.now()
 
-    // ============================================
-    // STEP 1: Reconstruct the test from raw text
-    // ============================================
-    const reconstructionContext = `
+    // Single AI call: reconstruct test + analyze fairness
+    const userContext = `
 ${languageInstruction}
 
 === STUDENT INFORMATION ===
@@ -330,53 +251,45 @@ Subject: ${subject || 'Unknown'}
 ${extractedText}
 
 === INSTRUCTIONS ===
-Reconstruct this test in detail. Identify every question, student answer, teacher correction, and point value.
+1. First reconstruct the test: identify every question, student answer, teacher correction, and point value.
+2. Then perform a thorough fairness analysis of the grading.
 Be forensic - look for correction marks, margin notes, crossed-out text, and anything that indicates grading decisions.
 Verify the point calculation yourself.
-`
-
-    const reconstructionResult = await runAgent(
-      TEST_RECONSTRUCTION_PROMPT,
-      reconstructionContext,
-      'TestReconstruction',
-      0.2 // Very low temperature for accuracy
-    )
-
-    const testReconstruction = (reconstructionResult as any).testReconstruction || reconstructionResult
-    console.log('[Independent Fairness API] Test reconstructed:', testReconstruction.questions?.length || 0, 'questions found')
-
-    // ============================================
-    // STEP 2: Run fairness analysis on reconstruction
-    // ============================================
-    const fairnessContext = `
-${languageInstruction}
-
-=== RECONSTRUCTED TEST ===
-${JSON.stringify(testReconstruction, null, 2)}
-
-=== STUDENT CONTEXT ===
-Name: ${childName || 'Schüler'}
-Grade/Class: ${grade || 'Unknown'}
-School Type: ${schoolType || 'Unknown'}
-Subject: ${subject || 'Unknown'}
-
-=== INSTRUCTIONS ===
-Perform a thorough, independent fairness analysis of this test grading.
 Check every dimension: consistency, proportionality, partial credit, clarity, feedback quality, mathematical accuracy.
-Be objective and evidence-based. Reference specific questions and point deductions.
-Calculate if recovering points could change the grade.
+Be objective and evidence-based.
 `
 
-    const fairnessResult = await runAgent(
-      FAIRNESS_ANALYSIS_PROMPT,
-      fairnessContext,
-      'FairnessAnalysis',
-      0.3
-    )
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      max_tokens: 4096,
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: FAIRNESS_PROMPT },
+        { role: 'user', content: userContext },
+      ],
+    })
 
-    const fairnessAnalysis = (fairnessResult as any).fairnessAnalysis || fairnessResult
+    const text = response.choices[0]?.message?.content
+    if (!text) {
+      throw new Error('No response from fairness analysis')
+    }
 
-    const totalTime = Date.now() - overallStart
+    const jsonString = extractJson(text)
+
+    let result: Record<string, unknown>
+    try {
+      result = JSON.parse(jsonString)
+    } catch (parseError) {
+      console.warn('[Independent Fairness] JSON parse failed, using AI repair...')
+      result = await fixJsonWithAI(text)
+      console.log('[Independent Fairness] JSON repaired via AI')
+    }
+
+    const testReconstruction = (result as any).testReconstruction || {}
+    const fairnessAnalysis = (result as any).fairnessAnalysis || result
+
+    const totalTime = Date.now() - startTime
     console.log(`[Independent Fairness API] Complete in ${totalTime}ms. Score: ${fairnessAnalysis.overallScore}`)
 
     return NextResponse.json({
