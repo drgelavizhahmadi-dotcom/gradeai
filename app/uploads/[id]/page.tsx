@@ -655,7 +655,7 @@ export default function UploadDetailPage() {
 
             {/* Language Selector for Report */}
             {upload.analysis && (
-              <div className="mb-4 flex items-center justify-between">
+              <div dir="ltr" className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-[var(--gray-600)]">
                   <Globe className="h-4 w-4" />
                   <span>Report Language:</span>
@@ -723,7 +723,7 @@ export default function UploadDetailPage() {
 
             {/* Parent Report */}
             {(upload.analysis || upload.extractedText) && (
-              <div className="mb-6">
+              <div className="mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {(() => {
                   // Use translated report if available, otherwise original
                   const analysisData = translatedReport || (upload.analysis ?
@@ -827,7 +827,7 @@ export default function UploadDetailPage() {
 
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
-              <div className="space-y-6 mb-6">
+              <div className="space-y-6 mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}

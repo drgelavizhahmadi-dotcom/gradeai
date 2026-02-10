@@ -443,13 +443,13 @@ export default function DashboardPage() {
                       <span className="text-sm font-bold text-[var(--gray-700)]">{child.totalTests}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-[var(--gray-500)]">Average Grade</span>
+                      <span className="text-sm text-[var(--gray-500)]">{t.child?.avgGrade || 'Average Grade'}</span>
                       <GradeBadge grade={child.averageGrade} size="sm" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-[var(--gray-500)]">Last Test</span>
+                      <span className="text-sm text-[var(--gray-500)]">{t.child?.testHistory || 'Last Test'}</span>
                       <span className="text-xs text-[var(--gray-400)]">
-                        {child.lastTestDate ? formatDate(child.lastTestDate) : 'Never'}
+                        {child.lastTestDate ? formatDate(child.lastTestDate) : '-'}
                       </span>
                     </div>
                   </div>
@@ -459,7 +459,7 @@ export default function DashboardPage() {
                     className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--gray-100)] px-4 py-3 text-sm font-semibold text-[var(--gray-700)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] transition-colors"
                     style={{ fontFamily: 'var(--font-display)' }}
                   >
-                    View Details
+                    {t.upload?.viewAnalysis || 'View Details'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
