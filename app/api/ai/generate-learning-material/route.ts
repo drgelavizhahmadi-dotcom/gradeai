@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/lib/auth'
 import { findRelevantTopics, getPrerequisites, CurriculumTopic } from '@/lib/curriculum/german-lehrplan'
 
+export const maxDuration = 300
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })

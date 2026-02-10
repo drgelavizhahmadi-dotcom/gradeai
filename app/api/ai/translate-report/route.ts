@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/ai/analyze-complete'
 
+export const maxDuration = 300
+
 const deepseek = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
