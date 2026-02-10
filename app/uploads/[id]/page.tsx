@@ -72,7 +72,7 @@ export default function UploadDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Language translation state
-  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>('en')
+  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>('de')
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
@@ -225,8 +225,8 @@ export default function UploadDetailPage() {
     setReportLanguage(newLanguage)
     setTranslationError(null)
 
-    // If English, use the original report
-    if (newLanguage === 'en' && originalReport) {
+    // If German (base language), use the original report
+    if (newLanguage === 'de' && originalReport) {
       setTranslatedReport(originalReport)
       return
     }
@@ -273,12 +273,11 @@ export default function UploadDetailPage() {
         : upload.analysis
 
       if (analysisData && typeof analysisData === 'object' && !Array.isArray(analysisData)) {
-        // Get English version (could be in _germanOriginal for backwards compat or direct)
-        const englishReport = analysisData._germanOriginal || analysisData
-        setOriginalReport(englishReport)
-        setTranslatedReport(englishReport)
+        // Store the report as original (German base)
+        setOriginalReport(analysisData)
+        setTranslatedReport(analysisData)
 
-        // Detect current language from report meta
+        // Detect current language from report meta (default to German)
         const currentLang = analysisData._meta?.language?.code
         if (currentLang && currentLang in REPORT_LANGUAGES) {
           setReportLanguage(currentLang as ReportLanguage)

@@ -1,13 +1,14 @@
 // lib/ai/analyze-complete.ts
 // Maximum speed + quality: Optimized prompts, parallel execution, smart fallbacks
 // Using DeepSeek for cost-effective AI analysis
-// Report is generated in ENGLISH first, then translated to target language
+// Report is generated in GERMAN first (native language of all tests),
+// then translated on-demand to the user's chosen language
 
 import OpenAI from 'openai';
 import {
-  COMPREHENSIVE_TEACHER_SYSTEM_EN,
-  COMPREHENSIVE_TEACHER_PROMPT_EN,
-} from './prompts/comprehensive-teacher-prompt-en';
+  COMPREHENSIVE_TEACHER_SYSTEM,
+  COMPREHENSIVE_TEACHER_PROMPT,
+} from './prompts/comprehensive-teacher-prompt';
 import {
   SUPPORTED_LANGUAGES,
 } from './prompts/translation-prompt';
@@ -52,16 +53,16 @@ function extractJSON(text: string): any {
 
 async function generateReport(extraction: string) {
   const startTime = Date.now();
-  console.log('[Report] Generating comprehensive report in English with DeepSeek...');
+  console.log('[Report] Generating comprehensive report in German with DeepSeek...');
 
   try {
-    const prompt = COMPREHENSIVE_TEACHER_PROMPT_EN.replace('{extraction}', extraction);
+    const prompt = COMPREHENSIVE_TEACHER_PROMPT.replace('{extraction}', extraction);
 
     const response = await deepseek.chat.completions.create({
       model: 'deepseek-chat',
       max_tokens: 8000,
       messages: [
-        { role: 'system', content: COMPREHENSIVE_TEACHER_SYSTEM_EN },
+        { role: 'system', content: COMPREHENSIVE_TEACHER_SYSTEM },
         { role: 'user', content: prompt },
       ],
     });
@@ -126,8 +127,8 @@ function preserveStructure(original: any, translated: any): any {
 }
 
 async function translateReport(report: any, targetLanguage: LanguageCode) {
-  // English is the base language now - no translation needed
-  if (targetLanguage === 'en') {
+  // German is the base language - no translation needed
+  if (targetLanguage === 'de') {
     return { success: true as const, translatedReport: report, duration: 0 };
   }
 
@@ -136,16 +137,16 @@ async function translateReport(report: any, targetLanguage: LanguageCode) {
   console.log('[Translate] To', lang.name, 'with DeepSeek...');
 
   try {
-    // More explicit translation prompt to preserve structure
-    const translationPrompt = `Translate this English school report to ${lang.name} (${lang.native}).
+    const translationPrompt = `Translate this German school report to ${lang.name} (${lang.native}).
 
 CRITICAL RULES:
 1. Translate ONLY the text values, NOT the JSON field names
 2. Keep ALL fields and arrays - do NOT remove any
 3. Student names should NOT be translated
-4. Grade values (numbers/letters) should NOT change
+4. Grade values (numbers like 1-6) should NOT change
 5. Keep the warm, empathetic tone
 6. Output ONLY valid JSON - no explanations
+7. Translate EVERY German text value - leave NOTHING in German
 
 IMPORTANT: The translated JSON MUST have the exact same structure with ALL fields:
 - student, test, grade, teacherFeedback, errorAnalysis
@@ -157,7 +158,7 @@ IMPORTANT: The translated JSON MUST have the exact same structure with ALL field
 - parentTips (with howToDiscuss, whatToAvoid, motivation)
 - resources, messages, summary
 
-ENGLISH REPORT:
+GERMAN REPORT:
 ${JSON.stringify(report, null, 2)}
 
 Respond with ONLY the translated JSON. No explanations.`;
@@ -195,7 +196,7 @@ Respond with ONLY the translated JSON. No explanations.`;
         native: lang.native,
         rtl: lang.rtl,
       },
-      translatedFrom: 'en',
+      translatedFrom: 'de',
     };
 
     const duration = Date.now() - startTime;
@@ -204,14 +205,14 @@ Respond with ONLY the translated JSON. No explanations.`;
     return { success: true as const, translatedReport, duration };
   } catch (error: any) {
     console.error('[Translate] Error:', error.message);
-    // Return English report with error flag
+    // Return German report with error flag
     return {
       success: false as const,
       error: error.message,
       translatedReport: {
         ...report,
         _meta: {
-          language: { code: 'en', name: 'English', native: 'English', rtl: false },
+          language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
           translationFailed: true,
           requestedLanguage: targetLanguage,
         },
@@ -225,7 +226,7 @@ export async function analyzeTestComplete(
   extraction: string,
   options: AnalyzeOptions = {}
 ) {
-  const { language = 'en' } = options;
+  const { language = 'de' } = options;
   const totalStart = Date.now();
 
   console.log('================================================================');
@@ -233,7 +234,7 @@ export async function analyzeTestComplete(
   console.log('[Analyze] Extraction:', extraction.length, 'chars');
   console.log('================================================================');
 
-  // STEP 1: Generate comprehensive report (English base)
+  // STEP 1: Generate comprehensive report (German base - native language of all tests)
   const reportResult = await generateReport(extraction);
 
   if (!reportResult.success) {
@@ -245,19 +246,19 @@ export async function analyzeTestComplete(
   }
 
   let report = reportResult.report;
-  const reportEnglish = JSON.parse(JSON.stringify(report));
+  const reportGerman = JSON.parse(JSON.stringify(report));
 
-  // STEP 2: Translate if needed (English is base, so translate if not English)
+  // STEP 2: Translate if needed (German is base, so translate if not German)
   let translationDuration = 0;
 
-  if (language !== 'en') {
+  if (language !== 'de') {
     const translateResult = await translateReport(report, language);
     translationDuration = translateResult.duration;
     report = translateResult.translatedReport;
   } else {
-    // Add English meta
+    // Add German meta
     report._meta = {
-      language: { code: 'en', name: 'English', native: 'English', rtl: false },
+      language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
     };
   }
 
@@ -271,8 +272,7 @@ export async function analyzeTestComplete(
   return {
     success: true as const,
     report,
-    reportEnglish, // English base report for reference
-    reportGerman: reportEnglish, // Keep for backwards compatibility
+    reportGerman, // German base report for reference
     timing: {
       report: reportResult.duration,
       translation: translationDuration,
