@@ -13,7 +13,7 @@ model User {
   phone              String?
   language           String    @default("de")
   hashedPassword     String?
-  subscriptionStatus String    @default("free")
+  subscriptionStatus String    @default("free") // "free" or "premium"
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   emailVerified      DateTime?
@@ -23,6 +23,12 @@ model User {
   sessions           Session[]
   uploads            Upload[]
 
+  // Stripe fields
+  stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
+  stripePriceId          String?   @map(name: "stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
+  
   @@index([email])
 }
 
