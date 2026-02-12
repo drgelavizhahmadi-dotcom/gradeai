@@ -27,7 +27,7 @@ export async function POST(_req: Request) {
         if (!stripeCustomerId) {
             const customer = await stripe.customers.create({
                 email: user.email,
-                name: user.name || undefined,
+                name: user.name,
                 metadata: {
                     userId: user.id,
                 },
@@ -43,6 +43,10 @@ export async function POST(_req: Request) {
                     stripeCustomerId: customer.id,
                 },
             });
+        }
+
+        if (!process.env.STRIPE_PREMIUM_PRICE_ID) {
+            return new NextResponse('Stripe Price ID is missing', { status: 500 });
         }
 
         const stripeSession = await stripe.checkout.sessions.create({

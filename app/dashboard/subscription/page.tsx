@@ -45,7 +45,7 @@ export default async function SubscriptionPage() {
                         <h3 className="text-2xl font-semibold leading-none tracking-tight">Premium Plan</h3>
                         <p className="text-sm text-muted-foreground mt-2">Unlock all features for growing students.</p>
                         <div className="mt-4 flex items-baseline text-3xl font-bold">
-                            $9.99
+                            €4.99
                             <span className="text-sm font-normal text-muted-foreground">/mo</span>
                         </div>
 
