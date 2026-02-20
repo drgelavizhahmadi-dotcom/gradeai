@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import LanguageSelector from '@/components/LanguageSelector'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import { OwlMascot } from '@/components/mascots'
 import {
   Upload,
@@ -27,6 +28,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const { user, isLoading, isAuthenticated } = useAuth()
+  const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
@@ -64,6 +66,10 @@ export default function DashboardLayout({
     { name: 'Upload Test', href: '/dashboard/upload', icon: Upload },
     { name: 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+    { name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
+    { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
+    { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
   ]
 
   const isActive = (href: string) => {
@@ -75,8 +81,8 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      {/* Sidebar - Desktop (always LTR layout, left-positioned) */}
+      <aside dir="ltr" className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-[var(--gray-200)] overflow-y-auto shadow-sm">
           {/* Logo with Owl */}
           <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--gray-200)]">
@@ -85,7 +91,7 @@ export default function DashboardLayout({
               <h1 className="text-xl font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
                 GradeAI
               </h1>
-              <p className="text-xs text-[var(--gray-500)]">Learning Companion</p>
+              <p className="text-xs text-[var(--gray-500)]">{t.nav?.dashboard === 'Dashboard' ? 'Learning Companion' : 'Lernbegleiter'}</p>
             </div>
           </div>
 
@@ -136,14 +142,14 @@ export default function DashboardLayout({
                     className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--gray-700)] hover:bg-[var(--gray-100)] transition-colors"
                   >
                     <Settings className="h-4 w-4" />
-                    Settings
+                    {t.nav?.settings || 'Settings'}
                   </Link>
                   <button
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--coral)] hover:bg-[var(--coral)]/10 transition-colors border-t border-[var(--gray-200)]"
                   >
                     <LogOut className="h-4 w-4" />
-                    Log Out
+                    {t.nav?.logout || 'Log Out'}
                   </button>
                 </div>
               )}
@@ -186,10 +192,14 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar (always LTR layout) */}
       <aside
         className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
+        dir="ltr"
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* User Info - Mobile */}
@@ -234,7 +244,7 @@ export default function DashboardLayout({
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[var(--coral)] bg-[var(--coral)]/10 hover:bg-[var(--coral)]/20 transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              Log Out
+              {t.nav?.logout || 'Log Out'}
             </button>
           </div>
         </div>

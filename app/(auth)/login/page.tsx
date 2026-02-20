@@ -30,7 +30,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError('Ungültige E-Mail oder Passwort')
         setIsLoading(false)
         return
       }
@@ -40,23 +40,23 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.')
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12">
+    <div dir="ltr" className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12" style={{ fontFamily: 'var(--font-body)' }}>
       <div className="w-full max-w-md">
         {/* Logo/Header with Mascot */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <OwlMascot mood="happy" size="lg" message="Welcome back!" />
+            <OwlMascot mood="happy" size="lg" message="Willkommen zurück!" />
           </div>
           <h1 className="text-3xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-            Welcome Back
+            Willkommen zurück
           </h1>
-          <p className="text-[var(--gray-600)]">Sign in to your GradeAI account</p>
+          <p className="text-[var(--gray-600)]">Melden Sie sich bei Ihrem GradeAI-Konto an</p>
         </div>
 
         {/* Login Form */}
@@ -73,7 +73,7 @@ export default function LoginPage() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Email Address
+                E-Mail-Adresse
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -95,7 +95,7 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Password
+                Passwort
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder="Enter your password"
+                  placeholder="Passwort eingeben"
                   disabled={isLoading}
                 />
               </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
                 href="/forgot-password"
                 className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline"
               >
-                Forgot password?
+                Passwort vergessen?
               </Link>
             </div>
 
@@ -133,12 +133,12 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing In...
+                  Anmeldung...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Sign In
+                  Anmelden
                 </>
               )}
             </button>
@@ -150,7 +150,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Don't have an account?</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Noch kein Konto?</span>
             </div>
           </div>
 
@@ -159,20 +159,21 @@ export default function LoginPage() {
             href="/signup"
             className="btn-secondary w-full block text-center"
           >
-            Create an Account
+            Konto erstellen
           </Link>
         </div>
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-[var(--gray-600)]">
-          By signing in, you agree to our{' '}
+          Mit der Anmeldung stimmen Sie unseren{' '}
           <Link href="/terms" className="text-[var(--primary)] hover:underline font-medium">
-            Terms of Service
+            Nutzungsbedingungen
           </Link>{' '}
-          and{' '}
+          und der{' '}
           <Link href="/privacy" className="text-[var(--primary)] hover:underline font-medium">
-            Privacy Policy
-          </Link>
+            Datenschutzerklärung
+          </Link>{' '}
+          zu
         </p>
       </div>
     </div>

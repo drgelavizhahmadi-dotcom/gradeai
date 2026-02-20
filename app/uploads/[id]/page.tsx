@@ -72,7 +72,7 @@ export default function UploadDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Language translation state
-  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>('en')
+  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>('de')
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
@@ -225,8 +225,8 @@ export default function UploadDetailPage() {
     setReportLanguage(newLanguage)
     setTranslationError(null)
 
-    // If English, use the original report
-    if (newLanguage === 'en' && originalReport) {
+    // If German (base language), use the original report
+    if (newLanguage === 'de' && originalReport) {
       setTranslatedReport(originalReport)
       return
     }
@@ -273,12 +273,11 @@ export default function UploadDetailPage() {
         : upload.analysis
 
       if (analysisData && typeof analysisData === 'object' && !Array.isArray(analysisData)) {
-        // Get English version (could be in _germanOriginal for backwards compat or direct)
-        const englishReport = analysisData._germanOriginal || analysisData
-        setOriginalReport(englishReport)
-        setTranslatedReport(englishReport)
+        // Store the report as original (German base)
+        setOriginalReport(analysisData)
+        setTranslatedReport(analysisData)
 
-        // Detect current language from report meta
+        // Detect current language from report meta (default to German)
         const currentLang = analysisData._meta?.language?.code
         if (currentLang && currentLang in REPORT_LANGUAGES) {
           setReportLanguage(currentLang as ReportLanguage)
@@ -655,7 +654,7 @@ export default function UploadDetailPage() {
 
             {/* Language Selector for Report */}
             {upload.analysis && (
-              <div className="mb-4 flex items-center justify-between">
+              <div dir="ltr" className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-[var(--gray-600)]">
                   <Globe className="h-4 w-4" />
                   <span>Report Language:</span>
@@ -723,7 +722,7 @@ export default function UploadDetailPage() {
 
             {/* Parent Report */}
             {(upload.analysis || upload.extractedText) && (
-              <div className="mb-6">
+              <div className="mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {(() => {
                   // Use translated report if available, otherwise original
                   const analysisData = translatedReport || (upload.analysis ?
@@ -827,7 +826,7 @@ export default function UploadDetailPage() {
 
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
-              <div className="space-y-6 mb-6">
+              <div className="space-y-6 mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}

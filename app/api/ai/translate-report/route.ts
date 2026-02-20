@@ -88,14 +88,14 @@ export async function POST(request: NextRequest) {
 
     const lang = SUPPORTED_LANGUAGES[targetLanguage as LanguageCode]
 
-    // If English, return as-is (English is base language)
-    if (targetLanguage === 'en') {
+    // If German, return as-is (German is base language)
+    if (targetLanguage === 'de') {
       return NextResponse.json({
         success: true,
         translatedReport: {
           ...report,
           _meta: {
-            language: { code: 'en', name: 'English', native: 'English', rtl: false },
+            language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
           },
         },
       })
@@ -104,18 +104,19 @@ export async function POST(request: NextRequest) {
     console.log(`[Translate API] Translating report to ${lang.name}...`)
     const startTime = Date.now()
 
-    // Get the original English report (strip any existing _meta)
+    // Get the original German report (strip any existing _meta)
     const { _meta, _germanOriginal, ...cleanReport } = report
 
-    const translationPrompt = `Translate this English school report to ${lang.name} (${lang.native}).
+    const translationPrompt = `Translate this German school report to ${lang.name} (${lang.native}).
 
 CRITICAL RULES:
 1. Translate ONLY the text values, NOT the JSON field names
 2. Keep ALL fields and arrays - do NOT remove any
 3. Student names should NOT be translated
-4. Grade values (numbers/letters) should NOT change
+4. Grade values (numbers like 1-6) should NOT change
 5. Keep the warm, empathetic tone
 6. Output ONLY valid JSON - no explanations
+7. Translate EVERY German text value - leave NOTHING in German
 
 IMPORTANT: The translated JSON MUST have the exact same structure with ALL fields:
 - student, test, grade, teacherFeedback, errorAnalysis
@@ -127,7 +128,7 @@ IMPORTANT: The translated JSON MUST have the exact same structure with ALL field
 - parentTips (with howToDiscuss, whatToAvoid, motivation)
 - resources, messages, summary
 
-ENGLISH REPORT:
+GERMAN REPORT:
 ${JSON.stringify(cleanReport, null, 2)}
 
 Respond with ONLY the translated JSON. No explanations.`
@@ -153,7 +154,7 @@ Respond with ONLY the translated JSON. No explanations.`
         native: lang.native,
         rtl: lang.rtl,
       },
-      translatedFrom: 'en',
+      translatedFrom: 'de',
     }
 
     const duration = Date.now() - startTime
