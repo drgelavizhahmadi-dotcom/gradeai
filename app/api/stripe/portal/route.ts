@@ -28,9 +28,10 @@ export async function POST(_req: Request) {
             });
         }
 
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
         const stripesession = await stripe.billingPortal.sessions.create({
             customer: user.stripeCustomerId,
-            return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription`,
+            return_url: `${appUrl}/dashboard/subscription`,
         });
 
         return NextResponse.json({ url: stripesession.url });

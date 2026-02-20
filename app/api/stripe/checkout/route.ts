@@ -49,6 +49,7 @@ export async function POST(_req: Request) {
             return new NextResponse('Stripe Price ID is missing', { status: 500 });
         }
 
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
         const stripeSession = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             mode: 'subscription',
@@ -60,8 +61,8 @@ export async function POST(_req: Request) {
                     quantity: 1,
                 },
             ],
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?success=true`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?canceled=true`,
+            success_url: `${appUrl}/dashboard/subscription?success=true`,
+            cancel_url: `${appUrl}/dashboard/subscription?canceled=true`,
             metadata: {
                 userId: user.id,
             },
