@@ -29,9 +29,18 @@ export async function POST(_req: Request) {
         }
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const returnUrl = `${appUrl}/dashboard/subscription`;
+        console.log('[STRIPE_PORTAL_DEBUG] NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+        console.log('[STRIPE_PORTAL_DEBUG] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+        console.log('[STRIPE_PORTAL_DEBUG] STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ set' : '❌ missing');
+        console.log('[STRIPE_PORTAL_DEBUG] NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✅ set' : '❌ missing');
+        console.log('[STRIPE_PORTAL_DEBUG] STRIPE_PREMIUM_PRICE_ID:', process.env.STRIPE_PREMIUM_PRICE_ID);
+        console.log('[STRIPE_PORTAL_DEBUG] STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ set' : '❌ missing');
+        console.log('[STRIPE_PORTAL_DEBUG] appUrl (resolved):', appUrl);
+        console.log('[STRIPE_PORTAL_DEBUG] return_url:', returnUrl);
         const stripesession = await stripe.billingPortal.sessions.create({
             customer: user.stripeCustomerId,
-            return_url: `${appUrl}/dashboard/subscription`,
+            return_url: returnUrl,
         });
 
         return NextResponse.json({ url: stripesession.url });
