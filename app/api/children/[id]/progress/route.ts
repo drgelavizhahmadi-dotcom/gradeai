@@ -47,7 +47,7 @@ export async function GET(
     }
 
     // Process uploads to extract weaknesses and calculate progress
-    const tests = child.uploads.map((upload) => {
+    const tests = child.uploads.map((upload: any) => {
       const analysis = upload.analysis as any
 
       // Extract weaknesses from analysis
@@ -94,8 +94,8 @@ export async function GET(
       testIndices: number[]
     }>()
 
-    tests.forEach((test, index) => {
-      test.weaknesses.forEach((weakness) => {
+    tests.forEach((test: any, index: number) => {
+      test.weaknesses.forEach((weakness: string) => {
         const normalized = weakness.toLowerCase().trim()
         if (!weaknessMap.has(normalized)) {
           weaknessMap.set(normalized, {
@@ -116,9 +116,9 @@ export async function GET(
     })
 
     // Determine weakness status (resolved if not seen in last 2 tests, improving if decreasing)
-    const weaknessTracking = Array.from(weaknessMap.values()).map((w) => {
+    const weaknessTracking = Array.from(weaknessMap.values()).map((w: any) => {
       const lastTestIndex = tests.length - 1
-      const maxIndex = Math.max(...w.testIndices)
+      const maxIndex = Math.max(...(w.testIndices as number[]))
 
       let status: 'active' | 'improving' | 'resolved' = 'active'
 
@@ -128,8 +128,8 @@ export async function GET(
       }
       // If seen in last test but frequency is decreasing, mark as improving
       else if (tests.length >= 3) {
-        const recentCount = w.testIndices.filter(i => i >= tests.length - 2).length
-        const earlierCount = w.testIndices.filter(i => i < tests.length - 2).length
+        const recentCount = w.testIndices.filter((i: any) => i >= tests.length - 2).length
+        const earlierCount = w.testIndices.filter((i: any) => i < tests.length - 2).length
         const recentRatio = recentCount / 2
         const earlierRatio = tests.length > 2 ? earlierCount / (tests.length - 2) : 1
 
@@ -146,16 +146,16 @@ export async function GET(
         status,
         subjects: Array.from(w.subjects),
       }
-    }).sort((a, b) => {
+    }).sort((a: any, b: any) => {
       // Sort: active first, then improving, then resolved
-      const order = { active: 0, improving: 1, resolved: 2 }
-      return order[a.status] - order[b.status]
+      const order: Record<string, number> = { active: 0, improving: 1, resolved: 2 }
+      return (order[a.status] ?? 3) - (order[b.status] ?? 3)
     })
 
     // Calculate stats
-    const gradesArray = tests.map(t => t.grade).filter((g): g is number => g !== null)
+    const gradesArray = tests.map((t: any) => t.grade).filter((g: any): g is number => g !== null)
     const averageGrade = gradesArray.length > 0
-      ? gradesArray.reduce((a, b) => a + b, 0) / gradesArray.length
+      ? gradesArray.reduce((a: number, b: number) => a + b, 0) / gradesArray.length
       : null
     const bestGrade = gradesArray.length > 0 ? Math.min(...gradesArray) : null
 
@@ -177,12 +177,12 @@ export async function GET(
       }
     }
 
-    const resolvedWeaknesses = weaknessTracking.filter(w => w.status === 'resolved').length
-    const activeWeaknesses = weaknessTracking.filter(w => w.status === 'active').length
+    const resolvedWeaknesses = weaknessTracking.filter((w: any) => w.status === 'resolved').length
+    const activeWeaknesses = weaknessTracking.filter((w: any) => w.status === 'active').length
 
     // Calculate subject breakdown
     const subjectMap = new Map<string, { grades: number[], testIndices: number[] }>()
-    tests.forEach((test, index) => {
+    tests.forEach((test: any, index: number) => {
       if (!subjectMap.has(test.subject)) {
         subjectMap.set(test.subject, { grades: [], testIndices: [] })
       }
@@ -195,15 +195,15 @@ export async function GET(
 
     const subjectBreakdown = Array.from(subjectMap.entries()).map(([subject, data]) => {
       const avgGrade = data.grades.length > 0
-        ? data.grades.reduce((a, b) => a + b, 0) / data.grades.length
+        ? data.grades.reduce((a: number, b: number) => a + b, 0) / data.grades.length
         : null
 
       let trend: 'up' | 'down' | 'stable' = 'stable'
       if (data.grades.length >= 2) {
         const firstHalf = data.grades.slice(0, Math.ceil(data.grades.length / 2))
         const secondHalf = data.grades.slice(Math.ceil(data.grades.length / 2))
-        const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
-        const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
+        const firstAvg = firstHalf.reduce((a: number, b: number) => a + b, 0) / firstHalf.length
+        const secondAvg = secondHalf.reduce((a: number, b: number) => a + b, 0) / secondHalf.length
 
         if (secondAvg < firstAvg - 0.3) {
           trend = 'up' // Lower is better
@@ -218,7 +218,7 @@ export async function GET(
         avgGrade,
         trend,
       }
-    }).sort((a, b) => b.count - a.count)
+    }).sort((a: any, b: any) => b.count - a.count)
 
     return NextResponse.json({
       success: true,

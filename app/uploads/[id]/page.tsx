@@ -329,12 +329,12 @@ export default function UploadDetailPage() {
     switch (upload.analysisStatus) {
       case 'completed':
         return upload.grade && upload.grade <= 2
-          ? t.analysis.excellentWork || 'Excellent work!'
-          : t.analysis.analysisComplete || 'Analysis complete!'
-      case 'failed': return t.analysis.letsTryAgain || 'Let\'s try again!'
+          ? 'Excellent work!'
+          : 'Analysis complete!'
+      case 'failed': return 'Let\'s try again!'
       case 'processing': return t.upload.analyzing || 'Analyzing...'
-      case 'pending': return t.upload.gettingReady || 'Getting ready...'
-      default: return t.analysis.letsLearnTogether || 'Let\'s learn together!'
+      case 'pending': return 'Getting ready...'
+      default: return 'Let\'s learn together!'
     }
   }
 
@@ -369,7 +369,7 @@ export default function UploadDetailPage() {
               onClick={() => router.push('/dashboard')}
               className="btn-primary w-full"
             >
-              {t.common.backToDashboard || 'Back to Dashboard'}
+              {'Back to Dashboard'}
             </button>
           </div>
         </div>
@@ -381,10 +381,10 @@ export default function UploadDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <OwlMascot mood="thinking" size="lg" message={t.errors.whereDidItGo || 'Where did it go?'} />
-          <p className="text-[var(--gray-600)] mt-4">{t.errors.uploadNotFound || 'Upload not found'}</p>
+          <OwlMascot mood="thinking" size="lg" message={'Where did it go?'} />
+          <p className="text-[var(--gray-600)] mt-4">{'Upload not found'}</p>
           <Link href="/dashboard" className="btn-primary inline-block mt-4">
-            {t.common.backToDashboard || 'Back to Dashboard'}
+            {'Back to Dashboard'}
           </Link>
         </div>
       </div>
@@ -424,7 +424,7 @@ export default function UploadDetailPage() {
       default:
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gray-200)] px-4 py-1.5 text-sm font-semibold text-[var(--gray-600)]">
-            {t.status.unknown || 'Unknown'}
+            {'Unknown'}
           </span>
         )
     }
@@ -637,7 +637,7 @@ export default function UploadDetailPage() {
                 <div className="card-story p-4 border-l-4 border-[var(--primary)]">
                   <div className="flex items-center gap-2 mb-2">
                     <BookOpen className="h-5 w-5 text-[var(--primary)]" />
-                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.common?.subject || 'Subject'}</p>
+                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.upload?.subject || 'Subject'}</p>
                   </div>
                   <SubjectTag subject={upload.subject} size="lg" />
                 </div>
@@ -647,7 +647,7 @@ export default function UploadDetailPage() {
                 <div className="card-story p-4 border-l-4 border-[var(--success)]">
                   <div className="flex items-center gap-2 mb-2">
                     <GraduationCap className="h-5 w-5 text-[var(--success)]" />
-                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.analysis?.gradeReceived || 'Grade Received'}</p>
+                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.upload?.gradeReceived || 'Grade Received'}</p>
                   </div>
                   <GradeBadge grade={Math.round(upload.grade)} size="lg" showLabel />
                 </div>
@@ -883,7 +883,7 @@ export default function UploadDetailPage() {
             <details className="mb-6 card-story overflow-hidden">
               <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
                 <FileText className="h-5 w-5 text-[var(--primary)]" />
-                {t.upload.uploadDetails || 'Upload Details'}
+                {'Upload Details'}
               </summary>
               <div className="px-4 pb-4 border-t border-[var(--gray-200)]">
                 <dl className="space-y-3 mt-4">
@@ -898,11 +898,11 @@ export default function UploadDetailPage() {
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-[var(--gray-600)]">{t.common.fileName || 'File Name'}:</dt>
+                    <dt className="font-medium text-[var(--gray-600)]">File Name:</dt>
                     <dd className="truncate text-[var(--gray-800)]">{upload.fileName}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-[var(--gray-600)]">{t.common.fileSize || 'File Size'}:</dt>
+                    <dt className="font-medium text-[var(--gray-600)]">File Size:</dt>
                     <dd className="text-[var(--gray-800)]">{formatFileSize(upload.fileSize)}</dd>
                   </div>
                   <div className="flex justify-between">
@@ -911,7 +911,7 @@ export default function UploadDetailPage() {
                   </div>
                   {upload.processedAt && (
                     <div className="flex justify-between">
-                      <dt className="font-medium text-[var(--gray-600)]">{t.upload.processed || 'Processed'}:</dt>
+                      <dt className="font-medium text-[var(--gray-600)]">{'Processed'}:</dt>
                       <dd className="text-[var(--gray-800)]">{formatDate(upload.processedAt)}</dd>
                     </div>
                   )}
