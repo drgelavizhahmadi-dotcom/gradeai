@@ -28,6 +28,10 @@ export interface Translations {
     yes: string
     no: string
     selectAll: string
+    translating?: string
+    errorLabel?: string
+    backTo?: string
+    dashboard?: string
   }
 
   // Navigation
@@ -113,6 +117,16 @@ export interface Translations {
     bulkDelete: string
     bulkDeleteMessage: string
     bulkDeleteWarning: string
+    preparing?: string
+    preparingDesc?: string
+    analyzingTest?: string
+    analyzingDesc?: string
+    analysisFailed?: string
+    analysisErrorDesc?: string
+    duplicateTitle?: string
+    duplicateMessage?: string
+    reportGenerationProgress?: string
+    reportGenerationDesc?: string
   }
 
   // Analysis
@@ -140,6 +154,10 @@ export interface Translations {
     rationale: string
     downloadPDF: string
     executiveSummary: string
+    description?: string
+    gradeReceived?: string
+    analyzedAt?: string
+    reportLanguage?: string
   }
 
   // Auth
@@ -166,6 +184,11 @@ export interface Translations {
     unauthorized: string
     deleteFailed: string
     saveFailed: string
+    reportDisplay?: string
+    reportDisplayDesc?: string
+    rawAnalysisData?: string
+    aiUnavailable?: string
+    aiUnavailableDesc?: string
   }
 
   // School Types
@@ -305,6 +328,10 @@ export const translations: Record<Language, Translations> = {
       yes: 'Ja',
       no: 'Nein',
       selectAll: 'Alle auswählen',
+      translating: 'Übersetzen...',
+      errorLabel: 'Fehler:',
+      backTo: 'Zurück zu',
+      dashboard: 'Dashboard',
     },
     nav: {
       dashboard: 'Dashboard',
@@ -407,6 +434,10 @@ export const translations: Record<Language, Translations> = {
       rationale: 'Begründung',
       downloadPDF: 'PDF-Bericht herunterladen',
       executiveSummary: 'Zusammenfassung',
+      description: 'Details und Analyse für diesen Test anzeigen',
+      gradeReceived: 'Erhaltene Note',
+      analyzedAt: 'Analysiert am',
+      reportLanguage: 'Berichts-Sprache:',
     },
     auth: {
       login: 'Anmelden',
