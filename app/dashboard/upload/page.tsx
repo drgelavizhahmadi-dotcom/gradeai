@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import UploadZone from "@/components/UploadZone";
 import { ArrowLeft, Loader2, AlertCircle, GraduationCap, User, ChevronDown } from "lucide-react";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 import { OwlMascot } from "@/components/mascots";
 
 interface Child {
@@ -14,6 +15,7 @@ interface Child {
 }
 
 export default function UploadPage() {
+  const { t } = useLanguage();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export default function UploadPage() {
       const response = await fetch("/api/children");
 
       if (!response.ok) {
-        throw new Error("Failed to load children");
+        throw new Error(t.errors.generic);
       }
 
       const data = await response.json();
@@ -44,7 +46,7 @@ export default function UploadPage() {
         setSelectedChildId(sortedChildren[0].id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load children");
+      setError(err instanceof Error ? err.message : t.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -62,20 +64,20 @@ export default function UploadPage() {
             className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zum Dashboard
+            {t.upload.backToDashboard}
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                Test hochladen
+                {t.upload.title}
               </h1>
               <p className="text-white/80 text-lg">
-                Laden Sie ein Foto oder PDF des Tests hoch &ndash; unsere KI analysiert ihn sofort
+                {t.upload.uploadTestDesc}
               </p>
             </div>
             <div className="flex-shrink-0">
-              <OwlMascot mood="happy" size="lg" message="Ich bin bereit!" />
+              <OwlMascot mood="happy" size="lg" message={t.upload.mascotReady} />
             </div>
           </div>
         </div>
@@ -90,7 +92,7 @@ export default function UploadPage() {
               <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold text-[var(--coral)] mb-1">
-                  Fehler beim Laden
+                  {t.upload.loadError}
                 </p>
                 <p className="text-sm text-[var(--gray-700)]">{error}</p>
               </div>
@@ -102,7 +104,7 @@ export default function UploadPage() {
         {loading && (
           <div className="card-story p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-[var(--primary)] mb-3" />
-            <p className="text-[var(--gray-600)] font-medium">Kinder werden geladen...</p>
+            <p className="text-[var(--gray-600)] font-medium">{t.upload.loadingChildren}</p>
           </div>
         )}
 
@@ -114,7 +116,7 @@ export default function UploadPage() {
                 <User className="h-5 w-5 text-[var(--primary)]" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
-                Kind auswählen
+                {t.upload.selectChildLabel}
               </h2>
             </div>
 
@@ -124,10 +126,10 @@ export default function UploadPage() {
                 onChange={(e) => setSelectedChildId(e.target.value)}
                 className="w-full appearance-none rounded-xl border-2 border-[var(--gray-200)] bg-white px-4 py-3 pr-10 text-[var(--gray-800)] font-medium focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
               >
-                <option value="">Kind auswählen...</option>
+                <option value="">{t.upload.selectChildPlaceholder}</option>
                 {children.map((child) => (
                   <option key={child.id} value={child.id}>
-                    {child.name} &ndash; Klasse {child.grade} ({child.schoolType})
+                    {child.name} &ndash; {t.upload.classLabel.replace('{grade}', String(child.grade))} ({child.schoolType})
                   </option>
                 ))}
               </select>
@@ -137,7 +139,7 @@ export default function UploadPage() {
             {selectedChild && (
               <div className="mt-3 flex items-center gap-2 text-sm text-[var(--primary)]">
                 <GraduationCap className="h-4 w-4" />
-                <span>{selectedChild.name} &bull; Klasse {selectedChild.grade} &bull; {selectedChild.schoolType}</span>
+                <span>{selectedChild.name} &bull; {t.upload.classLabel.replace('{grade}', String(selectedChild.grade))} &bull; {selectedChild.schoolType}</span>
               </div>
             )}
           </div>
@@ -151,16 +153,16 @@ export default function UploadPage() {
         {/* No Children State */}
         {!loading && !error && children.length === 0 && (
           <div className="card-story p-8 text-center">
-            <OwlMascot mood="thinking" size="md" message="Noch kein Kind angelegt?" showMessage={false} />
+            <OwlMascot mood="thinking" size="md" message={t.upload.mascotNoChild} showMessage={false} />
             <p className="mt-4 text-[var(--gray-600)] mb-6">
-              Sie haben noch kein Kind angelegt. Fügen Sie zuerst ein Kind hinzu.
+              {t.upload.noChildYetDesc}
             </p>
             <Link
               href="/dashboard/children/new"
               className="btn-primary inline-flex items-center gap-2"
             >
               <User className="h-5 w-5" />
-              Erstes Kind hinzufügen
+              {t.upload.addFirstChild}
             </Link>
           </div>
         )}

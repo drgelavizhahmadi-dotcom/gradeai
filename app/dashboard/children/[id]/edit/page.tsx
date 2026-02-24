@@ -31,7 +31,7 @@ export default function EditChildPage() {
       try {
         const response = await fetch(`/api/children/${childId}`)
         const data = await response.json()
-        
+
         if (response.ok) {
           setFormData({
             name: data.child.name,
@@ -93,16 +93,16 @@ export default function EditChildPage() {
     const newErrors: { [key: string]: string } = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required'
+      newErrors.name = t.child.nameRequired
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters'
+      newErrors.name = t.child.nameMinLength
     }
 
     const gradeNum = parseInt(formData.grade)
     if (!formData.grade) {
-      newErrors.grade = 'Grade is required'
+      newErrors.grade = t.child.gradeRequired
     } else if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 13) {
-      newErrors.grade = 'Grade must be between 1 and 13'
+      newErrors.grade = t.child.gradeRange
     }
 
     setErrors(newErrors)
@@ -188,7 +188,7 @@ export default function EditChildPage() {
             icon={<GraduationCap className="h-5 w-5 text-gray-400" />}
             error={errors.grade}
             required
-            helperText="Enter grade 1-13 (German school system)"
+            helperText={t.child.gradeHelperText}
           />
 
           {/* School Type */}

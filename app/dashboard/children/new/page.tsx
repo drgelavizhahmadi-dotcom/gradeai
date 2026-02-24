@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, GraduationCap, User, School } from 'lucide-react'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import FormInput from '@/components/FormInput'
 import FormSelect from '@/components/FormSelect'
 
 export default function NewChildPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     name: '',
     grade: '',
@@ -46,12 +48,12 @@ export default function NewChildPage() {
       const data = await response.json()
 
       if (response.ok) {
-        router.push(`/children/${data.child.id}`)
+        router.push(`/dashboard/children/${data.child.id}`)
       } else {
-        setError(data.error || 'Failed to add child')
+        setError(data.error || t.errors.generic)
       }
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -61,16 +63,16 @@ export default function NewChildPage() {
     const newErrors: { [key: string]: string } = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required'
+      newErrors.name = t.child.nameRequired
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters'
+      newErrors.name = t.child.nameMinLength
     }
 
     const gradeNum = parseInt(formData.grade)
     if (!formData.grade) {
-      newErrors.grade = 'Grade is required'
+      newErrors.grade = t.child.gradeRequired
     } else if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 13) {
-      newErrors.grade = 'Grade must be between 1 and 13'
+      newErrors.grade = t.child.gradeRange
     }
 
     setErrors(newErrors)
@@ -95,9 +97,9 @@ export default function NewChildPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">Add New Child</h1>
+        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">{t.child.addNewTitle}</h1>
         <p className="text-lg text-gray-600 mt-2">
-          Enter your child's information to start tracking their academic progress
+          {t.child.addNewDesc}
         </p>
       </div>
 
@@ -113,7 +115,7 @@ export default function NewChildPage() {
 
           {/* Name Field */}
           <FormInput
-            label="Child's Full Name"
+            label={t.child.fullName}
             name="name"
             type="text"
             required
@@ -126,7 +128,7 @@ export default function NewChildPage() {
 
           {/* Grade Field */}
           <FormInput
-            label="Grade Level"
+            label={t.child.gradeLevel}
             name="grade"
             type="number"
             required
@@ -137,25 +139,24 @@ export default function NewChildPage() {
             error={errors.grade}
             icon={<GraduationCap className="h-5 w-5 text-gray-400" />}
             placeholder="e.g., 7"
-            helperText="Enter grade level from 1 to 13"
+            helperText={t.child.gradeHelperText}
           />
 
           {/* School Type Field */}
           <FormSelect
-            label="School Type"
+            label={t.child.schoolType}
             name="schoolType"
             required
             value={formData.schoolType}
             onChange={handleChange}
             icon={<School className="h-5 w-5 text-gray-400" />}
-            helperText="Select the type of school your child attends"
             options={[
-              { value: 'Gymnasium', label: 'Gymnasium' },
-              { value: 'Realschule', label: 'Realschule' },
-              { value: 'Hauptschule', label: 'Hauptschule' },
-              { value: 'Gesamtschule', label: 'Gesamtschule' },
-              { value: 'Grundschule', label: 'Grundschule' },
-              { value: 'Other', label: 'Other' },
+              { value: 'Gymnasium', label: t.schoolTypes.gymnasium },
+              { value: 'Realschule', label: t.schoolTypes.realschule },
+              { value: 'Hauptschule', label: t.schoolTypes.hauptschule },
+              { value: 'Gesamtschule', label: t.schoolTypes.gesamtschule },
+              { value: 'Grundschule', label: t.schoolTypes.grundschule },
+              { value: 'Other', label: t.schoolTypes.other },
             ]}
           />
 
@@ -165,7 +166,7 @@ export default function NewChildPage() {
               href="/dashboard"
               className="flex-1 flex items-center justify-center rounded-lg bg-gray-100 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t.common.cancel}
             </Link>
             <button
               type="submit"
@@ -175,10 +176,10 @@ export default function NewChildPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Adding...
+                  {t.child.adding}
                 </>
               ) : (
-                'Add Child'
+                t.child.addChildButton
               )}
             </button>
           </div>

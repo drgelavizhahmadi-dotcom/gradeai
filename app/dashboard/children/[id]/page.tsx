@@ -180,28 +180,28 @@ export default function ChildProfilePage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-soft)] px-3 py-1 text-xs font-semibold text-[var(--success-dark)] border border-[var(--success)]">
             <CheckCircle className="h-3.5 w-3.5" />
-            Completed
+            {t.status.completed}
           </span>
         )
       case 'processing':
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-semibold text-[var(--primary-dark)] border border-[var(--primary)]">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Processing
+            {t.status.processing}
           </span>
         )
       case 'failed':
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--error-soft)] px-3 py-1 text-xs font-semibold text-[var(--error)] border border-[var(--error)]">
             <AlertCircle className="h-3.5 w-3.5" />
-            Failed
+            {t.status.failed}
           </span>
         )
       default:
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--warning-soft)] px-3 py-1 text-xs font-semibold text-[var(--gold-dark)] border border-[var(--warning)]">
             <Clock className="h-3.5 w-3.5" />
-            Pending
+            {t.status.pending}
           </span>
         )
     }
@@ -220,8 +220,8 @@ export default function ChildProfilePage() {
       <div className="min-h-screen bg-[var(--background)]">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <FoxMascot mood="thinking" size="xl" message="Loading profile..." />
-            <p className="text-[var(--gray-600)] font-medium mt-4">Getting everything ready...</p>
+            <FoxMascot mood="thinking" size="xl" message={t.child.loadingProfile} />
+            <p className="text-[var(--gray-600)] font-medium mt-4">{t.child.gettingReady}</p>
           </div>
         </div>
       </div>
@@ -235,17 +235,17 @@ export default function ChildProfilePage() {
           <Breadcrumbs />
           <div className="card-story p-12 text-center bg-white mt-6">
             <div className="flex justify-center mb-4">
-              <FoxMascot mood="encouraging" size="lg" message="Oops! Let me try again..." />
+              <FoxMascot mood="encouraging" size="lg" message={t.child.tryAgain} />
             </div>
             <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-              Failed to Load Profile
+              {t.child.failedToLoadProfile}
             </h3>
             <p className="text-[var(--gray-600)] mb-6">{error}</p>
             <button
               onClick={fetchChildData}
               className="btn-primary"
             >
-              Try Again
+              {t.child.tryAgain}
             </button>
           </div>
         </div>
@@ -260,16 +260,16 @@ export default function ChildProfilePage() {
           <Breadcrumbs />
           <div className="card-story p-12 text-center bg-white mt-6">
             <div className="flex justify-center mb-4">
-              <FoxMascot mood="thinking" size="lg" message="I can't find this profile..." />
+              <FoxMascot mood="thinking" size="lg" message={t.child.childNotFound} />
             </div>
             <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-              Child Not Found
+              {t.child.childNotFound}
             </h3>
             <p className="text-[var(--gray-600)] mb-6">
-              The child profile you're looking for doesn't exist or may have been deleted.
+              {t.child.childNotFoundDesc}
             </p>
             <Link href="/dashboard" className="btn-primary inline-flex items-center gap-2">
-              Back to Dashboard
+              {t.child.backToDashboard}
             </Link>
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function ChildProfilePage() {
                 <FoxMascot
                   mood={getMascotMood()}
                   size="lg"
-                  message={stats.totalTests === 0 ? `Let's upload ${child.name}'s first test!` : `${child.name} is doing great!`}
+                  message={stats.totalTests === 0 ? `${t.child.uploadFirstTest}` : `${child.name} ⭐`}
                 />
               </div>
               <div>
@@ -298,7 +298,7 @@ export default function ChildProfilePage() {
                   {child.name}
                 </h1>
                 <p className="text-lg text-[var(--gray-600)]">
-                  Grade {child.grade} • {child.schoolType}
+                  {t.child.gradeLabel.replace('{grade}', String(child.grade))} • {child.schoolType}
                 </p>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function ChildProfilePage() {
                 <FileText className="h-7 w-7 text-[var(--primary)]" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Total Tests</p>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.child.totalTests}</p>
                 <p className="text-3xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
                   {stats.totalTests}
                 </p>
@@ -355,7 +355,7 @@ export default function ChildProfilePage() {
                 <TrendingUp className="h-7 w-7 text-[var(--success)]" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Avg. Grade</p>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.child.avgGrade}</p>
                 <div className="mt-1">
                   <GradeBadge grade={stats.averageGrade} size="lg" />
                 </div>
@@ -439,7 +439,7 @@ export default function ChildProfilePage() {
                   <span className="text-white font-bold text-sm">{selectedUploads.size}</span>
                 </div>
                 <p className="text-sm font-semibold text-[var(--gray-800)]">
-                  {selectedUploads.size} {selectedUploads.size === 1 ? 'test selected' : 'tests selected'}
+                  {selectedUploads.size} {selectedUploads.size === 1 ? t.upload.selected : t.upload.selectedPlural}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -464,20 +464,20 @@ export default function ChildProfilePage() {
           {uploads.length === 0 ? (
             <div className="card-story p-12 text-center bg-white">
               <div className="flex justify-center mb-4">
-                <FoxMascot mood="encouraging" size="lg" message={`Upload ${child.name}'s first test!`} />
+                <FoxMascot mood="encouraging" size="lg" message={t.child.uploadFirstTest} />
               </div>
               <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                No tests uploaded yet
+                {t.child.noTestsYet}
               </h3>
               <p className="text-[var(--gray-600)] mb-6 max-w-md mx-auto">
-                Upload {child.name}'s first test to start tracking their progress and get AI-powered insights
+                {t.child.noTestsUploadedDesc.replace('{name}', child.name)}
               </p>
               <Link
                 href={`/dashboard/upload?childId=${child.id}`}
                 className="btn-coral inline-flex items-center gap-2"
               >
                 <Upload className="h-5 w-5" />
-                Upload First Test
+                {t.child.uploadFirstTest}
               </Link>
             </div>
           ) : (
