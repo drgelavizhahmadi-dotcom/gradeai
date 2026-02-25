@@ -594,7 +594,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2">
           <Link
             href="/dashboard/upload"
             className="group card-story p-8 text-center border-2 border-dashed border-[var(--gray-300)] hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] transition-all"
@@ -622,21 +622,6 @@ export default function DashboardPage() {
             </h3>
             <p className="text-sm text-[var(--gray-500)]">
               {t.dashboard?.quickActions?.addChildDesc || "Register a new child to track their academic progress"}
-            </p>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="group card-story p-8 text-center border-2 border-dashed border-[var(--gray-300)] hover:border-[var(--success)] hover:bg-[var(--success-soft)] transition-all"
-          >
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--success-soft)] flex items-center justify-center mb-4 group-hover:bg-[var(--success)] group-hover:text-white transition-colors">
-              <BarChart3 className="h-8 w-8 text-[var(--success)] group-hover:text-white transition-colors" />
-            </div>
-            <h3 className="text-lg font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-              {t.dashboard?.quickActions?.viewAnalyticsTitle || 'View Analytics'}
-            </h3>
-            <p className="text-sm text-[var(--gray-500)]">
-              {t.dashboard?.quickActions?.viewAnalyticsDesc || 'Track performance trends and insights over time'}
             </p>
           </Link>
         </div>
