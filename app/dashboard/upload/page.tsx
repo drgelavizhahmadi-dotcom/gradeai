@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import UploadZone from "@/components/UploadZone";
 import { ArrowLeft, Loader2, AlertCircle, GraduationCap, User, ChevronDown } from "lucide-react";
@@ -16,6 +17,8 @@ interface Child {
 
 export default function UploadPage() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const childIdFromUrl = searchParams.get("childId");
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,9 @@ export default function UploadPage() {
       setChildren(sortedChildren);
 
       if (sortedChildren.length > 0) {
-        setSelectedChildId(sortedChildren[0].id);
+        // Pre-select the child from URL query param, or fall back to the first child
+        const matchFromUrl = childIdFromUrl && sortedChildren.find((c: Child) => c.id === childIdFromUrl);
+        setSelectedChildId(matchFromUrl ? matchFromUrl.id : sortedChildren[0].id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.generic);
