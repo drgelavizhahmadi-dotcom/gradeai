@@ -571,49 +571,70 @@ export function FlashcardsPremiumSection({
             </div>
           )}
 
-          {/* Flashcards grid */}
+          {/* Flashcards grid — always shows both sides; click to highlight answer */}
           <div className="grid md:grid-cols-2 gap-4">
             {flashcards.flashcards?.map((card: any, i: number) => (
               <div
                 key={i}
                 onClick={() => toggleCard(i)}
-                className="cursor-pointer"
+                className="cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all border-2 border-amber-200"
               >
-                {/* Front */}
-                {!flippedCards.has(i) && (
-                  <div className="bg-white rounded-xl p-5 border-2 border-amber-200 shadow-md transition-all hover:shadow-lg">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        card.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                        card.difficulty === 'hard' ? 'bg-red-100 text-red-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {card.difficulty === 'easy' ? t.easy : card.difficulty === 'hard' ? t.hard : t.medium}
-                      </span>
-                      <span className="text-xs text-gray-400">{t.clickToFlip}</span>
-                    </div>
-                    <p className="text-lg font-medium text-gray-800">{card.front}</p>
-                    {card.forWeakness && (
-                      <p className="mt-3 text-xs text-gray-500 border-t pt-2">
-                        {t.forWeakness} {card.forWeakness}
-                      </p>
-                    )}
-                  </div>
-                )}
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500">
+                  <span className="text-xs font-bold text-white">
+                    {language === 'de' ? 'Karte' : 'Card'} {i + 1}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    card.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                    card.difficulty === 'hard' ? 'bg-red-100 text-red-800' :
+                    'bg-white/20 text-white'
+                  }`}>
+                    {card.difficulty === 'easy' ? t.easy : card.difficulty === 'hard' ? t.hard : t.medium}
+                  </span>
+                </div>
 
-                {/* Back */}
-                {flippedCards.has(i) && (
-                  <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-md transition-all hover:shadow-lg">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{t.answer}</span>
-                      <span className="text-xs opacity-70">{t.clickToFlip}</span>
-                    </div>
-                    <p className="text-lg font-medium">{card.back}</p>
-                    {card.tip && (
-                      <p className="mt-3 text-sm bg-white/10 rounded-lg p-2">
-                        {card.tip}
-                      </p>
-                    )}
+                {/* Front — always visible */}
+                <div className="bg-white px-4 pt-3 pb-2">
+                  <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-1">
+                    {language === 'de' ? 'Frage · Vorderseite' : 'Question · Front'}
+                  </p>
+                  <p className="text-base font-medium text-gray-800">{card.front}</p>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-2 bg-amber-50 px-4 py-1.5 border-y border-amber-200">
+                  <div className="flex-1 h-px bg-amber-300" />
+                  <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                    {language === 'de' ? 'Antwort · Rückseite' : 'Answer · Back'}
+                  </span>
+                  <div className="flex-1 h-px bg-amber-300" />
+                </div>
+
+                {/* Back — revealed on click */}
+                <div className={`px-4 pt-2 pb-3 transition-all ${
+                  flippedCards.has(i)
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-500'
+                    : 'bg-amber-50'
+                }`}>
+                  {flippedCards.has(i) ? (
+                    <>
+                      <p className="text-base font-medium text-white">{card.back}</p>
+                      {card.tip && (
+                        <p className="mt-2 text-xs bg-white/15 rounded-lg px-3 py-1.5 text-white/90">
+                          {card.tip}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-amber-600 text-center py-1">{t.clickToFlip}</p>
+                  )}
+                </div>
+
+                {card.forWeakness && (
+                  <div className="bg-gray-50 px-4 py-1.5 border-t border-gray-100">
+                    <p className="text-xs text-gray-400">
+                      {t.forWeakness} {card.forWeakness}
+                    </p>
                   </div>
                 )}
               </div>

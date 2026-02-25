@@ -123,7 +123,10 @@ function checkNewPage(doc: jsPDF, y: number, requiredSpace: number = 40): number
 
 export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = {}): void {
   const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const cardWidth = pageWidth - 30
   let y = addHeader(doc, 'Lernkarten', options)
+  let pageNum = 1
 
   const flashcards = flashcardData.flashcards || []
   const studyPlan = flashcardData.studyPlan || {}
@@ -133,14 +136,11 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
     y = addSectionTitle(doc, 'Lernplan', y, COLORS.secondary)
 
     doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-
-    const planItems = [
+    const planItems: [string, string][] = [
       ['Tägliches Ziel:', studyPlan.dailyGoal],
       ['Gesamtzeit:', studyPlan.totalTime],
       ['Wiederholung:', studyPlan.reviewSchedule],
     ]
-
     planItems.forEach(([label, value]) => {
       if (value) {
         doc.setFont('helvetica', 'bold')
@@ -150,63 +150,117 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
         y += 6
       }
     })
-
-    y += 10
+    y += 8
   }
 
-  // Flashcards
-  y = addSectionTitle(doc, `Lernkarten (${flashcards.length})`, y, COLORS.primary)
+  // Flashcards — each card shows BOTH sides clearly
+  y = addSectionTitle(doc, `Lernkarten (${flashcards.length}) – Vorder- und Rückseite`, y, COLORS.primary)
+  y += 2
 
   flashcards.forEach((card: any, index: number) => {
-    y = checkNewPage(doc, y, 50)
+    // ── measure content heights before drawing ──────────────────
+    doc.setFontSize(10)
+    const frontLines = doc.splitTextToSize(card.front || '', cardWidth - 20)
+    const backLines  = doc.splitTextToSize(card.back  || '', cardWidth - 20)
+    const tipLines   = card.tip ? doc.splitTextToSize(`Tipp: ${card.tip}`, cardWidth - 20) : []
 
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const cardWidth = pageWidth - 30
+    const lineH  = 5.5   // line height in mm
+    const pad    = 4     // inner padding
+    const headerH = 8    // card-number + difficulty row
+    const labelH  = 5    // "Frage:" / "Antwort:" label row
+    const dividerH = 6   // divider row between front and back
 
-    // Card container
-    doc.setDrawColor(...COLORS.gray)
-    doc.setFillColor(...COLORS.light)
-    doc.roundedRect(15, y, cardWidth, 45, 3, 3, 'FD')
+    const frontBlockH = labelH + frontLines.length * lineH + pad
+    const backBlockH  = labelH + backLines.length  * lineH + pad
+    const tipBlockH   = tipLines.length > 0 ? tipLines.length * lineH + pad : 0
+    const totalCardH  = headerH + frontBlockH + dividerH + backBlockH + tipBlockH + pad * 2
 
-    // Card number and difficulty
+    y = checkNewPage(doc, y, totalCardH + 6)
+
+    // ── card outer box ───────────────────────────────────────────
+    doc.setDrawColor(200, 200, 200)
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(15, y, cardWidth, totalCardH, 3, 3, 'FD')
+
+    // ── header strip ────────────────────────────────────────────
+    const diffColor = card.difficulty === 'easy' ? COLORS.success :
+                      card.difficulty === 'hard'  ? COLORS.danger  : COLORS.warning
+    const diffText  = card.difficulty === 'easy' ? 'Leicht' :
+                      card.difficulty === 'hard'  ? 'Schwer' : 'Mittel'
+
+    doc.setFillColor(...COLORS.primary)
+    doc.roundedRect(15, y, cardWidth, headerH + 1, 3, 3, 'F')
+    // cover bottom rounded corners of header
+    doc.setFillColor(...COLORS.primary)
+    doc.rect(15, y + headerH - 2, cardWidth, 3, 'F')
+
     doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...COLORS.primary)
-    doc.text(`Karte ${index + 1}`, 20, y + 7)
+    doc.setTextColor(255, 255, 255)
+    doc.text(`Karte ${index + 1}`, 20, y + 6)
 
-    // Difficulty badge
-    const diffColor = card.difficulty === 'easy' ? COLORS.success :
-                      card.difficulty === 'hard' ? COLORS.danger : COLORS.warning
     doc.setTextColor(...diffColor)
-    const diffText = card.difficulty === 'easy' ? 'Leicht' :
-                     card.difficulty === 'hard' ? 'Schwer' : 'Mittel'
-    doc.text(diffText, pageWidth - 35, y + 7)
+    doc.setFillColor(...diffColor)
+    doc.roundedRect(pageWidth - 40, y + 2, 22, 5, 1, 1, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(8)
+    doc.text(diffText, pageWidth - 29, y + 6, { align: 'center' })
 
-    // Front (Question)
-    doc.setTextColor(...COLORS.dark)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Frage:', 20, y + 15)
-    doc.setFont('helvetica', 'normal')
-    const frontLines = doc.splitTextToSize(card.front || '', cardWidth - 35)
-    doc.text(frontLines, 45, y + 15)
-
-    // Back (Answer)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Antwort:', 20, y + 27)
-    doc.setFont('helvetica', 'normal')
-    const backLines = doc.splitTextToSize(card.back || '', cardWidth - 35)
-    doc.text(backLines, 45, y + 27)
-
-    // Tip
-    if (card.tip) {
-      doc.setFontSize(8)
-      doc.setTextColor(...COLORS.warning)
-      doc.text(`Tipp: ${card.tip}`, 20, y + 40)
+    if (card.forWeakness) {
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'normal')
+      const weakLines = doc.splitTextToSize(`Für: ${card.forWeakness}`, cardWidth - 50)
+      doc.text(weakLines[0], 50, y + 6)
     }
 
     doc.setTextColor(...COLORS.dark)
-    y += 52
+    let cy = y + headerH + pad
+
+    // ── FRONT section ────────────────────────────────────────────
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...COLORS.secondary)
+    doc.text('FRAGE / VORDERSEITE', 20, cy)
+    cy += labelH
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.dark)
+    doc.text(frontLines, 20, cy)
+    cy += frontLines.length * lineH + pad
+
+    // ── divider with "ANTWORT" label ─────────────────────────────
+    // amber background strip
+    doc.setFillColor(254, 243, 199) // amber-100
+    doc.rect(15, cy, cardWidth, dividerH, 'F')
+    doc.setDrawColor(251, 191, 36)  // amber-400
+    doc.line(15, cy, 15 + cardWidth, cy)
+    doc.line(15, cy + dividerH, 15 + cardWidth, cy + dividerH)
+
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(146, 64, 14)   // amber-800
+    doc.text('ANTWORT / RÜCKSEITE', 20, cy + 4.5)
+    cy += dividerH + pad
+
+    // ── BACK section ─────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.dark)
+    doc.text(backLines, 20, cy)
+    cy += backLines.length * lineH + pad
+
+    // ── Tip ──────────────────────────────────────────────────────
+    if (tipLines.length > 0) {
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'italic')
+      doc.setTextColor(...COLORS.warning)
+      doc.text(tipLines, 20, cy)
+    }
+
+    doc.setTextColor(...COLORS.dark)
+    y += totalCardH + 6
   })
 
   // Print instructions
@@ -214,11 +268,18 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
     y = checkNewPage(doc, y, 30)
     y = addSectionTitle(doc, 'Druckanleitung', y, COLORS.gray)
     doc.setFontSize(9)
-    doc.text(flashcardData.printInstructions, 20, y)
-    y += 15
+    doc.setFont('helvetica', 'normal')
+    const instrLines = doc.splitTextToSize(flashcardData.printInstructions, pageWidth - 40)
+    doc.text(instrLines, 20, y)
   }
 
-  addFooter(doc, 1)
+  // Footers
+  const totalPages = doc.internal.pages.length - 1
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addFooter(doc, i)
+  }
+
   doc.save(`GradeAI_Lernkarten_${options.childName || 'Export'}.pdf`)
 }
 
