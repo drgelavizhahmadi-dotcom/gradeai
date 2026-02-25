@@ -37,8 +37,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.hashedPassword) {
-          console.warn('[Auth] User does not have a hashed password:', credentials.email)
+          console.warn('[Auth] User does not have a hashed password (likely Google OAuth):', credentials.email)
           return null
+        }
+
+        if (!user.emailVerified) {
+          console.warn('[Auth] Email not verified:', credentials.email)
+          throw new Error('Please verify your email address before logging in.')
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.hashedPassword)

@@ -19,6 +19,7 @@ export default function SignUpPage() {
     language: 'de',
   })
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -69,27 +70,39 @@ export default function SignUpPage() {
         return
       }
 
-      // Auto-login after successful signup
-      const signInResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      })
-
-      if (signInResult?.error) {
-        setError('Account created but login failed. Please try logging in manually.')
-        setIsLoading(false)
-        return
-      }
-
-      if (signInResult?.ok) {
-        router.push('/dashboard')
-        router.refresh()
-      }
+      setSuccess(true)
+      setIsLoading(false)
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12">
+        <div className="w-full max-w-md text-center">
+          <div className="flex justify-center mb-6">
+            <OwlMascot mood="celebrating" size="lg" message="Fast geschafft!" />
+          </div>
+          <div className="card-story p-8">
+            <div className="flex justify-center mb-4">
+              <div className="bg-green-100 p-3 rounded-full">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--gray-800)] mb-4">Überprüfe deine E-Mails</h1>
+            <p className="text-[var(--gray-600)] mb-6">
+              Wir haben einen Bestätigungslink an <strong>{formData.email}</strong> gesendet.
+              Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.
+            </p>
+            <Link href="/login" className="btn-primary w-full inline-block">
+              Zurück zum Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

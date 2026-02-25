@@ -30,7 +30,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Ungültige E-Mail oder Passwort')
+        setError(result.error === 'CredentialsSignin' ? 'Ungültige E-Mail oder Passwort' : result.error)
         setIsLoading(false)
         return
       }
