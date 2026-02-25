@@ -289,83 +289,174 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
 
 export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {}): void {
   const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
   let y = addHeader(doc, 'Fairness-Check', options)
 
-  // Score Section
-  y = addSectionTitle(doc, 'Fairness-Bewertung', y, COLORS.secondary)
+  // Extract nested data from independent-fairness API response structure
+  const fa = fairnessData.fairnessAnalysis || fairnessData  // fairnessAnalysis sub-object
+  const tr = fairnessData.testReconstruction || {}           // testReconstruction sub-object
 
-  const pageWidth = doc.internal.pageSize.getWidth()
+  const score = fa.overallScore ?? fa.fairnessScore ?? 0
+  const verdict = fa.verdict || ''
+  const verdictSummary = fa.verdictSummary || fa.verdictExplanation || ''
+  const dimensions = fa.dimensions || fa.analysis || {}
+  const concerns = fa.concerns || []
+  const positiveFindings = fa.positiveFindings || []
+  const gradeBoundary = fa.gradeBoundaryAnalysis || {}
+  const recoveryOpps = fa.pointRecoveryOpportunities || []
+  const recommendation = fa.recommendation || {}
 
-  // Big score display
-  const score = fairnessData.fairnessScore || 0
+  // ── Score Banner ───────────────────────────────────────────────
   const scoreColor = score >= 80 ? COLORS.success : score >= 60 ? COLORS.warning : COLORS.danger
 
   doc.setFontSize(48)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...scoreColor)
-  doc.text(`${score}%`, pageWidth / 2, y + 20, { align: 'center' })
+  doc.text(`${score}`, pageWidth / 2, y + 18, { align: 'center' })
 
-  doc.setFontSize(12)
-  doc.setTextColor(...COLORS.dark)
-  doc.text('Fairness-Score', pageWidth / 2, y + 30, { align: 'center' })
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...COLORS.gray)
+  doc.text('Fairness-Score (0–100)', pageWidth / 2, y + 25, { align: 'center' })
 
-  // Verdict
-  const verdictText = fairnessData.verdict === 'fair' ? 'Bewertung ist fair' :
-                      fairnessData.verdict === 'mostly_fair' ? 'Überwiegend fair' :
-                      fairnessData.verdict === 'questionable' ? 'Einige Fragen offen' :
-                      'Überprüfung empfohlen'
+  const verdictLabel =
+    verdict === 'fair'           ? 'Bewertung ist fair' :
+    verdict === 'mostly_fair'    ? 'Überwiegend fair' :
+    verdict === 'some_concerns'  ? 'Einige Bedenken' :
+    verdict === 'questionable'   ? 'Fraglich' :
+    verdict === 'needs_review'   ? 'Überprüfung empfohlen' :
+    'Analyse abgeschlossen'
 
-  doc.setFontSize(14)
+  const verdictColor = score >= 80 ? COLORS.success : score >= 60 ? COLORS.warning : COLORS.danger
+
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(verdictText, pageWidth / 2, y + 42, { align: 'center' })
+  doc.setTextColor(...verdictColor)
+  doc.text(verdictLabel, pageWidth / 2, y + 34, { align: 'center' })
 
-  if (fairnessData.verdictExplanation) {
+  if (verdictSummary) {
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    const explLines = doc.splitTextToSize(fairnessData.verdictExplanation, pageWidth - 60)
-    doc.text(explLines, pageWidth / 2, y + 50, { align: 'center' })
+    doc.setTextColor(...COLORS.dark)
+    const summLines = doc.splitTextToSize(verdictSummary, pageWidth - 50)
+    doc.text(summLines, pageWidth / 2, y + 42, { align: 'center' })
+    y += summLines.length * 4
   }
 
-  y += 65
+  y += 58
 
-  // Analysis breakdown
-  if (fairnessData.analysis) {
+  // ── Test Reconstruction ────────────────────────────────────────
+  if (tr.subject || tr.topic || tr.maxPoints) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Test-Zusammenfassung', y, COLORS.secondary)
+
+    const infoRows: [string, string][] = [
+      ['Fach:', tr.subject || '-'],
+      ['Thema:', tr.topic || '-'],
+      ['Art:', tr.testType || '-'],
+      ['Erzielte Punkte:', `${tr.achievedPoints ?? '-'} / ${tr.maxPoints ?? '-'} (${tr.calculatedPercentage ?? '-'}%)`],
+      ['Note:', tr.gradeGiven || '-'],
+    ]
+
+    doc.setFontSize(9)
+    infoRows.forEach(([label, value]) => {
+      if (value && value !== '-') {
+        y = checkNewPage(doc, y, 7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...COLORS.dark)
+        doc.text(label, 20, y)
+        doc.setFont('helvetica', 'normal')
+        doc.text(value, 65, y)
+        y += 5.5
+      }
+    })
+
+    // Teacher comment
+    if (tr.teacherComments?.finalComment) {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Lehrer-Kommentar:', 20, y)
+      y += 5
+      doc.setFont('helvetica', 'italic')
+      const cmtLines = doc.splitTextToSize(`"${tr.teacherComments.finalComment}"`, pageWidth - 45)
+      doc.text(cmtLines, 25, y)
+      y += cmtLines.length * 4.5
+    }
+
+    y += 6
+  }
+
+  // ── Dimension breakdown table ──────────────────────────────────
+  if (Object.keys(dimensions).length > 0) {
     y = checkNewPage(doc, y, 50)
     y = addSectionTitle(doc, 'Detailanalyse', y, COLORS.primary)
 
-    const analysisData = Object.entries(fairnessData.analysis).map(([key, value]: [string, any]) => {
-      const label = key === 'consistency' ? 'Konsistenz' :
-                    key === 'clarity' ? 'Klarheit' :
-                    key === 'proportionality' ? 'Verhältnismäßigkeit' :
-                    key === 'feedbackQuality' ? 'Feedback-Qualität' :
-                    key === 'partialCredit' ? 'Teilpunkte' : key
-      return [label, `${value.score}%`]
+    const dimLabels: Record<string, string> = {
+      gradingConsistency:    'Benotungskonsistenz',
+      pointProportionality:  'Punktverhältnismäßigkeit',
+      partialCredit:         'Teilpunkte',
+      feedbackQuality:       'Feedback-Qualität',
+      mathematicalAccuracy:  'Rechnerische Richtigkeit',
+      consistency:           'Konsistenz',
+      proportionality:       'Verhältnismäßigkeit',
+      clarity:               'Klarheit',
+    }
+
+    const tableBody = Object.entries(dimensions).map(([key, val]: [string, any]) => {
+      const label = dimLabels[key] || key
+      const scoreVal = val?.score ?? '-'
+      const finding = val?.finding || val?.detail || ''
+      const concern = val?.concern || ''
+      return [label, `${scoreVal}`, finding + (concern ? `\n⚠ ${concern}` : '')]
     })
 
     doc.autoTable({
       startY: y,
-      head: [['Kriterium', 'Score']],
-      body: analysisData,
+      head: [['Kriterium', 'Score', 'Befund']],
+      body: tableBody,
       theme: 'striped',
       headStyles: { fillColor: COLORS.primary },
-      margin: { left: 20, right: 20 },
+      columnStyles: { 0: { cellWidth: 52 }, 1: { cellWidth: 18, halign: 'center' }, 2: { cellWidth: 110 } },
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      margin: { left: 15, right: 15 },
     })
 
     y = doc.lastAutoTable.finalY + 10
   }
 
-  // Concerns
-  if (fairnessData.concerns && fairnessData.concerns.length > 0) {
-    y = checkNewPage(doc, y, 40)
-    y = addSectionTitle(doc, 'Mögliche Bedenken', y, COLORS.warning)
+  // ── Positive Findings ──────────────────────────────────────────
+  if (positiveFindings.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Positive Aspekte', y, COLORS.success)
 
-    fairnessData.concerns.forEach((concern: any, index: number) => {
-      y = checkNewPage(doc, y, 15)
+    positiveFindings.forEach((pf: any) => {
+      y = checkNewPage(doc, y, 12)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.success)
+      doc.text('✓', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      doc.setFont('helvetica', 'normal')
+      const pfLines = doc.splitTextToSize(`${pf.title || ''}: ${pf.detail || ''}`, pageWidth - 45)
+      doc.text(pfLines, 28, y)
+      y += pfLines.length * 4.5 + 2
+    })
+
+    y += 4
+  }
+
+  // ── Concerns ──────────────────────────────────────────────────
+  if (concerns.length > 0) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Bedenken & Auffälligkeiten', y, COLORS.warning)
+
+    concerns.forEach((concern: any) => {
+      y = checkNewPage(doc, y, 20)
 
       const severity = concern.severity === 'significant' ? 'Wichtig' :
-                       concern.severity === 'moderate' ? 'Moderat' : 'Gering'
+                       concern.severity === 'moderate'    ? 'Moderat' : 'Gering'
       const sevColor = concern.severity === 'significant' ? COLORS.danger :
-                       concern.severity === 'moderate' ? COLORS.warning : COLORS.gray
+                       concern.severity === 'moderate'    ? COLORS.warning : COLORS.gray
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
@@ -373,67 +464,212 @@ export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {})
       doc.text(`[${severity}]`, 20, y)
 
       doc.setTextColor(...COLORS.dark)
-      doc.setFont('helvetica', 'normal')
-      const issueLines = doc.splitTextToSize(concern.issue || '', pageWidth - 60)
-      doc.text(issueLines, 45, y)
+      const titleTxt = concern.title || concern.issue || ''
+      const titleLines = doc.splitTextToSize(titleTxt, pageWidth - 55)
+      doc.text(titleLines, 48, y)
+      y += Math.max(titleLines.length * 4.5, 5)
 
-      y += 8 + (issueLines.length - 1) * 4
+      if (concern.detail) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8.5)
+        const detailLines = doc.splitTextToSize(concern.detail, pageWidth - 45)
+        doc.text(detailLines, 25, y)
+        y += detailLines.length * 4 + 2
+      }
+
+      if (concern.recommendation) {
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(...COLORS.secondary)
+        const recLines = doc.splitTextToSize(`→ ${concern.recommendation}`, pageWidth - 45)
+        doc.text(recLines, 25, y)
+        doc.setTextColor(...COLORS.dark)
+        y += recLines.length * 4 + 2
+      }
+
+      y += 3
     })
+
+    y += 3
+  }
+
+  // ── Grade Boundary Analysis ────────────────────────────────────
+  if (gradeBoundary.currentGrade || gradeBoundary.analysis) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Notengrenz-Analyse', y, COLORS.secondary)
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...COLORS.dark)
+
+    const gbRows: [string, string][] = [
+      ['Aktuelle Note:', gradeBoundary.currentGrade || '-'],
+      ['Aktuelle Punkte:', `${gradeBoundary.currentPoints ?? '-'} / ${gradeBoundary.maxPoints ?? '-'} (${gradeBoundary.percentage ?? '-'}%)`],
+      ['Nächstbessere Note:', gradeBoundary.nextBetterGrade || '-'],
+      ['Fehlende Punkte:', gradeBoundary.pointsNeededForBetter != null ? `${gradeBoundary.pointsNeededForBetter} Punkte` : '-'],
+      ['Rückholbare Punkte:', gradeBoundary.potentialRecoverablePoints != null ? `${gradeBoundary.potentialRecoverablePoints} Punkte` : '-'],
+      ['Notenänderung möglich:', gradeBoundary.couldChangeGrade ? 'Ja – Überprüfung lohnt sich!' : 'Nein'],
+    ]
+
+    gbRows.forEach(([label, value]) => {
+      if (value && value !== '-') {
+        y = checkNewPage(doc, y, 7)
+        doc.setFont('helvetica', 'bold')
+        doc.text(label, 20, y)
+        doc.setFont('helvetica', 'normal')
+        const isHighlight = label.includes('Notenänderung') && gradeBoundary.couldChangeGrade
+        if (isHighlight) doc.setTextColor(...COLORS.success)
+        doc.text(value, 80, y)
+        if (isHighlight) doc.setTextColor(...COLORS.dark)
+        y += 5.5
+      }
+    })
+
+    if (gradeBoundary.analysis) {
+      y = checkNewPage(doc, y, 15)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      const gbAnalLines = doc.splitTextToSize(gradeBoundary.analysis, pageWidth - 40)
+      doc.text(gbAnalLines, 20, y)
+      y += gbAnalLines.length * 4 + 5
+    }
 
     y += 5
   }
 
-  // Recommendation
-  if (fairnessData.recommendation) {
+  // ── Point Recovery Opportunities ──────────────────────────────
+  if (recoveryOpps.length > 0) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Punktrückholungs-Möglichkeiten', y, COLORS.warning)
+
+    recoveryOpps.forEach((opp: any) => {
+      y = checkNewPage(doc, y, 20)
+
+      const strength = opp.strength === 'strong'   ? 'Stark'   :
+                       opp.strength === 'moderate'  ? 'Moderat' : 'Schwach'
+      const strColor = opp.strength === 'strong'   ? COLORS.success :
+                       opp.strength === 'moderate'  ? COLORS.warning : COLORS.gray
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...strColor)
+      doc.text(`[${strength}]`, 20, y)
+
+      doc.setTextColor(...COLORS.dark)
+      const qLabel = opp.question ? `Frage: ${opp.question}` : ''
+      const pts = (opp.currentPoints != null && opp.possiblePoints != null)
+        ? ` (${opp.currentPoints} → ${opp.possiblePoints} Pkt.)` : ''
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${qLabel}${pts}`, 48, y)
+      y += 5
+
+      if (opp.argument) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8.5)
+        const argLines = doc.splitTextToSize(opp.argument, pageWidth - 45)
+        doc.text(argLines, 25, y)
+        y += argLines.length * 4 + 2
+      }
+
+      y += 2
+    })
+
+    if (fa.totalPotentialRecovery) {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(...COLORS.warning)
+      doc.text(`Gesamt-Potenzial: ${fa.totalPotentialRecovery}`, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      y += 8
+    }
+
+    y += 3
+  }
+
+  // ── Recommendation ────────────────────────────────────────────
+  if (recommendation.approach || recommendation.shouldContactTeacher != null) {
     y = checkNewPage(doc, y, 50)
     y = addSectionTitle(doc, 'Empfehlung', y, COLORS.success)
 
     doc.setFontSize(10)
 
-    if (fairnessData.recommendation.shouldDiscussWithTeacher) {
+    if (recommendation.shouldContactTeacher) {
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...COLORS.secondary)
       doc.text('Gespräch mit Lehrer empfohlen', 20, y)
+      if (recommendation.urgency) {
+        const urgLabel = recommendation.urgency === 'high' ? 'Dringend' :
+                         recommendation.urgency === 'medium' ? 'Bald' : 'Optional'
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.text(`Dringlichkeit: ${urgLabel}`, pageWidth - 20, y, { align: 'right' })
+      }
     } else {
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...COLORS.success)
-      doc.text('Kein Gespräch nötig', 20, y)
+      doc.text('Kein Gespräch notwendig', 20, y)
     }
-    y += 8
+    y += 7
 
-    if (fairnessData.recommendation.suggestedApproach) {
+    if (recommendation.approach) {
       doc.setTextColor(...COLORS.dark)
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      const approachLines = doc.splitTextToSize(fairnessData.recommendation.suggestedApproach, pageWidth - 40)
+      const approachLines = doc.splitTextToSize(recommendation.approach, pageWidth - 40)
       doc.text(approachLines, 20, y)
-      y += approachLines.length * 5 + 5
+      y += approachLines.length * 4.5 + 4
     }
 
-    if (fairnessData.recommendation.questionsToAsk) {
+    if (recommendation.specificPoints && recommendation.specificPoints.length > 0) {
+      y = checkNewPage(doc, y, 20)
       doc.setFont('helvetica', 'bold')
-      doc.text('Fragen für das Gespräch:', 20, y)
-      y += 6
-
+      doc.setFontSize(9)
+      doc.setTextColor(...COLORS.dark)
+      doc.text('Konkrete Punkte ansprechen:', 20, y)
+      y += 5
       doc.setFont('helvetica', 'normal')
-      fairnessData.recommendation.questionsToAsk.forEach((q: string) => {
-        y = checkNewPage(doc, y, 10)
-        doc.text(`• ${q}`, 25, y)
-        y += 5
+      recommendation.specificPoints.forEach((pt: string) => {
+        y = checkNewPage(doc, y, 8)
+        const ptLines = doc.splitTextToSize(`• ${pt}`, pageWidth - 45)
+        doc.text(ptLines, 25, y)
+        y += ptLines.length * 4.5
       })
+      y += 3
+    }
+
+    if (recommendation.sampleOpener) {
+      y = checkNewPage(doc, y, 20)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(...COLORS.primary)
+      doc.text('Gesprächseinstieg:', 20, y)
+      y += 5
+      doc.setFont('helvetica', 'italic')
+      doc.setTextColor(...COLORS.dark)
+      const openerLines = doc.splitTextToSize(`"${recommendation.sampleOpener}"`, pageWidth - 45)
+      doc.text(openerLines, 25, y)
+      y += openerLines.length * 4.5 + 4
     }
   }
 
-  // Disclaimer
+  // ── Disclaimer ────────────────────────────────────────────────
   y = checkNewPage(doc, y, 20)
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.gray)
   doc.text(
-    fairnessData.disclaimer || 'Diese Analyse dient nur zur Orientierung. Im Zweifel sprechen Sie direkt mit dem Lehrer.',
+    'Diese Analyse dient nur zur Orientierung. Im Zweifel sprechen Sie direkt mit dem Lehrer.',
     pageWidth / 2,
     y + 10,
     { align: 'center' }
   )
 
-  addFooter(doc, 1)
+  // Footers on all pages
+  const totalPages = doc.internal.pages.length - 1
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addFooter(doc, i)
+  }
+
   doc.save(`GradeAI_Fairness-Check_${options.childName || 'Export'}.pdf`)
 }
 
