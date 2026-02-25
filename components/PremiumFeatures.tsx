@@ -37,6 +37,8 @@ interface IndependentFeatureProps extends PremiumFeatureProps {
   subject?: string | undefined
   schoolType?: string | undefined
   language?: string | undefined
+  uploadId?: string | undefined
+  cachedData?: any | undefined
 }
 
 // Keep backward compat alias
@@ -415,9 +417,11 @@ export function FlashcardsPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: IndependentFeatureProps) {
   const [isGenerating, setIsGenerating] = useState(false)
-  const [flashcards, setFlashcards] = useState<any>(null)
+  const [flashcards, setFlashcards] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
   const t = getPremiumT(language)
@@ -437,6 +441,7 @@ export function FlashcardsPremiumSection({
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
           language,
+          uploadId,
         }),
       })
 
@@ -652,9 +657,11 @@ export function FairnessCheckPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: IndependentFeatureProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [fairnessData, setFairnessData] = useState<any>(null)
+  const [fairnessData, setFairnessData] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
@@ -686,6 +693,7 @@ export function FairnessCheckPremiumSection({
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
           language,
+          uploadId,
         }),
       })
 
@@ -1337,9 +1345,11 @@ export function LearningMaterialPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: LearningMaterialProps) {
   const [isGenerating, setIsGenerating] = useState(false)
-  const [learningMaterial, setLearningMaterial] = useState<any>(null)
+  const [learningMaterial, setLearningMaterial] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'analysis' | 'lessons' | 'worksheets' | 'quizzes'>('analysis')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
@@ -1364,6 +1374,7 @@ export function LearningMaterialPremiumSection({
           schoolType: schoolType || 'Gymnasium',
           language,
           contentTypes: ['lessons', 'worksheets', 'quizzes'],
+          uploadId,
         }),
       })
 

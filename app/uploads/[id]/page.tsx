@@ -50,6 +50,9 @@ interface Upload {
     ai: TestAnalysis | null
     aiError: string | null
   } | null
+  flashcards: any | null
+  fairnessCheck: any | null
+  learningMaterial: any | null
   child: {
     id?: string
     name: string
@@ -838,6 +841,8 @@ export default function UploadDetailPage() {
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
                   language={reportLanguage as any}
+                  uploadId={upload.id}
+                  cachedData={upload.flashcards}
                 />
 
                 {/* Fairness Check Section - Independent AI Analysis */}
@@ -851,6 +856,8 @@ export default function UploadDetailPage() {
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
                   language={reportLanguage as any}
+                  uploadId={upload.id}
+                  cachedData={upload.fairnessCheck}
                 />
 
                 {/* Learning Material Section - Independent AI Analysis */}
@@ -864,6 +871,8 @@ export default function UploadDetailPage() {
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
                   language={reportLanguage as any}
+                  uploadId={upload.id}
+                  cachedData={upload.learningMaterial}
                 />
               </div>
             )}
