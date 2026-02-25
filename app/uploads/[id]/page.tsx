@@ -860,20 +860,8 @@ export default function UploadDetailPage() {
                   cachedData={upload.fairnessCheck}
                 />
 
-                {/* Learning Material Section - Independent AI Analysis */}
-                <LearningMaterialPremiumSection
-                  isPremium={isPremiumUser}
-                  childName={upload.child.name}
-                  analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
-                  onUpgrade={() => handleUpgrade('learning')}
-                  extractedText={upload.extractedText}
-                  grade={upload.child.grade}
-                  subject={upload.subject || undefined}
-                  schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
-                  uploadId={upload.id}
-                  cachedData={upload.learningMaterial}
-                />
+                {/* Learning Material Section - coming soon */}
+                {/* <LearningMaterialPremiumSection ... /> */}
               </div>
             )}
 
