@@ -439,7 +439,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Kinderprofil',
       addNew: 'Neues Kind',
       editProfile: 'Profil bearbeiten',
       name: 'Name',
@@ -769,7 +769,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profile',
+      profile: 'Child Profile',
       addNew: 'New Child',
       editProfile: 'Edit Profile',
       name: 'Name',
@@ -1095,7 +1095,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'الملف الشخصي',
+      profile: 'ملف الطفل',
       addNew: 'طفل جديد',
       editProfile: 'تعديل الملف',
       name: 'الاسم',
@@ -1421,7 +1421,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Çocuk Profili',
       addNew: 'Yeni Çocuk',
       editProfile: 'Profili Düzenle',
       name: 'İsim',
@@ -1747,7 +1747,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Profilul Copilului',
       addNew: 'Copil nou',
       editProfile: 'Editează profilul',
       name: 'Nume',
@@ -2073,7 +2073,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Профиль',
+      profile: 'Профиль ребёнка',
       addNew: 'Новый ребенок',
       editProfile: 'Редактировать профиль',
       name: 'Имя',
@@ -2399,7 +2399,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'پروفایل',
+      profile: 'پروفایل فرزند',
       addNew: 'فرزند جدید',
       editProfile: 'ویرایش پروفایل',
       name: 'نام',
@@ -2725,7 +2725,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'پروفایل',
+      profile: 'پرۆفایلی منداڵ',
       addNew: 'منداڵی نوێ',
       editProfile: 'پروفایل ده‌ستکاری بکه‌',
       name: 'ناو',
@@ -3051,7 +3051,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profîl',
+      profile: 'Profîla Zarok',
       addNew: 'Zarokê nû',
       editProfile: 'Profîlê sererast bike',
       name: 'Nav',

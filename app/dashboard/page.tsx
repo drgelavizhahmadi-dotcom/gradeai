@@ -459,7 +459,7 @@ export default function DashboardPage() {
                     className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--gray-100)] px-4 py-3 text-sm font-semibold text-[var(--gray-700)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] transition-colors"
                     style={{ fontFamily: 'var(--font-display)' }}
                   >
-                    {t.upload?.viewAnalysis || 'View Details'}
+                    {t.child?.profile || 'Child Profile'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
