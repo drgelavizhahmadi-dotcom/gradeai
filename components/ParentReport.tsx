@@ -302,7 +302,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
           <div className="flex items-start gap-3">
             <Heart className="w-6 h-6 text-[var(--lavender)] flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>Liebe Eltern,</h3>
+              <h3 className="font-semibold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>{t.dearParents}</h3>
               <p className="text-[var(--gray-700)] leading-relaxed">{reportData.messages.toParents}</p>
             </div>
           </div>
@@ -314,7 +314,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
         <div className="bg-[var(--primary-soft)] border-2 border-[var(--primary)]/30 rounded-2xl p-5">
           <h3 className="font-semibold text-[var(--primary-dark)] mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <Target className="w-5 h-5" />
-            Das Wichtigste auf einen Blick
+            {t.keyInsights}
           </h3>
           {summaryText && <p className="text-[var(--gray-700)] mb-3 font-medium">{summaryText}</p>}
           {typeof reportData.summary === 'object' && reportData.summary?.keyTakeaways && (
@@ -330,7 +330,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
           {typeof reportData.summary === 'object' && reportData.summary?.nextStep && (
             <div className="mt-4 p-3 bg-[var(--primary)]/20 rounded-xl">
               <p className="text-[var(--primary-dark)] font-medium">
-                👉 Nächster Schritt: {reportData.summary.nextStep}
+                👉 {t.nextStep} {reportData.summary.nextStep}
               </p>
             </div>
           )}

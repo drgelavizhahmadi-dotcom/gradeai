@@ -34,6 +34,7 @@ export interface Translations {
   nav: {
     dashboard: string
     children: string
+    communication?: string
     uploads: string
     settings: string
     logout: string
@@ -211,6 +212,7 @@ export interface Translations {
     parentReport: string
     dearParents: string
     keyInsights: string
+    nextStep: string
     whatWasTested: string
     whyImportant: string
     nextTopics: string
@@ -309,6 +311,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Dashboard',
       children: 'Kinder',
+      communication: 'Schulpost',
       uploads: 'Uploads',
       settings: 'Einstellungen',
       logout: 'Abmelden',
@@ -466,6 +469,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Elternbericht',
       dearParents: 'Liebe Eltern,',
       keyInsights: 'Das Wichtigste auf einen Blick',
+      nextStep: 'Nächster Schritt:',
       whatWasTested: 'Was wurde getestet?',
       whyImportant: 'Warum ist das wichtig?',
       nextTopics: 'Als nächstes kommt',
@@ -563,6 +567,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Dashboard',
       children: 'Children',
+      communication: 'School Post',
       uploads: 'Uploads',
       settings: 'Settings',
       logout: 'Logout',
@@ -720,6 +725,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Parent Report',
       dearParents: 'Dear Parents,',
       keyInsights: 'Key Insights at a Glance',
+      nextStep: 'Next Step:',
       whatWasTested: 'What Was Tested?',
       whyImportant: 'Why is this important?',
       nextTopics: 'Coming up next',
@@ -817,6 +823,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'لوحة التحكم',
       children: 'الأطفال',
+      communication: 'بريد المدرسة',
       uploads: 'الملفات المرفوعة',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
@@ -974,6 +981,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'تقرير الوالدين',
       dearParents: 'أعزائي الآباء،',
       keyInsights: 'النقاط الرئيسية في لمحة',
+      nextStep: 'الخطوة التالية:',
       whatWasTested: 'ماذا تم اختباره؟',
       whyImportant: 'لماذا هذا مهم؟',
       nextTopics: 'المواضيع القادمة',
@@ -1071,6 +1079,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Kontrol Paneli',
       children: 'Çocuklar',
+      communication: 'Okul Postası',
       uploads: 'Yüklemeler',
       settings: 'Ayarlar',
       logout: 'Çıkış Yap',
@@ -1228,6 +1237,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Veli Raporu',
       dearParents: 'Sevgili Veliler,',
       keyInsights: 'Önemli Noktalar',
+      nextStep: 'Sonraki Adım:',
       whatWasTested: 'Ne Test Edildi?',
       whyImportant: 'Bu neden önemli?',
       nextTopics: 'Sıradaki konular',
@@ -1325,6 +1335,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Panou de control',
       children: 'Copii',
+      communication: 'Poșta Școlară',
       uploads: 'Încărcări',
       settings: 'Setări',
       logout: 'Deconectare',
@@ -1482,6 +1493,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Raport pentru Părinți',
       dearParents: 'Dragi Părinți,',
       keyInsights: 'Puncte Cheie',
+      nextStep: 'Pasul Următor:',
       whatWasTested: 'Ce a fost testat?',
       whyImportant: 'De ce este important?',
       nextTopics: 'Următoarele subiecte',
@@ -1579,6 +1591,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Панель управления',
       children: 'Дети',
+      communication: 'Школьная почта',
       uploads: 'Загрузки',
       settings: 'Настройки',
       logout: 'Выйти',
@@ -1736,6 +1749,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Отчёт для родителей',
       dearParents: 'Уважаемые родители,',
       keyInsights: 'Ключевые выводы',
+      nextStep: 'Следующий шаг:',
       whatWasTested: 'Что проверялось?',
       whyImportant: 'Почему это важно?',
       nextTopics: 'Следующие темы',
@@ -1833,6 +1847,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'داشبورد',
       children: 'فرزندان',
+      communication: 'نامه مدرسه',
       uploads: 'آپلودها',
       settings: 'تنظیمات',
       logout: 'خروج',
@@ -1990,6 +2005,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'گزارش والدین',
       dearParents: 'والدین عزیز،',
       keyInsights: 'نکات کلیدی در یک نگاه',
+      nextStep: 'قدم بعدی:',
       whatWasTested: 'چه چیزی آزمون شد؟',
       whyImportant: 'چرا این مهم است؟',
       nextTopics: 'موضوعات بعدی',
@@ -2087,6 +2103,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'ڕێدرتیه‌کی',
       children: 'منداڵه‌کان',
+      communication: 'پۆستی قوتابخانه',
       uploads: 'بارکردنه‌کان',
       settings: 'ڕێکخستنه‌کان',
       logout: 'دێن ده‌رچوون',
@@ -2244,6 +2261,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'ڕاپۆرتی دایبابان',
       dearParents: 'دایبابانی بەڕێز،',
       keyInsights: 'خاڵە سەرەکییەکان',
+      nextStep: 'هەنگاوی داهاتوو:',
       whatWasTested: 'چی تاقی کرایەوە؟',
       whyImportant: 'بۆچی گرنگە؟',
       nextTopics: 'بابەتەکانی دواتر',
@@ -2341,6 +2359,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       dashboard: 'Serpêhatiyê',
       children: 'Zarok',
+      communication: 'Posta Dibistanê',
       uploads: 'Barkirin',
       settings: 'Mîheng',
       logout: 'Derketin',
@@ -2498,6 +2517,7 @@ export const translations: Record<Language, Translations> = {
       parentReport: 'Rapora Dêûbavan',
       dearParents: 'Dêûbavên hêja,',
       keyInsights: 'Xalên Girîng',
+      nextStep: 'Gavê Pêş:',
       whatWasTested: 'Çi hat ceribandin?',
       whyImportant: 'Çima ev girîng e?',
       nextTopics: 'Mijarên piştî',
