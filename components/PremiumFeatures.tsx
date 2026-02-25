@@ -784,8 +784,7 @@ export function FlashcardsPremiumSection({
   const [flashcards, setFlashcards] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
-  const { language: uiLang } = useLanguage()
-  const t = getPremiumT(uiLang)
+  const t = getPremiumT(language)
 
   const generateFlashcards = async () => {
     setIsGenerating(true)
@@ -1047,8 +1046,7 @@ export function FairnessCheckPremiumSection({
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const { language: uiLang } = useLanguage()
-  const t = getPremiumT(uiLang)
+  const t = getPremiumT(language)
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedItems)
@@ -1144,7 +1142,7 @@ export function FairnessCheckPremiumSection({
               <span className="text-2xl font-bold text-gray-400">??%</span>
             </div>
             <div className="bg-white rounded-lg p-3 border">
-              <span className="text-gray-500">{uiLang === 'de' ? <>Wir haben <strong className="text-amber-600">3 mögliche Bedenken</strong> gefunden...</> : <>We found <strong className="text-amber-600">3 potential concerns</strong>...</>}</span>
+              <span className="text-gray-500">{language === 'de' ? <>Wir haben <strong className="text-amber-600">3 mögliche Bedenken</strong> gefunden...</> : <>We found <strong className="text-amber-600">3 potential concerns</strong>...</>}</span>
             </div>
           </div>
         }
@@ -1737,8 +1735,7 @@ export function LearningMaterialPremiumSection({
   const [activeTab, setActiveTab] = useState<'analysis' | 'lessons' | 'worksheets' | 'quizzes'>('analysis')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [generationProgress, setGenerationProgress] = useState<string>('')
-  const { language: uiLang } = useLanguage()
-  const t = getPremiumT(uiLang)
+  const t = getPremiumT(language)
 
   const generateLearningMaterial = async () => {
     setIsGenerating(true)
