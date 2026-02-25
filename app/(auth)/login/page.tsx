@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
+import { usePreLoginTranslation } from '@/lib/preLoginTranslations'
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, language, setLanguage } = usePreLoginTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -30,7 +32,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Ungültige E-Mail oder Passwort')
+        setError(t.login.errorInvalidCredentials)
         setIsLoading(false)
         return
       }
@@ -40,23 +42,47 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (err) {
-      setError('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.')
+      setError(t.login.errorUnexpected)
       setIsLoading(false)
     }
   }
 
   return (
     <div dir="ltr" className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12" style={{ fontFamily: 'var(--font-body)' }}>
+      {/* Language Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-1 py-1 shadow-lg border border-[var(--gray-200)]">
+          <button
+            onClick={() => setLanguage('de')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'de'
+              ? 'bg-[var(--primary)] text-white shadow-md'
+              : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            DE
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'en'
+              ? 'bg-[var(--primary)] text-white shadow-md'
+              : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            EN
+          </button>
+        </div>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo/Header with Mascot */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <OwlMascot mood="happy" size="lg" message="Willkommen zurück!" />
+            <OwlMascot mood="happy" size="lg" message={t.login.mascotMessage} />
           </div>
           <h1 className="text-3xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-            Willkommen zurück
+            {t.login.title}
           </h1>
-          <p className="text-[var(--gray-600)]">Melden Sie sich bei Ihrem GradeAI-Konto an</p>
+          <p className="text-[var(--gray-600)]">{t.login.subtitle}</p>
         </div>
 
         {/* Login Form */}
@@ -73,7 +99,7 @@ export default function LoginPage() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                E-Mail-Adresse
+                {t.login.emailLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -95,7 +121,7 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Passwort
+                {t.login.passwordLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -108,7 +134,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder="Passwort eingeben"
+                  placeholder={t.login.passwordPlaceholder}
                   disabled={isLoading}
                 />
               </div>
@@ -120,7 +146,7 @@ export default function LoginPage() {
                 href="/forgot-password"
                 className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline"
               >
-                Passwort vergessen?
+                {t.login.forgotPassword}
               </Link>
             </div>
 
@@ -133,12 +159,12 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Anmeldung...
+                  {t.login.loggingIn}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Anmelden
+                  {t.login.loginButton}
                 </>
               )}
             </button>
@@ -150,7 +176,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Noch kein Konto?</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">{t.login.noAccount}</span>
             </div>
           </div>
 
@@ -159,21 +185,21 @@ export default function LoginPage() {
             href="/signup"
             className="btn-secondary w-full block text-center"
           >
-            Konto erstellen
+            {t.login.createAccount}
           </Link>
         </div>
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-[var(--gray-600)]">
-          Mit der Anmeldung stimmen Sie unseren{' '}
+          {t.login.footerText}{' '}
           <Link href="/terms" className="text-[var(--primary)] hover:underline font-medium">
-            Nutzungsbedingungen
+            {t.login.termsOfService}
           </Link>{' '}
-          und der{' '}
+          {t.login.footerAnd}{' '}
           <Link href="/privacy" className="text-[var(--primary)] hover:underline font-medium">
-            Datenschutzerklärung
-          </Link>{' '}
-          zu
+            {t.login.privacyPolicy}
+          </Link>
+          {t.login.footerEnd && ` ${t.login.footerEnd}`}
         </p>
       </div>
     </div>

@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Mail, Lock, User, Phone, Globe, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
+import { usePreLoginTranslation } from '@/lib/preLoginTranslations'
 
 export default function SignUpPage() {
   const router = useRouter()
+  const { t, language, setLanguage } = usePreLoginTranslation()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,12 +35,12 @@ export default function SignUpPage() {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setError(t.signup.errorPasswordMismatch)
       return
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
+      setError(t.signup.errorPasswordLength)
       return
     }
 
@@ -63,7 +65,7 @@ export default function SignUpPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create account')
+        setError(data.error || t.signup.errorUnexpected)
         setIsLoading(false)
         return
       }
@@ -76,7 +78,7 @@ export default function SignUpPage() {
       })
 
       if (signInResult?.error) {
-        setError('Account created but login failed. Please try logging in manually.')
+        setError(t.signup.errorAccountCreatedLoginFailed)
         setIsLoading(false)
         return
       }
@@ -86,23 +88,47 @@ export default function SignUpPage() {
         router.refresh()
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+      setError(t.signup.errorUnexpected)
       setIsLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-12">
+      {/* Language Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-1 py-1 shadow-lg border border-[var(--gray-200)]">
+          <button
+            onClick={() => setLanguage('de')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'de'
+              ? 'bg-[var(--primary)] text-white shadow-md'
+              : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            DE
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'en'
+              ? 'bg-[var(--primary)] text-white shadow-md'
+              : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            EN
+          </button>
+        </div>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo/Header with Mascot */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <OwlMascot mood="celebrating" size="lg" message="Join us!" />
+            <OwlMascot mood="celebrating" size="lg" message={t.signup.mascotMessage} />
           </div>
           <h1 className="text-3xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-            Create Account
+            {t.signup.title}
           </h1>
-          <p className="text-[var(--gray-600)]">Join GradeAI and start supporting your child's learning</p>
+          <p className="text-[var(--gray-600)]">{t.signup.subtitle}</p>
         </div>
 
         {/* Signup Form */}
@@ -119,7 +145,7 @@ export default function SignUpPage() {
             {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Full Name
+                {t.signup.nameLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -133,7 +159,7 @@ export default function SignUpPage() {
                   value={formData.name}
                   onChange={handleChange}
                   className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder="John Doe"
+                  placeholder={t.signup.namePlaceholder}
                   disabled={isLoading}
                 />
               </div>
@@ -142,7 +168,7 @@ export default function SignUpPage() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Email Address
+                {t.signup.emailLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -165,7 +191,7 @@ export default function SignUpPage() {
             {/* Phone Field */}
             <div>
               <label htmlFor="phone" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Phone Number <span className="text-[var(--gray-400)] font-normal">(optional)</span>
+                {t.signup.phoneLabel} <span className="text-[var(--gray-400)] font-normal">{t.signup.phoneOptional}</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -187,7 +213,7 @@ export default function SignUpPage() {
             {/* Language Dropdown */}
             <div>
               <label htmlFor="language" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Preferred Language
+                {t.signup.languageLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -213,7 +239,7 @@ export default function SignUpPage() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Password
+                {t.signup.passwordLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -227,7 +253,7 @@ export default function SignUpPage() {
                   value={formData.password}
                   onChange={handleChange}
                   className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder="At least 8 characters"
+                  placeholder={t.signup.passwordPlaceholder}
                   disabled={isLoading}
                 />
               </div>
@@ -236,7 +262,7 @@ export default function SignUpPage() {
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                Confirm Password
+                {t.signup.confirmPasswordLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -250,7 +276,7 @@ export default function SignUpPage() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder="Re-enter your password"
+                  placeholder={t.signup.confirmPasswordPlaceholder}
                   disabled={isLoading}
                 />
               </div>
@@ -265,12 +291,12 @@ export default function SignUpPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Creating Account...
+                  {t.signup.submitting}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Create Account
+                  {t.signup.submitButton}
                 </>
               )}
             </button>
@@ -282,7 +308,7 @@ export default function SignUpPage() {
               <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">Already have an account?</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">{t.signup.hasAccount}</span>
             </div>
           </div>
 
@@ -291,20 +317,21 @@ export default function SignUpPage() {
             href="/login"
             className="btn-secondary w-full block text-center"
           >
-            Sign In
+            {t.signup.signIn}
           </Link>
         </div>
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-[var(--gray-600)]">
-          By creating an account, you agree to our{' '}
+          {t.signup.footerText}{' '}
           <Link href="/terms" className="text-[var(--primary)] hover:underline font-medium">
-            Terms of Service
+            {t.signup.termsOfService}
           </Link>{' '}
-          and{' '}
+          {t.signup.footerAnd}{' '}
           <Link href="/privacy" className="text-[var(--primary)] hover:underline font-medium">
-            Privacy Policy
+            {t.signup.privacyPolicy}
           </Link>
+          {t.signup.footerEnd && ` ${t.signup.footerEnd}`}
         </p>
       </div>
     </div>
