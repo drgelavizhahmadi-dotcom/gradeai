@@ -10,8 +10,8 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id as string
       }
       return session
@@ -89,8 +89,14 @@ export const authOptions: NextAuthOptions = {
   }
 }
 
+/**
+ * Helper to get the current session in Server Components
+ */
 export const auth = () => getServerSession(authOptions)
 
+/**
+ * Helper to require authentication in Server Actions/Routes
+ */
 export async function requireAuth() {
   const session = await auth()
   if (!session?.user?.id) {
@@ -103,5 +109,3 @@ export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10)
   return bcrypt.hash(password, salt)
 }
-
-export default NextAuth(authOptions)
