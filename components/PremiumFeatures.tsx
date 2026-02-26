@@ -1269,11 +1269,12 @@ export function FlashcardsPremiumSection({
   uploadId,
   cachedData,
 }: IndependentFeatureProps) {
+  const { language: uiLang } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
   const [flashcards, setFlashcards] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
-  const t = getPremiumT(language)
+  const t = getPremiumT(uiLang)
 
   const generateFlashcards = async () => {
     setIsGenerating(true)
@@ -1530,12 +1531,13 @@ export function FairnessCheckPremiumSection({
   uploadId,
   cachedData,
 }: IndependentFeatureProps) {
+  const { language: uiLang } = useLanguage()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [fairnessData, setFairnessData] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const t = getPremiumT(language)
+  const t = getPremiumT(uiLang)
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedItems)
@@ -2225,13 +2227,14 @@ export function LearningMaterialPremiumSection({
   uploadId,
   cachedData,
 }: LearningMaterialProps) {
+  const { language: uiLang } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
   const [learningMaterial, setLearningMaterial] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'analysis' | 'lessons' | 'worksheets' | 'quizzes'>('analysis')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [generationProgress, setGenerationProgress] = useState<string>('')
-  const t = getPremiumT(language)
+  const t = getPremiumT(uiLang)
 
   const generateLearningMaterial = async () => {
     setIsGenerating(true)

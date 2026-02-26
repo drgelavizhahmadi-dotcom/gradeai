@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { translations, Language } from '@/lib/translations';
-import { generateReportPDF } from '@/lib/pdf/generate-pdf';
 
 // Helper to get report translations with English fallback
 function getReportTranslations(language: Language) {
@@ -254,15 +253,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
   const isRTL = data?._meta?.language?.rtl || ['ar', 'fa', 'ku'].includes(language);
 
   const handleDownloadPDF = () => {
-    try {
-      generateReportPDF(reportData, {
-        childName: reportData.student?.name || childName,
-        subject: reportData.test?.subject,
-        date: reportData.test?.date,
-      })
-    } catch (err) {
-      console.error('Report PDF generation failed:', err)
-    }
+    window.print()
   }
 
   const studentName = reportData.student?.name || childName || 'Student';

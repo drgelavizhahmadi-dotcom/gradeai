@@ -4,15 +4,7 @@
  */
 
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
-
-// Extend jsPDF type to include autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF
-    lastAutoTable: { finalY: number }
-  }
-}
+import autoTable from 'jspdf-autotable'
 
 // Color palette
 const COLORS = {
@@ -410,7 +402,7 @@ export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {})
       return [label, `${scoreVal}`, finding + (concern ? `\n⚠ ${concern}` : '')]
     })
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Kriterium', 'Score', 'Befund']],
       body: tableBody,
@@ -421,7 +413,7 @@ export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {})
       margin: { left: 15, right: 15 },
     })
 
-    y = doc.lastAutoTable.finalY + 10
+    y = (doc as any).lastAutoTable.finalY + 10
   }
 
   // ── Positive Findings ──────────────────────────────────────────

@@ -388,3 +388,36 @@ h1, h2, h3, h4, h5, h6 {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* === Print Styles === */
+@media print {
+  /* Hide everything except report content */
+  aside,
+  nav,
+  header,
+  footer,
+  .print\:hidden,
+  [class*="sidebar"],
+  [class*="mobile-header"] {
+    display: none !important;
+  }
+
+  /* Remove sidebar offset so content fills page */
+  .lg\:pl-64 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Clean white background for printing */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure content breaks well across pages */
+  .space-y-5 > * {
+    break-inside: avoid;
+  }
+}
