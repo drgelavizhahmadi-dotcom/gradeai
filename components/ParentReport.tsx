@@ -4,10 +4,12 @@ import { useState } from 'react';
 import {
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   Target, BookOpen, MessageCircle, Calendar, Lightbulb,
-  Heart, Users, ExternalLink, Clock, TrendingUp, AlertCircle
+  Heart, Users, ExternalLink, Clock, TrendingUp, AlertCircle,
+  Printer, Download
 } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { translations, Language } from '@/lib/translations';
+import { generateReportPDF } from '@/lib/pdf/generate-pdf';
 
 // Helper to get report translations with English fallback
 function getReportTranslations(language: Language) {
@@ -242,7 +244,7 @@ function SeverityBadge({ severity }: { severity: string | undefined }) {
 
 export function ParentReport({ data, extractedText, childName, language: propLanguage }: ParentReportProps) {
   const [showRaw, setShowRaw] = useState(false);
-  const { language: contextLanguage } = useLanguage();
+  const { language: contextLanguage, t: uiT } = useLanguage();
   // Use prop language if provided, otherwise fall back to context
   const language = propLanguage || contextLanguage;
   const t = getReportTranslations(language);
@@ -250,6 +252,18 @@ export function ParentReport({ data, extractedText, childName, language: propLan
 
   // Check if report has RTL language metadata
   const isRTL = data?._meta?.language?.rtl || ['ar', 'fa', 'ku'].includes(language);
+
+  const handleDownloadPDF = () => {
+    try {
+      generateReportPDF(reportData, {
+        childName: reportData.student?.name || childName,
+        subject: reportData.test?.subject,
+        date: reportData.test?.date,
+      })
+    } catch (err) {
+      console.error('Report PDF generation failed:', err)
+    }
+  }
 
   const studentName = reportData.student?.name || childName || 'Student';
   const grade = reportData.grade?.value || '—';
@@ -294,6 +308,24 @@ export function ParentReport({ data, extractedText, childName, language: propLan
             )}
           </div>
         </div>
+      </div>
+
+      {/* Print / Download buttons */}
+      <div className="flex items-center justify-end gap-2 print:hidden">
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white border border-[var(--gray-200)] rounded-xl text-[var(--gray-700)] hover:bg-[var(--gray-100)] transition-colors shadow-sm"
+        >
+          <Printer className="h-4 w-4" />
+          {({ de: 'Drucken', ar: 'طباعة', tr: 'Yazdır', ro: 'Tipărire', ru: 'Печать', fa: 'چاپ', ku: 'چاپ', kmr: 'Çap' } as Record<string,string>)[contextLanguage] || 'Print'}
+        </button>
+        <button
+          onClick={handleDownloadPDF}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-dark)] transition-colors shadow-sm"
+        >
+          <Download className="h-4 w-4" />
+          {uiT.analysis?.downloadPDF || 'PDF herunterladen'}
+        </button>
       </div>
 
       {/* Key Message to Parents */}

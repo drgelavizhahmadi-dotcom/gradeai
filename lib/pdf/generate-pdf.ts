@@ -111,7 +111,7 @@ function checkNewPage(doc: jsPDF, y: number, requiredSpace: number = 40): number
   const pageHeight = doc.internal.pageSize.getHeight()
   if (y + requiredSpace > pageHeight - 20) {
     doc.addPage()
-    addFooter(doc, doc.internal.pages.length - 1)
+    addFooter(doc, doc.getNumberOfPages())
     return 20
   }
   return y
@@ -274,7 +274,7 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
   }
 
   // Footers
-  const totalPages = doc.internal.pages.length - 1
+  const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
     addFooter(doc, i)
@@ -664,7 +664,7 @@ export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {})
   )
 
   // Footers on all pages
-  const totalPages = doc.internal.pages.length - 1
+  const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
     addFooter(doc, i)
@@ -989,7 +989,7 @@ export function generateLearningMaterialPDF(materialData: any, options: PDFOptio
   }
 
   // Add footers to all pages
-  const totalPages = doc.internal.pages.length - 1
+  const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
     addFooter(doc, i)
@@ -1056,4 +1056,190 @@ export function generateCombinedReportPDF(
 
   addFooter(doc, 1)
   doc.save(`GradeAI_Bericht_${options.childName || 'Export'}.pdf`)
+}
+
+// ============================================
+// PARENT REPORT PDF
+// ============================================
+
+export function generateReportPDF(reportData: any, options: PDFOptions = {}): void {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  let y = addHeader(doc, 'Elternbericht', options)
+
+  const grade = reportData?.grade?.value || '—'
+  const subject = reportData?.test?.subject || options.subject || ''
+  const studentName = reportData?.student?.name || options.childName || ''
+  const date = reportData?.test?.date || options.date || new Date().toLocaleDateString('de-DE')
+
+  // ── Student / Grade summary box ───────────────────────────────
+  doc.setFillColor(...COLORS.light)
+  doc.roundedRect(15, y, pageWidth - 30, 28, 3, 3, 'F')
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...COLORS.dark)
+  doc.text(studentName || 'Schüler/in', 20, y + 8)
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...COLORS.gray)
+  const meta = [subject, reportData?.student?.class, date].filter(Boolean).join(' · ')
+  doc.text(meta, 20, y + 14)
+
+  // Grade badge
+  const gradeStr = String(grade)
+  doc.setFontSize(22)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...COLORS.primary)
+  doc.text(gradeStr, pageWidth - 20, y + 16, { align: 'right' })
+
+  if (reportData?.grade?.description) {
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...COLORS.gray)
+    doc.text(reportData.grade.description, pageWidth - 20, y + 22, { align: 'right' })
+  }
+
+  doc.setTextColor(...COLORS.dark)
+  y += 35
+
+  // ── Message to parents ─────────────────────────────────────────
+  if (reportData?.messages?.toParents) {
+    y = checkNewPage(doc, y, 25)
+    y = addSectionTitle(doc, 'Nachricht an die Eltern', y, COLORS.primary)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    const lines = doc.splitTextToSize(reportData.messages.toParents, pageWidth - 40)
+    doc.text(lines, 20, y)
+    y += lines.length * 4.5 + 6
+  }
+
+  // ── Summary ───────────────────────────────────────────────────
+  const summaryText = typeof reportData?.summary === 'string'
+    ? reportData.summary
+    : reportData?.summary?.oneSentence
+  const keyTakeaways: string[] = reportData?.summary?.keyTakeaways || []
+  const nextStep: string = reportData?.summary?.nextStep || ''
+
+  if (summaryText || keyTakeaways.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Das Wichtigste auf einen Blick', y, COLORS.secondary)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    if (summaryText) {
+      const sl = doc.splitTextToSize(summaryText, pageWidth - 40)
+      doc.text(sl, 20, y)
+      y += sl.length * 4.5 + 4
+    }
+    keyTakeaways.forEach((point) => {
+      y = checkNewPage(doc, y, 8)
+      const pl = doc.splitTextToSize(`• ${point}`, pageWidth - 45)
+      doc.text(pl, 22, y)
+      y += pl.length * 4.5
+    })
+    if (nextStep) {
+      y = checkNewPage(doc, y, 10)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.primary)
+      const nl = doc.splitTextToSize(`→ Nächster Schritt: ${nextStep}`, pageWidth - 40)
+      doc.text(nl, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      y += nl.length * 4.5 + 4
+    }
+    doc.setFont('helvetica', 'normal')
+    y += 3
+  }
+
+  // ── Strengths ─────────────────────────────────────────────────
+  const strengths: any[] = reportData?.strengths || []
+  if (strengths.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Stärken', y, COLORS.success)
+    doc.setFontSize(9)
+    strengths.slice(0, 5).forEach((s: any) => {
+      y = checkNewPage(doc, y, 12)
+      const title = typeof s === 'string' ? s : (s.title || s.point || '')
+      const desc = typeof s === 'string' ? '' : (s.description || s.evidence || '')
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.success)
+      doc.text('✓', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      const tl = doc.splitTextToSize(title, pageWidth - 45)
+      doc.text(tl, 28, y)
+      y += tl.length * 4.5
+      if (desc) {
+        doc.setFont('helvetica', 'normal')
+        const dl = doc.splitTextToSize(desc, pageWidth - 45)
+        doc.text(dl, 28, y)
+        y += dl.length * 4 + 2
+      }
+    })
+    y += 3
+  }
+
+  // ── Weaknesses ────────────────────────────────────────────────
+  const weaknesses: any[] = reportData?.weaknesses || []
+  if (weaknesses.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Verbesserungsbereiche', y, COLORS.warning)
+    doc.setFontSize(9)
+    weaknesses.slice(0, 5).forEach((w: any) => {
+      y = checkNewPage(doc, y, 12)
+      const title = typeof w === 'string' ? w : (w.title || w.point || '')
+      const desc = typeof w === 'string' ? '' : (w.description || w.rootCause || w.example || '')
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.warning)
+      doc.text('!', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      const tl = doc.splitTextToSize(title, pageWidth - 45)
+      doc.text(tl, 28, y)
+      y += tl.length * 4.5
+      if (desc) {
+        doc.setFont('helvetica', 'normal')
+        const dl = doc.splitTextToSize(desc, pageWidth - 45)
+        doc.text(dl, 28, y)
+        y += dl.length * 4 + 2
+      }
+    })
+    y += 3
+  }
+
+  // ── Immediate Action Plan ─────────────────────────────────────
+  const immediate = reportData?.actionPlan?.immediate
+  if (immediate) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Sofortmaßnahmen', y, COLORS.primary)
+    doc.setFontSize(9)
+    if (immediate.goal) {
+      doc.setFont('helvetica', 'bold')
+      const gl = doc.splitTextToSize(`Ziel: ${immediate.goal}`, pageWidth - 40)
+      doc.text(gl, 20, y)
+      y += gl.length * 4.5 + 3
+    }
+    const activities: any[] = immediate.activities || []
+    activities.slice(0, 5).forEach((act: any) => {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.secondary)
+      doc.text(`${act.day || ''}`, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      doc.setFont('helvetica', 'normal')
+      const taskStr = `${act.task || ''}${act.duration ? ` (${act.duration})` : ''}`
+      const tl = doc.splitTextToSize(taskStr, pageWidth - 55)
+      doc.text(tl, 45, y)
+      y += tl.length * 4.5
+    })
+    y += 3
+  }
+
+  // ── Footer on all pages ────────────────────────────────────────
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addHeader(doc, 'Elternbericht', options)
+    addFooter(doc, i)
+  }
+
+  doc.save(`GradeAI_Elternbericht_${options.childName || 'Export'}.pdf`)
 }
