@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useLanguage } from './LanguageContext'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import { createTranslationPrompt } from './prompts/translationPrompt'
 
 /**
@@ -43,50 +43,57 @@ export interface TranslatedReport {
 }
 
 export const useReportTranslation = (rawAnalysisData: any) => {
-  const { language, targetLanguage } = useLanguage()
+  const { language } = useLanguage()
+
+  const languageNames: Record<string, string> = {
+    de: 'German', en: 'English', ar: 'Arabic', fa: 'Farsi/Persian',
+    ku: 'Kurdish Sorani', kmr: 'Kurdish Kurmanji', tr: 'Turkish',
+    ro: 'Romanian', ru: 'Russian'
+  }
+  const targetLanguage = languageNames[language] || 'English'
   const [translatedData, setTranslatedData] = useState<TranslatedReport | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Cache key for this report + language
   const cacheKey = `gradeai-translation-${rawAnalysisData?.metadata?.analysisTimestamp}-${language}`
-  
+
   const translateReport = useCallback(async () => {
     if (!rawAnalysisData) return
-    
+
     setIsTranslating(true)
     setError(null)
-    
+
     // Create abort controller for 30s timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000)
-    
+
     try {
       const prompt = createTranslationPrompt(rawAnalysisData, targetLanguage)
-      
+
       // Call your AI service (Claude/Gemini/etc.)
       const response = await fetch('/api/ai/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           prompt,
           targetLanguage,
           analysisData: rawAnalysisData
         }),
         signal: controller.signal
       })
-      
+
       clearTimeout(timeoutId)
-      
+
       if (!response.ok) throw new Error('Translation failed')
-      
+
       const translated = await response.json()
-      
+
       // Cache the translation (only in browser)
       if (typeof window !== 'undefined') {
         localStorage.setItem(cacheKey, JSON.stringify(translated))
       }
-      
+
       setTranslatedData(translated)
     } catch (err: any) {
       clearTimeout(timeoutId)
@@ -99,17 +106,17 @@ export const useReportTranslation = (rawAnalysisData: any) => {
       setIsTranslating(false)
     }
   }, [rawAnalysisData, targetLanguage, cacheKey])
-  
+
   // Check cache first
   useEffect(() => {
     if (!rawAnalysisData) return
-    
+
     // If English, no translation needed
     if (language === 'en') {
       setTranslatedData(createEnglishReport(rawAnalysisData))
       return
     }
-    
+
     // Check localStorage cache (only in browser)
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem(cacheKey)
@@ -122,11 +129,11 @@ export const useReportTranslation = (rawAnalysisData: any) => {
         }
       }
     }
-    
+
     // Need to translate
     translateReport()
   }, [rawAnalysisData, language, cacheKey, translateReport])
-  
+
   // Force re-translation
   const retranslate = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -134,7 +141,7 @@ export const useReportTranslation = (rawAnalysisData: any) => {
     }
     translateReport()
   }, [cacheKey, translateReport])
-  
+
   return {
     translatedData,
     isTranslating,

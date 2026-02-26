@@ -7,7 +7,7 @@
  * Keep this as small as possible - let AI handle the rest!
  */
 
-import { LanguageCode } from './LanguageContext'
+import { Language } from '@/lib/translations'
 
 export interface StaticLabels {
   loading: string
@@ -23,7 +23,7 @@ export interface StaticLabels {
   collapse: string
 }
 
-export const staticLabels: Record<LanguageCode, StaticLabels> = {
+export const staticLabels: Record<Language, StaticLabels> = {
   de: {
     loading: 'Wird geladen...',
     translating: 'Übersetze...',
@@ -143,6 +143,6 @@ export const staticLabels: Record<LanguageCode, StaticLabels> = {
   },
 }
 
-export const getStaticLabel = (language: LanguageCode, key: keyof StaticLabels): string => {
+export const getStaticLabel = (language: Language, key: keyof StaticLabels): string => {
   return staticLabels[language]?.[key] || staticLabels.en[key] || key
 }

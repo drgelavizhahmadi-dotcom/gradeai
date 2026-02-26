@@ -1,19 +1,18 @@
 'use client'
 
 import React, { useState } from 'react'
-import { LanguageProvider, useLanguage } from './LanguageContext'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import { useReportTranslation } from './useReportTranslation'
 import { getStaticLabel } from './staticLabels'
-import LanguageSelector from './components/LanguageSelector'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import GradeBadge from './components/ui/GradeBadge'
 import ProgressBar from './components/ui/ProgressBar'
 import ExpandableSection from './components/ui/ExpandableSection'
-import { 
-  FileText, 
-  BarChart3, 
-  Target, 
-  Award, 
+import {
+  FileText,
+  BarChart3,
+  Target,
+  Award,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -31,17 +30,16 @@ interface GradeAIParentReportProps {
 
 const GradeAIParentReport: React.FC<GradeAIParentReportProps> = ({ analysisData }) => {
   return (
-    <LanguageProvider>
-      <ReportContent analysisData={analysisData} />
-    </LanguageProvider>
+    <ReportContent analysisData={analysisData} />
   )
 }
 
 const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
-  const { language, isRTL } = useLanguage()
+  const { language } = useLanguage()
+  const isRTL = ['ar', 'fa', 'ku'].includes(language)
   const { translatedData, isTranslating, error, retranslate } = useReportTranslation(analysisData)
   const [activeTab, setActiveTab] = useState('overview')
-  
+
   // Get static labels for loading states
   const labels = {
     loading: getStaticLabel(language, 'loading'),
@@ -49,7 +47,7 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
     error: getStaticLabel(language, 'error'),
     retry: getStaticLabel(language, 'retry'),
   }
-  
+
   // Show loading while translating
   if (isTranslating || !translatedData) {
     return (
@@ -61,14 +59,14 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
       </div>
     )
   }
-  
+
   // Show error with retry
   if (error) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isRTL ? 'rtl' : 'ltr'}`}>
         <div className="text-center">
           <p className="text-red-600 mb-4">{labels.error}: {error}</p>
-          <button 
+          <button
             onClick={retranslate}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
@@ -78,26 +76,22 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
       </div>
     )
   }
-  
+
   const { translatedReport } = translatedData
-  
+
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="relative max-w-4xl mx-auto px-4 py-6 sm:py-10">
-        
-        {/* Language Selector */}
-        <div className="flex justify-end mb-6">
-          <LanguageSelector />
-        </div>
-        
+
+
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <GradeBadge 
+            <GradeBadge
               grade={analysisData.header.grade}
               percentage={analysisData.header.percentage}
             />
-            
+
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-2xl font-bold text-slate-800 mb-2">
                 {translatedReport.header.title}
@@ -115,7 +109,7 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Emotional Support Message */}
           <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-lg">
             <div className="flex items-start gap-3">
@@ -131,30 +125,29 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Tab Navigation */}
         <div className="bg-white rounded-lg shadow-sm mb-6 p-1 flex gap-1">
           {['overview', 'analysis', 'action', 'strengths'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 hover:bg-slate-50'
+                }`}
             >
               {translatedReport.tabs[tab as keyof typeof translatedReport.tabs]}
             </button>
           ))}
         </div>
-        
+
         {/* Tab Content */}
         <div className="space-y-4">
           {activeTab === 'overview' && (
             <>
               {/* Exam Structure */}
-              <ExpandableSection 
+              <ExpandableSection
                 title={translatedReport.sections.examStructure.title}
                 icon={<FileText className="h-5 w-5 text-blue-600" />}
                 defaultExpanded={true}
@@ -184,9 +177,9 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
                   ))}
                 </div>
               </ExpandableSection>
-              
+
               {/* Score Breakdown */}
-              <ExpandableSection 
+              <ExpandableSection
                 title={translatedReport.sections.scores.title}
                 icon={<BarChart3 className="h-5 w-5 text-green-600" />}
                 defaultExpanded={true}
@@ -219,9 +212,9 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
                   </div>
                 </div>
               </ExpandableSection>
-              
+
               {/* Fairness Check */}
-              <ExpandableSection 
+              <ExpandableSection
                 title={translatedReport.sections.fairness.title}
                 icon={<Scale className="h-5 w-5 text-purple-600" />}
               >
@@ -237,7 +230,7 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
                   </p>
                 </div>
               </ExpandableSection>
-              
+
               {/* Warnings */}
               {analysisData.riskAssessment.urgencyLevel !== 'none' && (
                 <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
@@ -259,9 +252,9 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
               )}
             </>
           )}
-          
+
           {activeTab === 'analysis' && (
-            <ExpandableSection 
+            <ExpandableSection
               title={translatedReport.sections.errorAnalysis.title}
               icon={<BookOpen className="h-5 w-5 text-orange-600" />}
               defaultExpanded={true}
@@ -300,10 +293,10 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
               </div>
             </ExpandableSection>
           )}
-          
+
           {activeTab === 'action' && (
             <>
-              <ExpandableSection 
+              <ExpandableSection
                 title={translatedReport.sections.parentActions.title}
                 icon={<Users className="h-5 w-5 text-indigo-600" />}
                 defaultExpanded={true}
@@ -320,8 +313,8 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
                   ))}
                 </div>
               </ExpandableSection>
-              
-              <ExpandableSection 
+
+              <ExpandableSection
                 title={translatedReport.sections.learningPlan.title}
                 icon={<Target className="h-5 w-5 text-green-600" />}
                 defaultExpanded={true}
@@ -343,9 +336,9 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
               </ExpandableSection>
             </>
           )}
-          
+
           {activeTab === 'strengths' && (
-            <ExpandableSection 
+            <ExpandableSection
               title={translatedReport.sections.strengths.title}
               icon={<Award className="h-5 w-5 text-yellow-600" />}
               defaultExpanded={true}
@@ -360,7 +353,7 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
                     </div>
                   </div>
                 ))}
-                
+
                 <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-green-50 border-l-4 border-emerald-500 rounded-lg">
                   <h4 className="font-semibold text-emerald-900 mb-2">
                     {translatedReport.sections.strengths.outlookTitle}
@@ -373,13 +366,13 @@ const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
             </ExpandableSection>
           )}
         </div>
-        
+
         {/* Footer */}
         <footer className="mt-8 pt-6 border-t border-slate-200 text-center">
           <p className="text-xs text-slate-400">{translatedReport.footer.createdWith}</p>
           <p className="text-xs text-slate-400 mt-1">{translatedReport.footer.disclaimer}</p>
         </footer>
-        
+
       </div>
     </div>
   )
