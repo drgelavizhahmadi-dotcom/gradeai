@@ -1,13 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { 
-  Scale, AlertTriangle, CheckCircle, HelpCircle, 
+import {
+  Scale, AlertTriangle, CheckCircle, HelpCircle,
   MessageCircle, ChevronDown, ChevronUp,
   FileQuestion, ThumbsUp, AlertCircle,
   BookOpen, Users, Gavel, XCircle
 } from 'lucide-react'
-import { useLanguage } from '../LanguageContext'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import { FairnessResult } from '../hooks/useFairnessCheck'
 
 interface FairnessCheckSectionProps {
@@ -17,13 +17,14 @@ interface FairnessCheckSectionProps {
   isLoading: boolean
 }
 
-const FairnessCheckSection: React.FC<FairnessCheckSectionProps> = ({ 
-  analysisData, 
+const FairnessCheckSection: React.FC<FairnessCheckSectionProps> = ({
+  analysisData,
   onRequestFairnessCheck,
   fairnessResult,
-  isLoading 
+  isLoading
 }) => {
-  const { isRTL } = useLanguage()
+  const { language } = useLanguage()
+  const isRTL = ['ar', 'fa', 'ku'].includes(language)
   const [showDetails, setShowDetails] = useState(false)
 
   // Verdict colors and icons
@@ -174,13 +175,12 @@ const FairnessCheckSection: React.FC<FairnessCheckSectionProps> = ({
             <p className="text-xs text-slate-500">Point Discrepancy</p>
           </div>
           <div className="bg-white/80 rounded-xl p-3 text-center">
-            <p className={`text-2xl font-bold ${
-              fairnessResult.consistencyAnalysis.overallConsistency === 'CONSISTENT' 
-                ? 'text-emerald-600' 
+            <p className={`text-2xl font-bold ${fairnessResult.consistencyAnalysis.overallConsistency === 'CONSISTENT'
+                ? 'text-emerald-600'
                 : fairnessResult.consistencyAnalysis.overallConsistency === 'MOSTLY_CONSISTENT'
-                ? 'text-blue-600'
-                : 'text-amber-600'
-            }`}>
+                  ? 'text-blue-600'
+                  : 'text-amber-600'
+              }`}>
               {fairnessResult.consistencyAnalysis.overallConsistency === 'CONSISTENT' && '✓'}
               {fairnessResult.consistencyAnalysis.overallConsistency === 'MOSTLY_CONSISTENT' && '~'}
               {fairnessResult.consistencyAnalysis.overallConsistency === 'INCONSISTENT' && '!'}
@@ -213,20 +213,18 @@ const FairnessCheckSection: React.FC<FairnessCheckSectionProps> = ({
               </h4>
               <div className="space-y-4">
                 {fairnessResult.potentialIssues.map((issue, idx) => (
-                  <div 
+                  <div
                     key={issue.issueId || idx}
-                    className={`p-4 rounded-xl border ${
-                      issue.severity === 'SIGNIFICANT' ? 'bg-red-50 border-red-200' :
-                      issue.severity === 'MODERATE' ? 'bg-amber-50 border-amber-200' :
-                      'bg-slate-50 border-slate-200'
-                    }`}
+                    className={`p-4 rounded-xl border ${issue.severity === 'SIGNIFICANT' ? 'bg-red-50 border-red-200' :
+                        issue.severity === 'MODERATE' ? 'bg-amber-50 border-amber-200' :
+                          'bg-slate-50 border-slate-200'
+                      }`}
                   >
                     <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        issue.severity === 'SIGNIFICANT' ? 'bg-red-100 text-red-700' :
-                        issue.severity === 'MODERATE' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${issue.severity === 'SIGNIFICANT' ? 'bg-red-100 text-red-700' :
+                          issue.severity === 'MODERATE' ? 'bg-amber-100 text-amber-700' :
+                            'bg-slate-100 text-slate-700'
+                        }`}>
                         {issue.severity}
                       </span>
                       <span className="text-xs text-slate-500">
@@ -328,7 +326,7 @@ const FairnessCheckSection: React.FC<FairnessCheckSectionProps> = ({
               <BookOpen className="w-5 h-5 text-slate-600" />
               Recommended Next Steps
             </h4>
-            
+
             <div className="space-y-4">
               {/* Action Steps */}
               <div className="bg-slate-50 rounded-xl p-4">

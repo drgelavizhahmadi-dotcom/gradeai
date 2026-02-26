@@ -88,18 +88,18 @@ export default function ProgressPage() {
       const response = await fetch(`/api/children/${childId}/progress`)
 
       if (!response.ok) {
-        throw new Error('Failed to load progress data')
+        throw new Error(t.progress.failedToLoad)
       }
 
       const result = await response.json()
       if (result.success) {
         setData(result.data)
       } else {
-        throw new Error(result.error || 'Failed to load progress')
+        throw new Error(result.error || t.progress.failedToLoad)
       }
     } catch (err) {
       console.error('Error fetching progress:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -119,8 +119,8 @@ export default function ProgressPage() {
       <div className="min-h-screen bg-[var(--background)]">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <CatMascot mood="thinking" size="xl" message="Analyzing progress..." />
-            <p className="text-[var(--gray-600)] font-medium mt-4">Gathering insights...</p>
+            <CatMascot mood="thinking" size="xl" message={t.common.loading} />
+            <p className="text-[var(--gray-600)] font-medium mt-4">{t.common.loading}</p>
           </div>
         </div>
       </div>
@@ -134,17 +134,17 @@ export default function ProgressPage() {
           <Breadcrumbs />
           <div className="card-story p-12 text-center bg-white mt-6">
             <div className="flex justify-center mb-4">
-              <CatMascot mood="encouraging" size="lg" message="Let me try again..." />
+              <CatMascot mood="encouraging" size="lg" message={t.progress.tryAgain} />
             </div>
             <h3 className="text-xl font-bold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-              Failed to load progress
+              {t.progress.failedToLoad}
             </h3>
             <p className="text-[var(--gray-600)] mb-6">{error}</p>
             <button
               onClick={fetchProgressData}
               className="btn-primary"
             >
-              Try Again
+              {t.progress.tryAgain}
             </button>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function ProgressPage() {
             className="inline-flex items-center gap-2 text-[var(--primary)] hover:text-[var(--primary-dark)] mb-4 font-medium"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Profile
+            {t.progress.backToProfile}
           </Link>
 
           <div className="bg-gradient-to-br from-[var(--lavender-soft)] to-[var(--primary-soft)] rounded-3xl p-8 relative overflow-hidden">
@@ -175,14 +175,14 @@ export default function ProgressPage() {
                 <CatMascot
                   mood={getMascotMood()}
                   size="lg"
-                  message={stats.recentTrend === 'improving' ? `${child.name} is doing amazing!` : `Let's see ${child.name}'s journey!`}
+                  message={stats.recentTrend === 'improving' ? t.progress.amazingProgress : t.progress.learningJourney.replace('{name}', child.name)}
                 />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
-                  Progress Dashboard
+                  {t.progress.title}
                 </h1>
-                <p className="text-lg text-[var(--gray-600)]">{child.name}'s learning journey</p>
+                <p className="text-lg text-[var(--gray-600)]">{t.progress.learningJourney.replace('{name}', child.name)}</p>
               </div>
             </div>
             {/* Decorative */}
@@ -196,8 +196,8 @@ export default function ProgressPage() {
           <div className="mb-8">
             <CelebrationBanner
               mascotType="cat"
-              title="Amazing Progress!"
-              subtitle={`${child.name} has resolved ${stats.resolvedWeaknesses} weakness${stats.resolvedWeaknesses > 1 ? 'es' : ''} and is showing improvement!`}
+              title={t.progress.amazingProgress}
+              subtitle={`${child.name}: ${stats.resolvedWeaknesses} ${t.progress.weaknessesResolved.toLowerCase()}!`}
               onClose={() => setShowCelebration(false)}
             />
           </div>
@@ -209,7 +209,7 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Average Grade</p>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.progress.averageGrade}</p>
                 <div className="mt-2">
                   <GradeBadge grade={stats.averageGrade} size="lg" showLabel />
                 </div>
@@ -224,25 +224,23 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Recent Trend</p>
-                <p className={`text-xl font-bold mt-2 ${
-                  stats.recentTrend === 'improving' ? 'text-[var(--success)]' :
-                  stats.recentTrend === 'declining' ? 'text-[var(--error)]' : 'text-[var(--gray-600)]'
-                }`} style={{ fontFamily: 'var(--font-display)' }}>
-                  {stats.recentTrend === 'improving' ? '🚀 Improving!' :
-                   stats.recentTrend === 'declining' ? 'Needs Focus' :
-                   stats.recentTrend === 'stable' ? '➡️ Stable' : 'Not enough data'}
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.progress.recentTrend}</p>
+                <p className={`text-xl font-bold mt-2 ${stats.recentTrend === 'improving' ? 'text-[var(--success)]' :
+                    stats.recentTrend === 'declining' ? 'text-[var(--error)]' : 'text-[var(--gray-600)]'
+                  }`} style={{ fontFamily: 'var(--font-display)' }}>
+                  {stats.recentTrend === 'improving' ? t.progress.improving :
+                    stats.recentTrend === 'declining' ? t.progress.needsFocus :
+                      stats.recentTrend === 'stable' ? t.progress.stable : t.progress.notEnoughData}
                 </p>
                 {stats.gradeChange !== null && (
                   <p className={`text-sm ${stats.gradeChange < 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
-                    {stats.gradeChange < 0 ? '' : '+'}{stats.gradeChange.toFixed(1)} vs last test
+                    {stats.gradeChange < 0 ? '' : '+'}{stats.gradeChange.toFixed(1)} {t.progress.vsLastTest}
                   </p>
                 )}
               </div>
-              <div className={`p-3 rounded-2xl ${
-                stats.recentTrend === 'improving' ? 'bg-[var(--success-soft)]' :
-                stats.recentTrend === 'declining' ? 'bg-[var(--error-soft)]' : 'bg-[var(--gray-100)]'
-              }`}>
+              <div className={`p-3 rounded-2xl ${stats.recentTrend === 'improving' ? 'bg-[var(--success-soft)]' :
+                  stats.recentTrend === 'declining' ? 'bg-[var(--error-soft)]' : 'bg-[var(--gray-100)]'
+                }`}>
                 {stats.recentTrend === 'improving' ? (
                   <TrendingUp className="h-6 w-6 text-[var(--success)]" />
                 ) : stats.recentTrend === 'declining' ? (
@@ -258,11 +256,11 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Weaknesses Resolved</p>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.progress.weaknessesResolved}</p>
                 <p className="text-3xl font-bold text-[var(--success)] mt-2" style={{ fontFamily: 'var(--font-display)' }}>
                   {stats.resolvedWeaknesses}
                 </p>
-                <p className="text-sm text-[var(--gray-400)]">{stats.activeWeaknesses} still active</p>
+                <p className="text-sm text-[var(--gray-400)]">{stats.activeWeaknesses} {t.progress.stillActive}</p>
               </div>
               <div className="p-3 rounded-2xl bg-[var(--success-soft)]">
                 <CheckCircle className="h-6 w-6 text-[var(--success)]" />
@@ -274,7 +272,7 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--gray-500)]">Best Grade</p>
+                <p className="text-sm font-medium text-[var(--gray-500)]">{t.progress.bestGrade}</p>
                 <div className="mt-2">
                   <GradeBadge grade={stats.bestGrade} size="lg" />
                 </div>
@@ -291,12 +289,12 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <h3 className="text-lg font-bold text-[var(--gray-800)] mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
               <TrendingUp className="h-5 w-5 text-[var(--primary)]" />
-              Grade History
+              {t.progress.gradeHistory}
             </h3>
             {tests.length === 0 ? (
               <div className="text-center py-8">
-                <CatMascot mood="encouraging" size="md" message="Upload tests to see progress!" showMessage={false} />
-                <p className="text-[var(--gray-500)] mt-4">No tests uploaded yet</p>
+                <CatMascot mood="encouraging" size="md" message={t.progress.uploadMoreTests} showMessage={false} />
+                <p className="text-[var(--gray-500)] mt-4">{t.progress.noTestsYet}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -326,8 +324,8 @@ export default function ProgressPage() {
                 </div>
                 {/* Grade scale reference */}
                 <div className="flex justify-between text-xs text-[var(--gray-400)] border-t border-[var(--gray-200)] pt-2">
-                  <span>1 (Best)</span>
-                  <span>6 (Worst)</span>
+                  <span>{t.progress.best}</span>
+                  <span>{t.progress.worst}</span>
                 </div>
               </div>
             )}
@@ -337,11 +335,11 @@ export default function ProgressPage() {
           <div className="card-story p-6 bg-white">
             <h3 className="text-lg font-bold text-[var(--gray-800)] mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
               <BookOpen className="h-5 w-5 text-[var(--lavender)]" />
-              By Subject
+              {t.progress.bySubject}
             </h3>
             {subjectBreakdown.length === 0 ? (
               <div className="text-center py-8 text-[var(--gray-500)]">
-                <p>No subject data yet</p>
+                <p>{t.progress.noSubjectData}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -353,15 +351,15 @@ export default function ProgressPage() {
                         <GradeBadge grade={subject.avgGrade} size="sm" />
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm text-[var(--gray-500)]">{subject.count} test{subject.count > 1 ? 's' : ''}</span>
+                        <span className="text-sm text-[var(--gray-500)]">{t.progress.testCount.replace('{count}', String(subject.count))}</span>
                         {subject.trend === 'up' && (
                           <span className="inline-flex items-center gap-1 text-xs text-[var(--success)] font-medium">
-                            <TrendingUp className="h-3 w-3" /> Improving
+                            <TrendingUp className="h-3 w-3" /> {t.progress.improving}
                           </span>
                         )}
                         {subject.trend === 'down' && (
                           <span className="inline-flex items-center gap-1 text-xs text-[var(--error)] font-medium">
-                            <TrendingDown className="h-3 w-3" /> Declining
+                            <TrendingDown className="h-3 w-3" /> {t.progress.declining}
                           </span>
                         )}
                       </div>
@@ -377,29 +375,27 @@ export default function ProgressPage() {
         <div className="mt-8 card-story p-6 bg-white">
           <h3 className="text-lg font-bold text-[var(--gray-800)] mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <Target className="h-5 w-5 text-[var(--coral)]" />
-            Weakness Tracker
+            {t.progress.weaknessTracker}
           </h3>
           {weaknessTracking.length === 0 ? (
             <div className="text-center py-8">
-              <CatMascot mood="happy" size="md" message="No weaknesses found yet!" showMessage={false} />
-              <p className="text-[var(--gray-500)] mt-4">Upload more tests to start tracking progress</p>
+              <CatMascot mood="happy" size="md" message={t.progress.noWeaknessesYet} showMessage={false} />
+              <p className="text-[var(--gray-500)] mt-4">{t.progress.uploadMoreTests}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {weaknessTracking.map((weakness, i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                    weakness.status === 'resolved' ? 'bg-[var(--success-soft)] border-[var(--success)]' :
-                    weakness.status === 'improving' ? 'bg-[var(--warning-soft)] border-[var(--warning)]' :
-                    'bg-[var(--error-soft)] border-[var(--error)]'
-                  }`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${weakness.status === 'resolved' ? 'bg-[var(--success-soft)] border-[var(--success)]' :
+                      weakness.status === 'improving' ? 'bg-[var(--warning-soft)] border-[var(--warning)]' :
+                        'bg-[var(--error-soft)] border-[var(--error)]'
+                    }`}
                 >
-                  <div className={`p-2 rounded-xl ${
-                    weakness.status === 'resolved' ? 'bg-[var(--success)]' :
-                    weakness.status === 'improving' ? 'bg-[var(--warning)]' :
-                    'bg-[var(--error)]'
-                  }`}>
+                  <div className={`p-2 rounded-xl ${weakness.status === 'resolved' ? 'bg-[var(--success)]' :
+                      weakness.status === 'improving' ? 'bg-[var(--warning)]' :
+                        'bg-[var(--error)]'
+                    }`}>
                     {weakness.status === 'resolved' ? (
                       <CheckCircle className="h-5 w-5 text-white" />
                     ) : weakness.status === 'improving' ? (
@@ -411,19 +407,18 @@ export default function ProgressPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-[var(--gray-800)]">{weakness.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        weakness.status === 'resolved' ? 'bg-[var(--success)] text-white' :
-                        weakness.status === 'improving' ? 'bg-[var(--warning)] text-white' :
-                        'bg-[var(--error)] text-white'
-                      }`}>
-                        {weakness.status === 'resolved' ? '✓ Resolved!' :
-                         weakness.status === 'improving' ? '↗ Improving' : '⚠ Active'}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${weakness.status === 'resolved' ? 'bg-[var(--success)] text-white' :
+                          weakness.status === 'improving' ? 'bg-[var(--warning)] text-white' :
+                            'bg-[var(--error)] text-white'
+                        }`}>
+                        {weakness.status === 'resolved' ? t.progress.resolved :
+                          weakness.status === 'improving' ? `↗ ${t.progress.improving}` : t.progress.active}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-[var(--gray-500)]">
-                      <span>Seen {weakness.occurrences}x</span>
+                      <span>{t.progress.seen.replace('{count}', String(weakness.occurrences))}</span>
                       <span>•</span>
-                      <span>In: {weakness.subjects.join(', ')}</span>
+                      <span>{t.progress.inSubjects} {weakness.subjects.join(', ')}</span>
                     </div>
                   </div>
                   {weakness.status === 'resolved' && (
@@ -439,11 +434,11 @@ export default function ProgressPage() {
         <div className="mt-8 card-story p-6 bg-white">
           <h3 className="text-lg font-bold text-[var(--gray-800)] mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <Calendar className="h-5 w-5 text-[var(--primary)]" />
-            Recent Tests
+            {t.progress.recentTests}
           </h3>
           {tests.length === 0 ? (
             <div className="text-center py-8 text-[var(--gray-500)]">
-              <p>No tests yet</p>
+              <p>{t.progress.noTestsYet}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -474,7 +469,7 @@ export default function ProgressPage() {
                         </span>
                       ))}
                       {test.weaknesses.length > 3 && (
-                        <span className="text-xs text-[var(--gray-400)]">+{test.weaknesses.length - 3} more</span>
+                        <span className="text-xs text-[var(--gray-400)]">{t.progress.moreWeaknesses.replace('{count}', String(test.weaknesses.length - 3))}</span>
                       )}
                     </div>
                   )}
