@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
   BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2,
-  Sparkles, Calendar, User, Globe, ChevronDown
+  Sparkles, Calendar, User
 } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
 import { GradeBadge } from '@/components/ui/GradeBadge'
@@ -17,20 +17,7 @@ import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { FlashcardsPremiumSection, FairnessCheckPremiumSection, LearningMaterialPremiumSection, UpgradeModal } from '@/components/PremiumFeatures'
-
-// Supported languages for report translation
-const REPORT_LANGUAGES = {
-  en: { name: 'English', native: 'English', flag: '🇬🇧' },
-  de: { name: 'German', native: 'Deutsch', flag: '🇩🇪' },
-  fa: { name: 'Persian', native: 'فارسی', flag: '🇮🇷' },
-  ar: { name: 'Arabic', native: 'العربية', flag: '🇸🇦' },
-  tr: { name: 'Turkish', native: 'Türkçe', flag: '🇹🇷' },
-  ru: { name: 'Russian', native: 'Русский', flag: '🇷🇺' },
-  fr: { name: 'French', native: 'Français', flag: '🇫🇷' },
-  es: { name: 'Spanish', native: 'Español', flag: '🇪🇸' },
-} as const
-
-type ReportLanguage = keyof typeof REPORT_LANGUAGES
+import { useLanguage } from '@/components/providers/LanguageProvider'
 
 interface Upload {
   id: string
@@ -74,12 +61,12 @@ export default function UploadDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Language translation state
-  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>('de')
+  const { language } = useLanguage()
+
+  // Report translation state
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [originalReport, setOriginalReport] = useState<any>(null)
 
   // Premium features state
@@ -217,56 +204,44 @@ export default function UploadDetailPage() {
     }
   }
 
-  // Handle language change for instant translation
-  const handleLanguageChange = async (newLanguage: ReportLanguage) => {
-    if (newLanguage === reportLanguage) {
-      setShowLanguageMenu(false)
-      return
-    }
+  // Translate report when global UI language changes
+  useEffect(() => {
+    if (!originalReport) return
 
-    setShowLanguageMenu(false)
-    setReportLanguage(newLanguage)
-    setTranslationError(null)
-
-    // If German (base language), use the original report
-    if (newLanguage === 'de' && originalReport) {
+    // German is the base language — use original
+    if (language === 'de') {
       setTranslatedReport(originalReport)
       return
     }
 
-    // Need to translate
-    if (!originalReport) {
-      setTranslationError('No report available to translate')
+    // Check if report is already in the target language
+    const currentLang = originalReport?._meta?.language?.code
+    if (currentLang === language) {
+      setTranslatedReport(originalReport)
       return
     }
 
+    setTranslationError(null)
     setIsTranslating(true)
 
-    try {
-      const response = await fetch('/api/ai/translate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          report: originalReport,
-          targetLanguage: newLanguage,
-        }),
+    fetch('/api/ai/translate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report: originalReport, targetLanguage: language }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) throw new Error(data.error || 'Translation failed')
+        setTranslatedReport(data.translatedReport)
       })
-
-      const data = await response.json()
-
-      if (!data.success) {
-        throw new Error(data.error || 'Translation failed')
-      }
-
-      setTranslatedReport(data.translatedReport)
-    } catch (err) {
-      console.error('Translation error:', err)
-      setTranslationError(err instanceof Error ? err.message : 'Translation failed')
-      // Keep current report on error
-    } finally {
-      setIsTranslating(false)
-    }
-  }
+      .catch((err) => {
+        console.error('Translation error:', err)
+        setTranslationError(err instanceof Error ? err.message : 'Translation failed')
+      })
+      .finally(() => {
+        setIsTranslating(false)
+      })
+  }, [language, originalReport])
 
   // Store original report when upload changes
   useEffect(() => {
@@ -280,11 +255,7 @@ export default function UploadDetailPage() {
         setOriginalReport(analysisData)
         setTranslatedReport(analysisData)
 
-        // Detect current language from report meta (default to German)
-        const currentLang = analysisData._meta?.language?.code
-        if (currentLang && currentLang in REPORT_LANGUAGES) {
-          setReportLanguage(currentLang as ReportLanguage)
-        }
+        // Language is now driven by the global useLanguage() context
       }
     }
   }, [upload?.analysis])
@@ -655,57 +626,11 @@ export default function UploadDetailPage() {
               </div>
             </div>
 
-            {/* Language Selector for Report */}
-            {upload.analysis && (
-              <div dir="ltr" className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-[var(--gray-600)]">
-                  <Globe className="h-4 w-4" />
-                  <span>Report Language:</span>
-                </div>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-                    disabled={isTranslating}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border-2 border-[var(--gray-200)] hover:border-[var(--primary)] transition-colors disabled:opacity-50"
-                  >
-                    {isTranslating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin text-[var(--primary)]" />
-                        <span className="text-sm font-medium">Translating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-lg">{REPORT_LANGUAGES[reportLanguage].flag}</span>
-                        <span className="text-sm font-medium">{REPORT_LANGUAGES[reportLanguage].native}</span>
-                        <ChevronDown className={`h-4 w-4 text-[var(--gray-500)] transition-transform ${showLanguageMenu ? 'rotate-180' : ''}`} />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Language Dropdown */}
-                  {showLanguageMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-[var(--gray-200)] py-2 z-50">
-                      {Object.entries(REPORT_LANGUAGES).map(([code, lang]) => (
-                        <button
-                          key={code}
-                          onClick={() => handleLanguageChange(code as ReportLanguage)}
-                          className={`w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-[var(--primary-soft)] transition-colors ${
-                            reportLanguage === code ? 'bg-[var(--primary-soft)] text-[var(--primary-dark)]' : ''
-                          }`}
-                        >
-                          <span className="text-lg">{lang.flag}</span>
-                          <div>
-                            <p className="text-sm font-medium">{lang.native}</p>
-                            <p className="text-xs text-[var(--gray-500)]">{lang.name}</p>
-                          </div>
-                          {reportLanguage === code && (
-                            <CheckCircle className="h-4 w-4 text-[var(--primary)] ml-auto" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            {/* Translation indicator */}
+            {isTranslating && (
+              <div className="mb-4 flex items-center gap-2 text-sm text-[var(--gray-600)]">
+                <Loader2 className="h-4 w-4 animate-spin text-[var(--primary)]" />
+                <span>Translating report...</span>
               </div>
             )}
 
@@ -725,7 +650,7 @@ export default function UploadDetailPage() {
 
             {/* Parent Report */}
             {(upload.analysis || upload.extractedText) && (
-              <div className="mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
+              <div className="mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
                 {(() => {
                   // Use translated report if available, otherwise original
                   const analysisData = translatedReport || (upload.analysis ?
@@ -757,7 +682,7 @@ export default function UploadDetailPage() {
                           data={analysisData}
                           extractedText={upload.extractedText}
                           childName={upload.child?.name}
-                          language={reportLanguage as any}
+                          language={language as any}
                         />
                       </ErrorBoundary>
                     );
@@ -829,7 +754,7 @@ export default function UploadDetailPage() {
 
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
-              <div className="space-y-6 mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
+              <div className="space-y-6 mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
                 {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}
@@ -840,7 +765,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
+                  language={language as any}
                   uploadId={upload.id}
                   cachedData={upload.flashcards}
                 />
@@ -855,7 +780,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
+                  language={language as any}
                   uploadId={upload.id}
                   cachedData={upload.fairnessCheck}
                 />
