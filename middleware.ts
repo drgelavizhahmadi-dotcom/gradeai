@@ -17,7 +17,7 @@ export default withAuth(
 );
 
 // Protect all routes starting with /dashboard
-// AUTH routes like /login, /signup, /forgot-password, /reset-password are NOT matched here and thus are public
+// AUTH routes like /login, /signup, /forgot-password, /reset-password, /verify-email are NOT matched here and thus are public
 export const config = {
     matcher: ["/dashboard/:path*"],
 };
