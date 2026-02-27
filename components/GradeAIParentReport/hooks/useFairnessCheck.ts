@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useLanguage } from '../LanguageContext'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import { createFairnessCheckPrompt, StudentContext } from '../prompts/fairnessCheckPrompt'
 
 export interface FairnessResult {
@@ -96,7 +96,13 @@ export interface FairnessResult {
 }
 
 export const useFairnessCheck = (analysisData: any, imageData?: string) => {
-  const { targetLanguage } = useLanguage()
+  const { language } = useLanguage()
+  const languageNames: Record<string, string> = {
+    de: 'German', en: 'English', ar: 'Arabic', fa: 'Farsi/Persian',
+    ku: 'Kurdish Sorani', kmr: 'Kurdish Kurmanji', tr: 'Turkish',
+    ro: 'Romanian', ru: 'Russian'
+  }
+  const targetLanguage = languageNames[language as string] || 'English'
   const [fairnessResult, setFairnessResult] = useState<FairnessResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,10 +118,10 @@ export const useFairnessCheck = (analysisData: any, imageData?: string) => {
     try {
       // Check cache first (only in browser)
       const cacheKey = `fairness-${analysisData.metadata?.analysisTimestamp}`
-      
+
       if (typeof window !== 'undefined') {
         const cached = localStorage.getItem(cacheKey)
-        
+
         if (cached) {
           setFairnessResult(JSON.parse(cached))
           setIsLoading(false)

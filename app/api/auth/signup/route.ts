@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
+import { sendVerificationEmail } from '@/lib/email'
+import crypto from 'crypto'
 import {
   signupRateLimiter,
   getClientIP,
@@ -87,10 +89,31 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Signup API] New user created: ${user.email}`)
 
+    // Generate verification token
+    const token = crypto.randomUUID()
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    await db.verificationToken.create({
+      data: {
+        identifier: user.email,
+        token,
+        expires,
+      },
+    })
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, token, user.name || 'User')
+    } catch (emailError) {
+      console.error('[Signup API] Error sending verification email:', emailError)
+      // We don't fail the signup if email sending fails, but we should inform the user
+      // or provide a resend option in the future.
+    }
+
     return NextResponse.json(
       {
         success: true,
-        message: 'Account created successfully',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user,
       },
       { status: 201 }
