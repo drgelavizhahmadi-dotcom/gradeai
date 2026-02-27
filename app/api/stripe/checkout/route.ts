@@ -53,15 +53,17 @@ export async function POST(_req: Request) {
             return new NextResponse('Stripe Price ID is missing', { status: 500 });
         }
 
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const successUrl = new URL('/dashboard/subscription?success=true', baseUrl).toString();
-        const cancelUrl = new URL('/dashboard/subscription?canceled=true', baseUrl).toString();
+        const nextAuthUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const baseUrl = new URL(nextAuthUrl).origin;
+        const successUrl = `${baseUrl}/dashboard/subscription?success=true`;
+        const cancelUrl = `${baseUrl}/dashboard/subscription?canceled=true`;
 
         console.log(`[CHECKOUT] Creating session with successUrl: ${successUrl}`);
 
         const stripeSession = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             mode: 'subscription',
+            client_reference_id: user.id,
             billing_address_collection: 'auto',
             payment_method_types: ['card'],
             line_items: [
