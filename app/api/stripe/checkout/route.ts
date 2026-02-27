@@ -31,7 +31,7 @@ export async function POST(_req: Request) {
         if (!stripeCustomerId) {
             const customer = await stripe.customers.create({
                 email: user.email,
-                name: user.name || undefined,
+                ...(user.name ? { name: user.name } : {}),
                 metadata: {
                     userId: user.id,
                 },
