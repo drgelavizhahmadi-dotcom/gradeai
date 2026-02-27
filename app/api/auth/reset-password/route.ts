@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Password must be at least 8 characters long' }, { status: 400 });
         }
 
-        // Find the token
+        // 1. Query the verificationToken table to find the record where token === submittedToken
         const verificationToken = await db.verificationToken.findUnique({
             where: { token },
         });
@@ -23,16 +23,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
         }
 
-        // Check expiry
+        // 2. Check expiry
         if (new Date() > verificationToken.expires) {
             await db.verificationToken.delete({ where: { token } });
             return NextResponse.json({ error: 'Token has expired' }, { status: 400 });
         }
 
-        // Hash new password
+        // 3. Use the identifier (which is the user's email) from that record to find and update the User
         const hashedPassword = await hashPassword(password);
 
-        // Update user password and mark as verified if they weren't (since they have email access)
         await db.user.update({
             where: { email: verificationToken.identifier },
             data: {
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Delete the token
+        // 4. Delete the token after successful use to prevent reuse
         await db.verificationToken.delete({
             where: { token },
         });

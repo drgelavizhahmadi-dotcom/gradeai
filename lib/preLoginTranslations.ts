@@ -111,6 +111,39 @@ interface PreLoginTranslations {
         footerAnd: string
         footerEnd: string
     }
+    forgotPassword: {
+        mascotMessage: string
+        mascotMessageSuccess: string
+        title: string
+        subtitle: string
+        emailLabel: string
+        submitButton: string
+        submitting: string
+        successMessage: (email: string) => string
+        backToLogin: string
+    }
+    resetPassword: {
+        mascotMessage: string
+        mascotMessageSuccess: string
+        mascotMessageError: string
+        title: string
+        subtitle: string
+        invalidTitle: string
+        invalidDesc: string
+        invalidButton: string
+        successTitle: string
+        successDesc: string
+        successButton: string
+        passwordLabel: string
+        passwordPlaceholder: string
+        confirmPasswordLabel: string
+        confirmPasswordPlaceholder: string
+        submitButton: string
+        submitting: string
+        errorMismatch: string
+        errorLength: string
+        errorUnexpected: string
+    }
 }
 
 const translations: Record<PreLoginLang, PreLoginTranslations> = {
@@ -218,6 +251,39 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             footerAnd: 'und der',
             footerEnd: 'zu',
         },
+        forgotPassword: {
+            mascotMessage: 'Passwort vergessen?',
+            mascotMessageSuccess: 'E-Mail gesendet!',
+            title: 'Passwort vergessen',
+            subtitle: 'Kein Problem! Wir senden dir einen Link zum Zurücksetzen.',
+            emailLabel: 'E-Mail-Adresse',
+            submitButton: 'Link anfordern',
+            submitting: 'Wird gesendet...',
+            successMessage: (email: string) => `Wenn ein Konto mit ${email} existiert, haben wir dir einen Link zum Zurücksetzen deines Passworts gesendet.`,
+            backToLogin: 'Zurück zum Login',
+        },
+        resetPassword: {
+            mascotMessage: 'Neues Passwort',
+            mascotMessageSuccess: 'Fertig!',
+            mascotMessageError: 'Oje...',
+            title: 'Passwort zurücksetzen',
+            subtitle: 'Gib jetzt dein neues Passwort ein.',
+            invalidTitle: 'Ungültiger Link',
+            invalidDesc: 'Dieser Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.',
+            invalidButton: 'Neuen Link anfordern',
+            successTitle: 'Erfolgreich!',
+            successDesc: 'Dein Passwort wurde erfolgreich geändert. Du wirst nun zum Login weitergeleitet.',
+            successButton: 'Jetzt anmelden',
+            passwordLabel: 'Neues Passwort',
+            passwordPlaceholder: 'Mindestens 8 Zeichen',
+            confirmPasswordLabel: 'Passwort bestätigen',
+            confirmPasswordPlaceholder: 'Passwort erneut eingeben',
+            submitButton: 'Passwort speichern',
+            submitting: 'Wird gespeichert...',
+            errorMismatch: 'Passwörter stimmen nicht überein.',
+            errorLength: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+            errorUnexpected: 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.',
+        },
     },
     en: {
         landing: {
@@ -322,6 +388,39 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             privacyPolicy: 'Privacy Policy',
             footerAnd: 'and',
             footerEnd: '',
+        },
+        forgotPassword: {
+            mascotMessage: 'Forgot password?',
+            mascotMessageSuccess: 'Email sent!',
+            title: 'Forgot Password',
+            subtitle: 'No problem! We\'ll send you a reset link.',
+            emailLabel: 'Email Address',
+            submitButton: 'Request Link',
+            submitting: 'Sending...',
+            successMessage: (email: string) => `If an account exists for ${email}, we've sent you a link to reset your password.`,
+            backToLogin: 'Back to Login',
+        },
+        resetPassword: {
+            mascotMessage: 'New Password',
+            mascotMessageSuccess: 'Done!',
+            mascotMessageError: 'Oops...',
+            title: 'Reset Password',
+            subtitle: 'Enter your new password now.',
+            invalidTitle: 'Invalid Link',
+            invalidDesc: 'This password reset link is invalid or has expired.',
+            invalidButton: 'Request New Link',
+            successTitle: 'Success!',
+            successDesc: 'Your password has been changed successfully. You are being redirected to login.',
+            successButton: 'Sign In Now',
+            passwordLabel: 'New Password',
+            passwordPlaceholder: 'At least 8 characters',
+            confirmPasswordLabel: 'Confirm Password',
+            confirmPasswordPlaceholder: 'Re-enter your password',
+            submitButton: 'Save Password',
+            submitting: 'Saving...',
+            errorMismatch: 'Passwords do not match.',
+            errorLength: 'Password must be at least 8 characters long.',
+            errorUnexpected: 'An error occurred. Please try again.',
         },
     },
 }
