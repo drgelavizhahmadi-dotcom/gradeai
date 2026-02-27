@@ -96,9 +96,22 @@ model Upload {
   processedAt    DateTime?
   child          Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations   ReportTranslation[]
 
   @@index([userId])
   @@index([childId])
   @@index([analysisStatus])
   @@index([uploadedAt])
+}
+
+model ReportTranslation {
+  id        String   @id @default(cuid())
+  uploadId  String
+  language  String
+  report    Json
+  createdAt DateTime @default(now())
+  upload    Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@unique([uploadId, language])
+  @@index([uploadId])
 }

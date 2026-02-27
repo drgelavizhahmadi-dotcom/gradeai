@@ -250,12 +250,14 @@ export default function UploadDetailPage() {
     setIsTranslating(true)
 
     try {
+      // The translate-report API checks DB cache first, then translates + saves if not cached
       const response = await fetch('/api/ai/translate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           report: originalReport,
           targetLanguage: newLanguage,
+          uploadId: uploadId,
         }),
       })
 
@@ -791,6 +793,7 @@ export default function UploadDetailPage() {
                       >
                         <GradeAIParentReport
                           analysisData={transformedData}
+                          uploadId={uploadId}
                         />
                       </ErrorBoundary>
                     );
