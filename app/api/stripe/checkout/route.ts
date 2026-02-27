@@ -54,6 +54,9 @@ export async function POST(_req: Request) {
         }
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        // Strip trailing slash if present to avoid accidental double slash
+        const cleanAppUrl = appUrl.replace(/\/$/, '');
+
         const stripeSession = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             mode: 'subscription',
@@ -65,8 +68,8 @@ export async function POST(_req: Request) {
                     quantity: 1,
                 },
             ],
-            success_url: `${appUrl}/dashboard/subscription?success=true`,
-            cancel_url: `${appUrl}/dashboard/subscription?canceled=true`,
+            success_url: `${cleanAppUrl}/dashboard/subscription?success=true`,
+            cancel_url: `${cleanAppUrl}/dashboard/subscription?canceled=true`,
             metadata: {
                 userId: user.id,
             },
