@@ -69,7 +69,7 @@ export default async function SubscriptionPage() {
                         </ul>
                     </div>
                     <div className="p-6 pt-0">
-                        <SubscriptionButton isPremium={isPremium} />
+                        <SubscriptionButton isPremium={isPremium} hasEmail={!!user.email} />
                     </div>
                 </div>
 

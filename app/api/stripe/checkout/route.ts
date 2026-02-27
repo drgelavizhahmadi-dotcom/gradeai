@@ -22,12 +22,16 @@ export async function POST(_req: Request) {
             return new NextResponse('User not found', { status: 404 });
         }
 
+        if (!user.email) {
+            return new NextResponse('Email required for payment', { status: 400 });
+        }
+
         let stripeCustomerId = user.stripeCustomerId;
 
         if (!stripeCustomerId) {
             const customer = await stripe.customers.create({
                 email: user.email,
-                name: user.name,
+                name: user.name || undefined,
                 metadata: {
                     userId: user.id,
                 },
