@@ -54,9 +54,8 @@ export async function POST(_req: Request) {
         }
 
         const nextAuthUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const baseUrl = new URL(nextAuthUrl).origin;
-        const successUrl = `${baseUrl}/dashboard/subscription?success=true`;
-        const cancelUrl = `${baseUrl}/dashboard/subscription?canceled=true`;
+        const successUrl = new URL('/dashboard/subscription?success=true', nextAuthUrl).toString();
+        const cancelUrl = new URL('/dashboard/subscription?canceled=true', nextAuthUrl).toString();
 
         console.log(`[CHECKOUT] Creating session with successUrl: ${successUrl}`);
 
@@ -80,8 +79,19 @@ export async function POST(_req: Request) {
         });
 
         return NextResponse.json({ url: stripeSession.url });
-    } catch (error) {
-        console.error('[STRIPE_ERROR]', error);
+    } catch (error: any) {
+        console.error('[STRIPE_ERROR] Failed to create checkout session:', error);
+
+        // Log more details if it's a Stripe error
+        if (error.type === 'StripeError') {
+            console.error('[STRIPE_ERROR_DETAILS]:', {
+                message: error.message,
+                param: error.param,
+                code: error.code,
+                type: error.type
+            });
+        }
+
         return new NextResponse('Internal Error', { status: 500 });
     }
 }
