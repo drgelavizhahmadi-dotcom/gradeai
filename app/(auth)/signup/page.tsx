@@ -289,6 +289,7 @@ export default function SignUpPage() {
               placeholder={t.signup.confirmPasswordPlaceholder}
               required
               disabled={isLoading}
+              showComplexity={true}
               translations={t.passwordInput}
             />
 

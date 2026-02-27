@@ -166,6 +166,7 @@ function ResetPasswordContent() {
                                             placeholder={t.resetPassword.confirmPasswordPlaceholder}
                                             required
                                             disabled={isLoading}
+                                            showComplexity={true}
                                             translations={t.passwordInput}
                                         />
 

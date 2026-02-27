@@ -40,11 +40,12 @@ export function PasswordInput({
     translations,
 }: PasswordInputProps) {
     const [showPassword, setShowPassword] = useState(false)
+    const [isFocused, setIsFocused] = useState(false)
 
     const toggleVisibility = () => setShowPassword(!showPassword)
 
     const complexity = useMemo(() => {
-        if (!showComplexity || !value) return null
+        if (!showComplexity) return null
 
         const checks = [
             { label: translations.ruleLength, met: value.length >= 8 },
@@ -86,6 +87,8 @@ export function PasswordInput({
                     required={required}
                     value={value}
                     onChange={onChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     disabled={disabled}
                     autoComplete="current-password"
                     className={`block w-full pl-12 pr-12 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white z-0 ${error ? 'border-red-500' : ''
@@ -102,7 +105,7 @@ export function PasswordInput({
                 </button>
             </div>
 
-            {showComplexity && value && complexity && (
+            {showComplexity && isFocused && complexity && (
                 <div className="mt-3 space-y-3 p-4 bg-[var(--gray-50)] rounded-xl border border-[var(--gray-200)]">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-[var(--gray-500)]">
