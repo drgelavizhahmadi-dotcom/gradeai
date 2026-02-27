@@ -6,6 +6,7 @@ import { Lock, Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { OwlMascot } from '@/components/mascots'
 import { usePreLoginTranslation } from '@/lib/preLoginTranslations'
+import { PasswordInput } from '@/components/PasswordInput'
 
 function ResetPasswordContent() {
     const { t, language, setLanguage } = usePreLoginTranslation()
@@ -145,47 +146,28 @@ function ResetPasswordContent() {
                                             </div>
                                         )}
 
-                                        <div>
-                                            <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                                                {t.resetPassword.passwordLabel}
-                                            </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                    <Lock className="h-5 w-5 text-[var(--gray-400)]" />
-                                                </div>
-                                                <input
-                                                    id="password"
-                                                    type="password"
-                                                    required
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                                                    placeholder={t.resetPassword.passwordPlaceholder}
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-                                        </div>
+                                        <PasswordInput
+                                            id="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            label={t.resetPassword.passwordLabel}
+                                            placeholder={t.resetPassword.passwordPlaceholder}
+                                            required
+                                            disabled={isLoading}
+                                            showComplexity={true}
+                                            translations={t.passwordInput}
+                                        />
 
-                                        <div>
-                                            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                                                {t.resetPassword.confirmPasswordLabel}
-                                            </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                    <Lock className="h-5 w-5 text-[var(--gray-400)]" />
-                                                </div>
-                                                <input
-                                                    id="confirmPassword"
-                                                    type="password"
-                                                    required
-                                                    value={confirmPassword}
-                                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                                                    placeholder={t.resetPassword.confirmPasswordPlaceholder}
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-                                        </div>
+                                        <PasswordInput
+                                            id="confirmPassword"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            label={t.resetPassword.confirmPasswordLabel}
+                                            placeholder={t.resetPassword.confirmPasswordPlaceholder}
+                                            required
+                                            disabled={isLoading}
+                                            translations={t.passwordInput}
+                                        />
 
                                         <button
                                             type="submit"

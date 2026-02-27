@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Loader2, Mail, Lock, User, Phone, Globe, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
 import { usePreLoginTranslation } from '@/lib/preLoginTranslations'
+import { PasswordInput } from '@/components/PasswordInput'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -265,50 +266,31 @@ export default function SignUpPage() {
             </div>
 
             {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                {t.signup.passwordLabel}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-[var(--gray-400)]" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder={t.signup.passwordPlaceholder}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <PasswordInput
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              label={t.signup.passwordLabel}
+              placeholder={t.signup.passwordPlaceholder}
+              required
+              disabled={isLoading}
+              showComplexity={true}
+              translations={t.passwordInput}
+            />
 
             {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                {t.signup.confirmPasswordLabel}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <CheckCircle className="h-5 w-5 text-[var(--gray-400)]" />
-                </div>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder={t.signup.confirmPasswordPlaceholder}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <PasswordInput
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              label={t.signup.confirmPasswordLabel}
+              placeholder={t.signup.confirmPasswordPlaceholder}
+              required
+              disabled={isLoading}
+              translations={t.passwordInput}
+            />
 
             {/* Submit Button */}
             <button
