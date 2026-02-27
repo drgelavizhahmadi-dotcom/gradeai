@@ -15,6 +15,20 @@ import {
   generateLearningMaterialPDF
 } from '@/lib/pdf/generate-pdf'
 
+// Languages that don't render correctly in jsPDF (non-Latin scripts)
+const NON_LATIN_LANGS = ['ar', 'fa', 'ku', 'kmr']
+
+// Print only a specific section — sets a body attribute so CSS can isolate it
+function printSectionOnly(section: 'flashcards' | 'fairness') {
+  document.body.setAttribute('data-printing', section)
+  window.print()
+  const cleanup = () => {
+    document.body.removeAttribute('data-printing')
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+}
+
 // FOMO Statistics (can be fetched from API in production)
 const FOMO_STATS = {
   upgradesThisWeek: 347,
@@ -1352,7 +1366,7 @@ export function FlashcardsPremiumSection({
 
   // Premium user - full feature
   return (
-    <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-amber-200">
+    <div data-print="flashcards" className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-amber-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-amber-100 rounded-xl">
@@ -1499,17 +1513,23 @@ export function FlashcardsPremiumSection({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => window.print()}
+              onClick={() => printSectionOnly('flashcards')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Printer className="h-4 w-4" />
               {t.print}
             </button>
             <button
-              onClick={() => generateFlashcardsPDF(flashcards, {
-                childName,
-                subject: analysisData?.test?.subject,
-              })}
+              onClick={() => {
+                if (NON_LATIN_LANGS.includes(uiLang)) {
+                  printSectionOnly('flashcards')
+                } else {
+                  generateFlashcardsPDF(flashcards, {
+                    childName,
+                    subject: analysisData?.test?.subject,
+                  })
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Download className="h-4 w-4" />
@@ -1657,7 +1677,7 @@ export function FairnessCheckPremiumSection({
 
   // Premium user - full feature
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+    <div data-print="fairness" className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-xl">
@@ -2183,7 +2203,7 @@ export function FairnessCheckPremiumSection({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => window.print()}
+              onClick={() => printSectionOnly('fairness')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Printer className="h-4 w-4" />
@@ -2191,14 +2211,18 @@ export function FairnessCheckPremiumSection({
             </button>
             <button
               onClick={() => {
-                try {
-                  generateFairnessPDF(fairnessData, {
-                    childName,
-                    subject: analysisData?.test?.subject,
-                  })
-                } catch (err) {
-                  console.error('Fairness PDF generation failed:', err)
-                  alert('PDF konnte nicht erstellt werden. Bitte versuche es erneut.')
+                if (NON_LATIN_LANGS.includes(uiLang)) {
+                  printSectionOnly('fairness')
+                } else {
+                  try {
+                    generateFairnessPDF(fairnessData, {
+                      childName,
+                      subject: analysisData?.test?.subject,
+                    })
+                  } catch (err) {
+                    console.error('Fairness PDF generation failed:', err)
+                    alert('PDF konnte nicht erstellt werden. Bitte versuche es erneut.')
+                  }
                 }
               }}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
