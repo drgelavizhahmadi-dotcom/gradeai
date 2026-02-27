@@ -76,7 +76,7 @@ export function PasswordInput({
                 </label>
             )}
             <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                     <Lock className="h-5 w-5 text-[var(--gray-400)]" />
                 </div>
                 <input
@@ -88,14 +88,14 @@ export function PasswordInput({
                     onChange={onChange}
                     disabled={disabled}
                     autoComplete="current-password"
-                    className={`block w-full pl-12 pr-12 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white ${error ? 'border-red-500' : ''
+                    className={`block w-full pl-12 pr-12 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white z-0 ${error ? 'border-red-500' : ''
                         }`}
                     placeholder={placeholder}
                 />
                 <button
                     type="button"
                     onClick={toggleVisibility}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[var(--gray-400)] hover:text-[var(--gray-600)]"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[var(--gray-400)] hover:text-[var(--gray-600)] z-10"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
