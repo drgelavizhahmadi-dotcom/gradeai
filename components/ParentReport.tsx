@@ -1165,7 +1165,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
             className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
           >
             {showRaw ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            {showRaw ? 'Rohdaten ausblenden' : 'Rohdaten anzeigen'}
+            {showRaw ? (uiT.analysis?.hideRawData || 'Rohdaten ausblenden') : (uiT.analysis?.showRawData || 'Rohdaten anzeigen')}
           </button>
           {showRaw && (
             <pre className="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto max-h-96 whitespace-pre-wrap">

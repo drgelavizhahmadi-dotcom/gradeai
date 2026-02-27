@@ -1460,23 +1460,28 @@ export function FlashcardsPremiumSection({
                   <div className="flex-1 h-px bg-amber-300" />
                 </div>
 
-                {/* Back — revealed on click */}
+                {/* Back — revealed on click, always visible in print */}
                 <div className={`px-4 pt-2 pb-3 transition-all ${
                   flippedCards.has(i)
                     ? 'bg-gradient-to-br from-amber-500 to-orange-500'
                     : 'bg-amber-50'
                 }`}>
-                  {flippedCards.has(i) ? (
-                    <>
-                      <p className="text-base font-medium text-white">{card.back}</p>
-                      {card.tip && (
-                        <p className="mt-2 text-xs bg-white/15 rounded-lg px-3 py-1.5 text-white/90">
-                          {card.tip}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-xs text-amber-600 text-center py-1">{t.clickToFlip}</p>
+                  {/* Answer content — shown when flipped or when printing */}
+                  <p className={`text-base font-medium ${
+                    flippedCards.has(i) ? 'text-white' : 'text-gray-800 hidden print:block'
+                  }`}>{card.back}</p>
+                  {card.tip && (
+                    <p className={`mt-2 text-xs rounded-lg px-3 py-1.5 ${
+                      flippedCards.has(i)
+                        ? 'bg-white/15 text-white/90'
+                        : 'bg-amber-100 text-amber-700 hidden print:block'
+                    }`}>
+                      {card.tip}
+                    </p>
+                  )}
+                  {/* Click prompt — hidden when printing */}
+                  {!flippedCards.has(i) && (
+                    <p className="text-xs text-amber-600 text-center py-1 print:hidden">{t.clickToFlip}</p>
                   )}
                 </div>
 
