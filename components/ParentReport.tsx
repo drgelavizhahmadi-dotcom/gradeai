@@ -789,28 +789,26 @@ export function ParentReport({ data, extractedText, childName, language: propLan
               const isUnfair = verdict === 'nein' || verdict === 'unfair';
 
               return (
-                <div className={`flex items-center gap-3 p-4 rounded-lg ${
-                  isFair ? 'bg-green-50 border-2 border-green-200' :
+                <div className={`flex items-center gap-3 p-4 rounded-lg ${isFair ? 'bg-green-50 border-2 border-green-200' :
                   isProbablyFair ? 'bg-blue-50 border-2 border-blue-200' :
-                  isQuestionable ? 'bg-yellow-50 border-2 border-yellow-200' :
-                  isUnfair ? 'bg-red-50 border-2 border-red-200' :
-                  'bg-gray-50 border-2 border-gray-200'
-                }`}>
+                    isQuestionable ? 'bg-yellow-50 border-2 border-yellow-200' :
+                      isUnfair ? 'bg-red-50 border-2 border-red-200' :
+                        'bg-gray-50 border-2 border-gray-200'
+                  }`}>
                   <span className="text-3xl">
                     {isFair ? '✅' : isProbablyFair ? '👍' : isQuestionable ? '🤔' : isUnfair ? '⚠️' : '❓'}
                   </span>
                   <div>
-                    <p className={`font-semibold ${
-                      isFair ? 'text-green-800' :
+                    <p className={`font-semibold ${isFair ? 'text-green-800' :
                       isProbablyFair ? 'text-blue-800' :
-                      isQuestionable ? 'text-yellow-800' :
-                      isUnfair ? 'text-red-800' : 'text-gray-800'
-                    }`}>
+                        isQuestionable ? 'text-yellow-800' :
+                          isUnfair ? 'text-red-800' : 'text-gray-800'
+                      }`}>
                       {isFair ? 'Die Bewertung erscheint fair' :
-                       isProbablyFair ? 'Wahrscheinlich fair bewertet' :
-                       isQuestionable ? 'Einige Punkte sind fraglich' :
-                       isUnfair ? 'Bewertung sollte überprüft werden' :
-                       'Fairness nicht beurteilbar'}
+                        isProbablyFair ? 'Wahrscheinlich fair bewertet' :
+                          isQuestionable ? 'Einige Punkte sind fraglich' :
+                            isUnfair ? 'Bewertung sollte überprüft werden' :
+                              'Fairness nicht beurteilbar'}
                     </p>
                   </div>
                 </div>
@@ -1142,7 +1140,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
             className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
           >
             {showRaw ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            {showRaw ? 'Rohdaten ausblenden' : 'Rohdaten anzeigen'}
+            {showRaw ? (t.hideRawData || 'Rohdaten ausblenden') : (t.showRawData || 'Rohdaten anzeigen')}
           </button>
           {showRaw && (
             <pre className="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto max-h-96 whitespace-pre-wrap">
