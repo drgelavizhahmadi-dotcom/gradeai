@@ -53,9 +53,11 @@ export async function POST(_req: Request) {
             return new NextResponse('Stripe Price ID is missing', { status: 500 });
         }
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        // Strip trailing slash if present to avoid accidental double slash
-        const cleanAppUrl = appUrl.replace(/\/$/, '');
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const successUrl = new URL('/dashboard/subscription?success=true', baseUrl).toString();
+        const cancelUrl = new URL('/dashboard/subscription?canceled=true', baseUrl).toString();
+
+        console.log(`[CHECKOUT] Creating session with successUrl: ${successUrl}`);
 
         const stripeSession = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
@@ -68,8 +70,8 @@ export async function POST(_req: Request) {
                     quantity: 1,
                 },
             ],
-            success_url: `${cleanAppUrl}/dashboard/subscription?success=true`,
-            cancel_url: `${cleanAppUrl}/dashboard/subscription?canceled=true`,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: {
                 userId: user.id,
             },

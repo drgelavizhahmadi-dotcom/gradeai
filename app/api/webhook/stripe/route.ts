@@ -24,9 +24,16 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        if (!session?.metadata?.userId) {
+        const userId = session.client_reference_id || session.metadata?.userId;
+
+        console.log(`[WEBHOOK DATA] session.client_reference_id: ${session.client_reference_id}, session.metadata?.userId: ${session.metadata?.userId}`);
+
+        if (!userId) {
+            console.error('[WEBHOOK ERROR] User id is missing from session');
             return new NextResponse('User id is required', { status: 400 });
         }
+
+        console.log(`[WEBHOOK] checkout.session.completed received for user: ${userId}`);
 
         try {
             const subscription = await stripe.subscriptions.retrieve(
@@ -41,7 +48,7 @@ export async function POST(req: Request) {
 
             await db.user.update({
                 where: {
-                    id: session.metadata.userId,
+                    id: userId,
                 },
                 data: {
                     stripeSubscriptionId: subscription.id,
