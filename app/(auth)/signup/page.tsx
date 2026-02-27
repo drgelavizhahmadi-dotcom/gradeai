@@ -108,13 +108,12 @@ export default function SignUpPage() {
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-[var(--gray-800)] mb-4">Überprüfe deine E-Mails</h1>
+            <h1 className="text-2xl font-bold text-[var(--gray-800)] mb-4">{t.signup.verifyEmailTitle}</h1>
             <p className="text-[var(--gray-600)] mb-6">
-              Wir haben einen Bestätigungslink an <strong>{formData.email}</strong> gesendet.
-              Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.
+              {t.signup.verifyEmailDesc(formData.email)}
             </p>
             <Link href="/login" className="btn-primary w-full inline-block">
-              Zurück zum Login
+              {t.signup.backToLogin}
             </Link>
           </div>
         </div>
@@ -337,7 +336,7 @@ export default function SignUpPage() {
               <div className="w-full border-t border-[var(--gray-200)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">or</span>
+              <span className="px-4 bg-white text-[var(--gray-500)] font-medium">{t.signup.dividerOr}</span>
             </div>
           </div>
 
@@ -354,7 +353,7 @@ export default function SignUpPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Sign up with Google
+            {t.signup.googleButton}
           </button>
 
           {/* Divider - Already have an account? */}

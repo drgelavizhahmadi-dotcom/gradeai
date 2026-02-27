@@ -66,6 +66,8 @@ interface PreLoginTranslations {
         forgotPassword: string
         loginButton: string
         loggingIn: string
+        googleButton: string
+        dividerOr: string
         noAccount: string
         createAccount: string
         errorInvalidCredentials: string
@@ -92,8 +94,13 @@ interface PreLoginTranslations {
         confirmPasswordPlaceholder: string
         submitButton: string
         submitting: string
+        googleButton: string
+        dividerOr: string
         hasAccount: string
         signIn: string
+        verifyEmailTitle: string
+        verifyEmailDesc: (email: string) => string
+        backToLogin: string
         errorPasswordMismatch: string
         errorPasswordLength: string
         errorAccountCreatedLoginFailed: string
@@ -166,6 +173,8 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             forgotPassword: 'Passwort vergessen?',
             loginButton: 'Anmelden',
             loggingIn: 'Anmeldung...',
+            googleButton: 'Mit Google anmelden',
+            dividerOr: 'oder',
             noAccount: 'Noch kein Konto?',
             createAccount: 'Konto erstellen',
             errorInvalidCredentials: 'Ungültige E-Mail oder Passwort',
@@ -192,8 +201,13 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             confirmPasswordPlaceholder: 'Passwort erneut eingeben',
             submitButton: 'Konto erstellen',
             submitting: 'Konto wird erstellt...',
+            googleButton: 'Mit Google registrieren',
+            dividerOr: 'oder',
             hasAccount: 'Haben Sie bereits ein Konto?',
             signIn: 'Anmelden',
+            verifyEmailTitle: 'Überprüfe deine E-Mails',
+            verifyEmailDesc: (email: string) => `Wir haben einen Bestätigungslink an ${email} gesendet. Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.`,
+            backToLogin: 'Zurück zum Login',
             errorPasswordMismatch: 'Passwörter stimmen nicht überein',
             errorPasswordLength: 'Das Passwort muss mindestens 8 Zeichen lang sein',
             errorAccountCreatedLoginFailed: 'Konto erstellt, aber Anmeldung fehlgeschlagen. Bitte versuchen Sie sich manuell anzumelden.',
@@ -264,6 +278,8 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             forgotPassword: 'Forgot password?',
             loginButton: 'Sign In',
             loggingIn: 'Signing in...',
+            googleButton: 'Sign in with Google',
+            dividerOr: 'or',
             noAccount: 'Don\'t have an account?',
             createAccount: 'Create Account',
             errorInvalidCredentials: 'Invalid email or password',
@@ -290,8 +306,13 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             confirmPasswordPlaceholder: 'Re-enter your password',
             submitButton: 'Create Account',
             submitting: 'Creating Account...',
+            googleButton: 'Sign up with Google',
+            dividerOr: 'or',
             hasAccount: 'Already have an account?',
             signIn: 'Sign In',
+            verifyEmailTitle: 'Check your emails',
+            verifyEmailDesc: (email: string) => `We have sent a confirmation link to ${email}. Please click the link in the email to activate your account.`,
+            backToLogin: 'Back to Login',
             errorPasswordMismatch: 'Passwords do not match',
             errorPasswordLength: 'Password must be at least 8 characters long',
             errorAccountCreatedLoginFailed: 'Account created but login failed. Please try logging in manually.',
