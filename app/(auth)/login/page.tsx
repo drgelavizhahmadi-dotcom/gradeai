@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Loader2, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
 import { usePreLoginTranslation } from '@/lib/preLoginTranslations'
+import { PasswordInput } from '@/components/PasswordInput'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -123,26 +124,17 @@ export default function LoginPage() {
             </div>
 
             {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-[var(--gray-700)] mb-2">
-                {t.login.passwordLabel}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-[var(--gray-400)]" />
-                </div>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-3 border-2 border-[var(--gray-200)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors bg-white"
-                  placeholder={t.login.passwordPlaceholder}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <PasswordInput
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              label={t.login.passwordLabel}
+              placeholder={t.login.passwordPlaceholder}
+              required
+              disabled={isLoading}
+              showComplexity={true}
+              translations={t.passwordInput}
+            />
 
             {/* Forgot Password Link */}
             <div className="flex items-center justify-end">

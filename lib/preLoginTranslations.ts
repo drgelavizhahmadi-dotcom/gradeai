@@ -144,6 +144,16 @@ interface PreLoginTranslations {
         errorLength: string
         errorUnexpected: string
     }
+    passwordInput: {
+        strengthLabel: string
+        strengthWeak: string
+        strengthMedium: string
+        strengthStrong: string
+        ruleLength: string
+        ruleNumber: string
+        ruleUppercase: string
+        ruleSpecial: string
+    }
 }
 
 const translations: Record<PreLoginLang, PreLoginTranslations> = {
@@ -284,6 +294,16 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             errorLength: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
             errorUnexpected: 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.',
         },
+        passwordInput: {
+            strengthLabel: 'Passwortstärke',
+            strengthWeak: 'Schwach',
+            strengthMedium: 'Mittel',
+            strengthStrong: 'Stark',
+            ruleLength: 'Mindestens 8 Zeichen',
+            ruleNumber: 'Mindestens eine Zahl',
+            ruleUppercase: 'Mindestens ein Großbuchstabe',
+            ruleSpecial: 'Mindestens ein Sonderzeichen',
+        },
     },
     en: {
         landing: {
@@ -421,6 +441,16 @@ const translations: Record<PreLoginLang, PreLoginTranslations> = {
             errorMismatch: 'Passwords do not match.',
             errorLength: 'Password must be at least 8 characters long.',
             errorUnexpected: 'An error occurred. Please try again.',
+        },
+        passwordInput: {
+            strengthLabel: 'Password Strength',
+            strengthWeak: 'Weak',
+            strengthMedium: 'Medium',
+            strengthStrong: 'Strong',
+            ruleLength: 'At least 8 characters',
+            ruleNumber: 'At least one number',
+            ruleUppercase: 'At least one uppercase letter',
+            ruleSpecial: 'At least one special character',
         },
     },
 }
