@@ -30,6 +30,7 @@
     "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "@stripe/stripe-js": "^8.7.0",
     "ai": "^6.0.26",
     "bcryptjs": "^3.0.3",
     "canvas": "^3.2.1",
@@ -52,6 +53,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sharp": "^0.34.5",
+    "stripe": "^20.4.0",
     "tesseract.js": "^7.0.0",
     "tesseract.js-node": "^0.1.0",
     "zod": "^4.3.5"
