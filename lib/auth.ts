@@ -68,11 +68,16 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id
-      }
-      // On first OAuth sign-in, user.id comes from the adapter
-      if (account && user) {
+      // Always ensure we have the most up-to-date user ID from the database
+      if (token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email }
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.name = dbUser.name
+        }
+      } else if (user) {
         token.id = user.id
       }
       return token
@@ -80,6 +85,9 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        if (token.name) {
+          session.user.name = token.name as string
+        }
       }
       return session
     }
