@@ -100,8 +100,8 @@ export default function UploadsLayout({
                                     key={item.name}
                                     href={item.href}
                                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${active
-                                            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
-                                            : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
+                                        ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                                        : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
                                         }`}
                                 >
                                     <Icon className="h-5 w-5" />
@@ -218,8 +218,8 @@ export default function UploadsLayout({
                                     href={item.href}
                                     onClick={() => setSidebarOpen(false)}
                                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${active
-                                            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
-                                            : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
+                                        ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                                        : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
                                         }`}
                                 >
                                     <Icon className="h-5 w-5" />

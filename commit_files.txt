@@ -1,0 +1,8 @@
+﻿app/api/ai/translate-report/route.ts
+app/api/uploads/[id]/translations/[lang]/route.ts
+app/uploads/[id]/page.tsx
+components/GradeAIParentReport/index.tsx
+components/GradeAIParentReport/prompts/translationPrompt.ts
+components/GradeAIParentReport/useReportTranslation.ts
+prisma/migrations/manual_add_report_translations.sql
+prisma/schema.prisma

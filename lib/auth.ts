@@ -1,13 +1,19 @@
 import NextAuth, { getServerSession } from 'next-auth'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from '@/lib/db'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import type { NextAuthOptions } from 'next-auth'
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
+  adapter: PrismaAdapter(db) as any,
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      allowDangerousEmailAccountLinking: true,
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -31,8 +37,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.hashedPassword) {
-          console.warn('[Auth] User does not have a hashed password:', credentials.email)
+          console.warn('[Auth] User does not have a hashed password (likely Google OAuth):', credentials.email)
           return null
+        }
+
+        if (!user.emailVerified) {
+          console.warn('[Auth] Email not verified:', credentials.email)
+          throw new Error('Please verify your email address before logging in.')
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.hashedPassword)
@@ -47,7 +58,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          name: user.name ?? '',
         }
       }
     })
@@ -56,15 +67,27 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt' as const,
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, account }) {
+      // Always ensure we have the most up-to-date user ID from the database
+      if (token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email }
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.name = dbUser.name
+        }
+      } else if (user) {
         token.id = user.id
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id
+      if (token && session.user) {
+        session.user.id = token.id as string
+        if (token.name) {
+          session.user.name = token.name as string
+        }
       }
       return session
     }
@@ -74,8 +97,14 @@ export const authOptions: NextAuthOptions = {
   }
 }
 
+/**
+ * Helper to get the current session in Server Components
+ */
 export const auth = () => getServerSession(authOptions)
 
+/**
+ * Helper to require authentication in Server Actions/Routes
+ */
 export async function requireAuth() {
   const session = await auth()
   if (!session?.user?.id) {
@@ -88,5 +117,3 @@ export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10)
   return bcrypt.hash(password, salt)
 }
-
-export default NextAuth(authOptions)

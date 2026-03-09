@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { OwlMascot, FoxMascot, CatMascot } from "@/components/mascots";
+import { usePreLoginTranslation } from "@/lib/preLoginTranslations";
 import {
   Upload,
   Sparkles,
@@ -18,6 +19,7 @@ import {
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const { t, language, setLanguage } = usePreLoginTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -25,6 +27,30 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
+      {/* Language Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-1 py-1 shadow-lg border border-[var(--gray-200)]">
+          <button
+            onClick={() => setLanguage('de')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'de'
+                ? 'bg-[var(--primary)] text-white shadow-md'
+                : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            DE
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${language === 'en'
+                ? 'bg-[var(--primary)] text-white shadow-md'
+                : 'text-[var(--gray-600)] hover:text-[var(--gray-800)]'
+              }`}
+          >
+            EN
+          </button>
+        </div>
+      </div>
+
       {/* Floating decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 text-4xl opacity-10 animate-float">📚</div>
@@ -47,7 +73,7 @@ export default function Home() {
               <OwlMascot
                 mood="happy"
                 size="xl"
-                message="Welcome! I'm here to help!"
+                message={t.landing.mascotMessage}
                 showMessage={true}
               />
             </div>
@@ -58,18 +84,18 @@ export default function Home() {
                 className="text-5xl font-bold tracking-tight text-[var(--gray-800)] sm:text-6xl md:text-7xl"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                GradeAI
+                {t.landing.headline}
               </h1>
               <p
                 className="text-2xl text-[var(--primary)] sm:text-3xl md:text-4xl font-semibold"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                Your Child's Learning Companion
+                {t.landing.subheadline}
               </p>
               <p className="mx-auto max-w-2xl text-lg text-[var(--gray-600)] sm:text-xl mt-4">
-                Upload any German school test. Get instant, caring feedback in your language.
+                {t.landing.description}
                 <br className="hidden sm:block" />
-                <span className="text-[var(--primary-dark)] font-medium">Because every child deserves to be understood.</span>
+                <span className="text-[var(--primary-dark)] font-medium">{t.landing.descriptionHighlight}</span>
               </p>
             </div>
 
@@ -79,7 +105,7 @@ export default function Home() {
                 href="/signup"
                 className="btn-coral inline-flex items-center gap-2 text-lg px-8 py-4 shadow-lg hover:shadow-xl"
               >
-                Start Free
+                {t.landing.ctaStart}
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
@@ -87,7 +113,7 @@ export default function Home() {
                 className="inline-flex items-center gap-2 text-lg px-8 py-4 rounded-xl bg-white border-2 border-[var(--gray-200)] text-[var(--gray-700)] font-semibold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                I have an account
+                {t.landing.ctaLogin}
               </Link>
             </div>
 
@@ -95,15 +121,15 @@ export default function Home() {
             <div className={`mt-12 flex flex-wrap justify-center gap-6 text-sm text-[var(--gray-500)] transition-all duration-1000 delay-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-[var(--primary)]" />
-                <span>GDPR Compliant</span>
+                <span>{t.landing.badgeGDPR}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-[var(--primary)]" />
-                <span>7+ Languages</span>
+                <span>{t.landing.badgeLanguages}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Heart className="h-4 w-4 text-[var(--coral)]" />
-                <span>Made for Parents</span>
+                <span>{t.landing.badgeParents}</span>
               </div>
             </div>
           </div>
@@ -118,10 +144,10 @@ export default function Home() {
               className="text-3xl sm:text-4xl font-bold text-[var(--gray-800)] mb-4"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              How It Works
+              {t.landing.howItWorksTitle}
             </h2>
             <p className="text-lg text-[var(--gray-600)] max-w-2xl mx-auto">
-              Three simple steps to understand your child's learning journey
+              {t.landing.howItWorksSubtitle}
             </p>
           </div>
 
@@ -140,10 +166,10 @@ export default function Home() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-[var(--gray-800)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                Snap & Upload
+                {t.landing.step1Title}
               </h3>
               <p className="text-[var(--gray-600)]">
-                Take a photo of your child's test or upload a PDF. Our AI reads German handwriting with ease.
+                {t.landing.step1Desc}
               </p>
             </div>
 
@@ -156,10 +182,10 @@ export default function Home() {
                 <OwlMascot mood="thinking" size="md" showMessage={false} />
               </div>
               <h3 className="text-xl font-bold text-[var(--gray-800)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                AI Analyzes
+                {t.landing.step2Title}
               </h3>
               <p className="text-[var(--gray-600)]">
-                Our wise AI teacher reviews every answer, identifies strengths, and finds areas to improve.
+                {t.landing.step2Desc}
               </p>
             </div>
 
@@ -174,10 +200,10 @@ export default function Home() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-[var(--gray-800)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                Get Your Report
+                {t.landing.step3Title}
               </h3>
               <p className="text-[var(--gray-600)]">
-                Receive a friendly report in your language with exercises, flashcards, and tips for parents.
+                {t.landing.step3Desc}
               </p>
             </div>
           </div>
@@ -192,10 +218,10 @@ export default function Home() {
               className="text-3xl sm:text-4xl font-bold text-[var(--gray-800)] mb-4"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              Everything You Need
+              {t.landing.featuresTitle}
             </h2>
             <p className="text-lg text-[var(--gray-600)] max-w-2xl mx-auto">
-              Tools designed with love for parents who care about their children's education
+              {t.landing.featuresSubtitle}
             </p>
           </div>
 
@@ -204,38 +230,38 @@ export default function Home() {
             {[
               {
                 icon: <Sparkles className="h-8 w-8" />,
-                title: "AI-Powered Analysis",
-                description: "Understands German school tests, teacher notes, and handwritten corrections",
+                title: t.landing.featureAI,
+                description: t.landing.featureAIDesc,
                 color: "primary"
               },
               {
                 icon: <Globe className="h-8 w-8" />,
-                title: "Your Language",
-                description: "Reports in German, English, Turkish, Arabic, Farsi, Russian & more",
+                title: t.landing.featureLanguage,
+                description: t.landing.featureLanguageDesc,
                 color: "lavender"
               },
               {
                 icon: <TrendingUp className="h-8 w-8" />,
-                title: "Track Progress",
-                description: "See how your child improves over time with beautiful charts",
+                title: t.landing.featureProgress,
+                description: t.landing.featureProgressDesc,
                 color: "success"
               },
               {
                 icon: <BookOpen className="h-8 w-8" />,
-                title: "Practice Exercises",
-                description: "Custom exercises based on exactly what your child needs to practice",
+                title: t.landing.featureExercises,
+                description: t.landing.featureExercisesDesc,
                 color: "coral"
               },
               {
                 icon: <Star className="h-8 w-8" />,
-                title: "Flashcards",
-                description: "Automatically generated flashcards from test topics for easy review",
+                title: t.landing.featureFlashcards,
+                description: t.landing.featureFlashcardsDesc,
                 color: "gold"
               },
               {
                 icon: <Heart className="h-8 w-8" />,
-                title: "Parent Tips",
-                description: "Practical advice on how to support your child at home",
+                title: t.landing.featureParentTips,
+                description: t.landing.featureParentTipsDesc,
                 color: "coral"
               }
             ].map((feature, index) => (
@@ -268,18 +294,17 @@ export default function Home() {
           <div className="card-story p-8 md:p-12 bg-gradient-to-br from-[var(--lavender-soft)] to-[var(--primary-soft)]">
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-shrink-0">
-                <OwlMascot mood="happy" size="lg" message="I speak your language!" />
+                <OwlMascot mood="happy" size="lg" message={t.landing.languageMascotMessage} />
               </div>
               <div className="flex-1 text-center md:text-left">
                 <h2
                   className="text-2xl sm:text-3xl font-bold text-[var(--gray-800)] mb-4"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  We Speak Your Language
+                  {t.landing.languageTitle}
                 </h2>
                 <p className="text-[var(--gray-600)] mb-6">
-                  Whether you speak Turkish, Arabic, Farsi, Russian, or English at home —
-                  we translate everything so you can fully support your child's education in Germany.
+                  {t.landing.languageDesc}
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   {['🇩🇪 Deutsch', '🇬🇧 English', '🇹🇷 Türkçe', '🇸🇦 العربية', '🇮🇷 فارسی', '🇷🇺 Русский', '🇺🇦 Українська'].map((lang, i) => (
@@ -304,10 +329,10 @@ export default function Home() {
             <FoxMascot mood="happy" size="lg" showMessage={false} />
           </div>
           <blockquote className="text-2xl sm:text-3xl text-[var(--gray-700)] italic mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-            "Finally, I can understand my daughter's German tests and help her with homework!"
+            {t.landing.testimonial}
           </blockquote>
           <p className="text-[var(--gray-500)]">
-            — A parent in Hamburg
+            {t.landing.testimonialAuthor}
           </p>
         </div>
       </div>
@@ -316,26 +341,26 @@ export default function Home() {
       <div className="py-24 bg-celebration">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
           <div className="mb-8">
-            <OwlMascot mood="celebrating" size="xl" message="Let's start this journey together!" />
+            <OwlMascot mood="celebrating" size="xl" message={t.landing.ctaMascotMessage} />
           </div>
           <h2
             className="text-3xl sm:text-4xl font-bold text-[var(--gray-800)] mb-4"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            Ready to Support Your Child?
+            {t.landing.ctaTitle}
           </h2>
           <p className="text-lg text-[var(--gray-600)] mb-8 max-w-2xl mx-auto">
-            Join thousands of parents who understand their children's education better with GradeAI.
+            {t.landing.ctaDesc}
           </p>
           <Link
             href="/signup"
             className="btn-primary inline-flex items-center gap-2 text-lg px-10 py-4 shadow-lg hover:shadow-xl"
           >
-            Get Started for Free
+            {t.landing.ctaButton}
             <ArrowRight className="h-5 w-5" />
           </Link>
           <p className="mt-4 text-sm text-[var(--gray-500)]">
-            No credit card required • Free for your first 3 tests
+            {t.landing.ctaNote}
           </p>
         </div>
       </div>
@@ -351,12 +376,12 @@ export default function Home() {
               </span>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-sm text-[var(--gray-600)]">
-              <Link href="/privacy" className="hover:text-[var(--primary)] transition-colors">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-[var(--primary)] transition-colors">Terms of Service</Link>
-              <Link href="/support" className="hover:text-[var(--primary)] transition-colors">Support</Link>
+              <Link href="/privacy" className="hover:text-[var(--primary)] transition-colors">{t.landing.footerPrivacy}</Link>
+              <Link href="/terms" className="hover:text-[var(--primary)] transition-colors">{t.landing.footerTerms}</Link>
+              <Link href="/support" className="hover:text-[var(--primary)] transition-colors">{t.landing.footerSupport}</Link>
             </div>
             <p className="text-sm text-[var(--gray-500)]">
-              © 2024 GradeAI. Made with ❤️ for parents.
+              {t.landing.footerCopyright}
             </p>
           </div>
         </div>

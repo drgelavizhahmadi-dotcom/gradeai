@@ -1,0 +1,5 @@
+﻿app/uploads/layout.tsx
+components/GradeAIParentReport/index.tsx
+components/GradeAIParentReport/useReportTranslation.ts
+lib/translations.ts
+package-lock.json

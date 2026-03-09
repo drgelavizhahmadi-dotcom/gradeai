@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
 
+
 /**
  * Custom hook that handles report translation
  * 
@@ -48,6 +49,7 @@ export const useReportTranslation = (rawAnalysisData: any, uploadId?: string) =>
   const [translatedData, setTranslatedData] = useState<TranslatedReport | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
 
   const translateReport = useCallback(async () => {
     if (!rawAnalysisData) return
