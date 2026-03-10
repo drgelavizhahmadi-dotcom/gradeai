@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Star } from 'lucide-react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
-import { getPremiumTranslation } from './premiumTranslations'
+
 
 export const FOMO_STATS = {
   upgradesThisWeek: 347,
@@ -30,8 +30,8 @@ export function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: nu
 }
 
 export function PremiumStatistics() {
-  const { language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   return (
     <div className="bg-gray-50 rounded-xl p-4 mb-6">

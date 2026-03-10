@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
   BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2,
-  Sparkles, Calendar, User
+  Sparkles, Calendar, User, Globe, ChevronDown
 } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
 import { GradeBadge } from '@/components/ui/GradeBadge'
@@ -82,13 +82,14 @@ export default function UploadDetailPage() {
 
 
   // Global Language translation state
-  const { language: globalLanguage, t } = useLanguage()
+  const { language, t } = useLanguage()
   // Local Report translation state
   const [reportLanguage, setReportLanguage] = useState<Language>('de')
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
   const [originalReport, setOriginalReport] = useState<any>(null)
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
 
   // Premium features state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -246,6 +247,8 @@ export default function UploadDetailPage() {
     const currentLang = originalReport?._meta?.language?.code
     if (currentLang === language) {
       setTranslatedReport(originalReport)
+      return
+    }
     // Need to translate
     if (!originalReport) {
       setTranslationError(t.common.error ? t.common.error : 'No report available to translate')
@@ -273,7 +276,12 @@ export default function UploadDetailPage() {
       .finally(() => {
         setIsTranslating(false)
       })
-  }, [language, originalReport])
+    } catch (err) {
+      console.error('Translation error:', err)
+      setTranslationError(err instanceof Error ? err.message : 'Translation failed')
+      setIsTranslating(false)
+    }
+  }
 
   // Store original report when upload changes
   useEffect(() => {

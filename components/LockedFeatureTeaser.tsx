@@ -1,5 +1,5 @@
 import { useLanguage } from '@/components/providers/LanguageProvider'
-import { getPremiumTranslation } from './premiumTranslations'
+
 import { Lock, Crown } from 'lucide-react'
 
 // Premium Badge Component
@@ -34,8 +34,8 @@ export function LockedFeatureTeaser({
   stats?: { label: string; value: string }[] | undefined
   onUpgrade?: (() => void) | undefined
 }) {
-  const { language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-6">

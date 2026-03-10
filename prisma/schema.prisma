@@ -23,12 +23,6 @@ model User {
   sessions           Session[]
   uploads            Upload[]
   schoolDocuments    SchoolDocument[]
-
-  accounts Account[]
-  children Child[]
-  sessions Session[]
-  uploads  Upload[]
-
   // Stripe fields
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -104,18 +98,7 @@ model Upload {
   teacherComment String?
   extractedText    String?
   analysisStatus   String    @default("pending")
-  id               String              @id @default(cuid())
-  userId           String
-  childId          String
-  fileName         String
-  fileUrl          String
-  fileSize         Int
-  mimeType         String
-  subject          String?
-  grade            Float?
-  teacherComment   String?
-  extractedText    String?
-  analysisStatus   String              @default("pending")
+
   analysis         Json?
   flashcards       Json?
   fairnessCheck    Json?
@@ -165,4 +148,16 @@ model SchoolDocument {
   @@index([status])
   @@index([deadline])
   @@index([createdAt])
+}
+
+model ReportTranslation {
+  id        String   @id @default(cuid())
+  uploadId  String
+  language  String
+  report    Json
+  createdAt DateTime @default(now())
+  upload    Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@unique([uploadId, language])
+  @@index([uploadId])
 }

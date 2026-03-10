@@ -17,7 +17,8 @@ import {
     Menu,
     X,
     ChevronDown,
-    Sparkles
+    Sparkles,
+    Mail
 } from 'lucide-react'
 
 export default function UploadsLayout({
@@ -63,8 +64,10 @@ export default function UploadsLayout({
     const navigation = [
         { name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
+        { name: t.nav?.communication || 'Schulpost', href: '/dashboard/communication', icon: Mail },
         { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
         { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
+        { name: t.nav?.subscription || 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
     ]
 
     const isActive = (href: string) => {

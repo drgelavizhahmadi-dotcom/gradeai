@@ -14,7 +14,6 @@ import {
   generateFairnessPDF,
   generateLearningMaterialPDF
 } from '@/lib/pdf/generate-pdf'
-import { getPremiumTranslation } from './premiumTranslations'
 
 import { useTimer } from '@/lib/hooks/useTimer'
 import { PremiumStatistics, FOMO_STATS } from '@/components/PremiumStatistics'
@@ -65,8 +64,8 @@ export function UpgradeButton({
   showDiscount?: boolean | undefined
   onClick?: (() => void) | undefined
 }) {
-  const { language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const variants = {
     primary: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl',
@@ -105,11 +104,11 @@ export function FlashcardsPremiumSection({
 }: IndependentFeatureProps) {
   const { language: uiLang } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [flashcards, setFlashcards] = useState<any>(cachedData || null)
+  const [flashcards, setFlashcards] = useState<any | null>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const generateFlashcards = async () => {
     setIsGenerating(true)
@@ -358,8 +357,8 @@ export function FairnessCheckPremiumSection({
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedItems)
@@ -456,7 +455,7 @@ export function FairnessCheckPremiumSection({
             </div>
             <div className="bg-white rounded-lg p-3 border">
               <span className="text-gray-500">
-                {globalLang === 'de' ? (
+                {language === 'de' ? (
                   <>Wir haben <strong className="text-amber-600">3 mögliche Bedenken</strong> gefunden...</>
                 ) : (
                   <>We found <strong className="text-amber-600">3 potential concerns</strong>...</>
@@ -1061,8 +1060,8 @@ export function LearningMaterialPremiumSection({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [generationProgress, setGenerationProgress] = useState<string>('')
 
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const generateLearningMaterial = async () => {
     setIsGenerating(true)
@@ -1923,8 +1922,8 @@ export function UpgradeModal({
   onClose: () => void
   feature?: 'flashcards' | 'fairness' | 'learning' | undefined
 }) {
-  const { language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   // Real countdown timer hook
   const timeLeft = useTimer(23, 47, 12);
