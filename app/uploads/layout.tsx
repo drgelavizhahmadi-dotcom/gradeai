@@ -64,6 +64,7 @@ export default function UploadsLayout({
         { name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
         { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
+        { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
     ]
 
     const isActive = (href: string) => {

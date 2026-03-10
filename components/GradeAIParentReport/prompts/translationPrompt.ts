@@ -1,11 +1,11 @@
 /**
  * AI TRANSLATION PROMPT
  * 
- * This prompt takes the English analysis data and translates
+ * This prompt takes the German analysis data and translates
  * ALL user-facing text to the target language.
  * 
  * Called when: User views the report in their chosen language
- * Cached: Yes, per language per report
+ * Cached: Yes, per language per report (saved to DB)
  */
 
 export const createTranslationPrompt = (analysisData: any, targetLanguage: string) => {
@@ -29,7 +29,7 @@ TRANSLATION GUIDELINES:
 SPECIAL INSTRUCTIONS FOR ${targetLanguage}:
 ${getLanguageSpecificInstructions(targetLanguage)}
 
-INPUT DATA (English):
+INPUT DATA (German):
 ${JSON.stringify(analysisData, null, 2)}
 
 OUTPUT FORMAT: Return ONLY valid JSON with the same structure but translated content:
@@ -254,7 +254,7 @@ function getLanguageSpecificInstructions(language: string): string {
       - Use simple language that all parents can understand
     `
   }
-  
+
   return instructions[language] || instructions['English']
 }
 

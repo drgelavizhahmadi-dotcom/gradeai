@@ -26,18 +26,19 @@ import {
 
 interface GradeAIParentReportProps {
   analysisData: any
+  uploadId?: string
 }
 
-const GradeAIParentReport: React.FC<GradeAIParentReportProps> = ({ analysisData }) => {
+const GradeAIParentReport: React.FC<GradeAIParentReportProps> = ({ analysisData, uploadId }) => {
   return (
-    <ReportContent analysisData={analysisData} />
+    <ReportContent analysisData={analysisData} uploadId={uploadId} />
   )
 }
 
-const ReportContent: React.FC<{ analysisData: any }> = ({ analysisData }) => {
+const ReportContent: React.FC<{ analysisData: any; uploadId?: string | undefined }> = ({ analysisData, uploadId }) => {
   const { language } = useLanguage()
   const isRTL = ['ar', 'fa', 'ku'].includes(language)
-  const { translatedData, isTranslating, error, retranslate } = useReportTranslation(analysisData)
+  const { translatedData, isTranslating, error, retranslate } = useReportTranslation(analysisData, uploadId)
   const [activeTab, setActiveTab] = useState('overview')
 
   // Get static labels for loading states

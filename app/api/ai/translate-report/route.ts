@@ -1,9 +1,12 @@
 // app/api/ai/translate-report/route.ts
 // On-demand report translation endpoint using DeepSeek
+// Saves translations to DB for reuse (create once, read many times)
 
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/ai/analyze-complete'
+import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 300
 
@@ -16,20 +19,20 @@ const deepseek = new OpenAI({
 function extractJSON(text: string): any {
   try {
     return JSON.parse(text.trim())
-  } catch {}
+  } catch { }
 
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (codeBlockMatch) {
     try {
       return JSON.parse(codeBlockMatch[1].trim())
-    } catch {}
+    } catch { }
   }
 
   const jsonMatch = text.match(/\{[\s\S]*\}/)
   if (jsonMatch) {
     try {
       return JSON.parse(jsonMatch[0])
-    } catch {}
+    } catch { }
   }
 
   throw new Error('Could not extract valid JSON from response')
@@ -69,7 +72,8 @@ function preserveStructure(original: any, translated: any): any {
 
 export async function POST(request: NextRequest) {
   try {
-    const { report, targetLanguage } = await request.json()
+    const session = await requireAuth()
+    const { report, targetLanguage, uploadId } = await request.json()
 
     if (!report || !targetLanguage) {
       return NextResponse.json(
@@ -88,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     const lang = SUPPORTED_LANGUAGES[targetLanguage as LanguageCode]
 
-    // If German, return as-is (German is base language)
+    // If German, return as-is (German is the source of truth in DB)
     if (targetLanguage === 'de') {
       return NextResponse.json({
         success: true,
@@ -98,7 +102,30 @@ export async function POST(request: NextRequest) {
             language: { code: 'de', name: 'German', native: 'Deutsch', rtl: false },
           },
         },
+        cached: false,
       })
+    }
+
+    // Check DB cache first (if uploadId provided)
+    if (uploadId) {
+      try {
+        const cached = await db.reportTranslation.findUnique({
+          where: {
+            uploadId_language: { uploadId, language: targetLanguage },
+          },
+        })
+
+        if (cached) {
+          console.log(`[Translate API] Cache hit for ${uploadId} → ${targetLanguage}`)
+          return NextResponse.json({
+            success: true,
+            translatedReport: cached.report,
+            cached: true,
+          })
+        }
+      } catch (dbError) {
+        console.warn('[Translate API] DB cache lookup failed, proceeding with translation:', dbError)
+      }
     }
 
     console.log(`[Translate API] Translating report to ${lang.name}...`)
@@ -160,9 +187,33 @@ Respond with ONLY the translated JSON. No explanations.`
     const duration = Date.now() - startTime
     console.log(`[Translate API] Done in ${duration}ms`)
 
+    // Save to DB for future reuse (if uploadId provided)
+    if (uploadId) {
+      try {
+        await db.reportTranslation.upsert({
+          where: {
+            uploadId_language: { uploadId, language: targetLanguage },
+          },
+          create: {
+            uploadId,
+            language: targetLanguage,
+            report: translatedReport,
+          },
+          update: {
+            report: translatedReport,
+          },
+        })
+        console.log(`[Translate API] Saved translation to DB: ${uploadId} → ${targetLanguage}`)
+      } catch (dbError) {
+        // Don't fail the request if DB save fails — translation still works
+        console.error('[Translate API] Failed to save translation to DB:', dbError)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       translatedReport,
+      cached: false,
       duration,
     })
   } catch (error) {
