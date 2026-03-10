@@ -19,35 +19,35 @@ model User {
   emailVerified      DateTime?
   image              String?
 
-  accounts           Account[]
-  children           Child[]
-  sessions           Session[]
-  uploads            Upload[]
+  accounts Account[]
+  children Child[]
+  sessions Session[]
+  uploads  Upload[]
 
   // Stripe fields
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
   stripePriceId          String?   @map(name: "stripe_price_id")
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
-  
+
   @@index([email])
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
 
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -86,25 +86,28 @@ model Child {
 }
 
 model Upload {
-  id             String    @id @default(cuid())
-  userId         String
-  childId        String
-  fileName       String
-  fileUrl        String
-  fileSize       Int
-  mimeType       String
-  subject        String?
-  grade          Float?
-  teacherComment String?
-  extractedText  String?
-  analysisStatus String    @default("pending")
-  analysis       Json?
-  errorMessage   String?
-  uploadedAt     DateTime  @default(now())
-  processedAt    DateTime?
-  child          Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  translations   ReportTranslation[]
+  id               String              @id @default(cuid())
+  userId           String
+  childId          String
+  fileName         String
+  fileUrl          String
+  fileSize         Int
+  mimeType         String
+  subject          String?
+  grade            Float?
+  teacherComment   String?
+  extractedText    String?
+  analysisStatus   String              @default("pending")
+  analysis         Json?
+  flashcards       Json?
+  fairnessCheck    Json?
+  learningMaterial Json?
+  errorMessage     String?
+  uploadedAt       DateTime            @default(now())
+  processedAt      DateTime?
+  child            Child               @relation(fields: [childId], references: [id], onDelete: Cascade)
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations     ReportTranslation[]
 
   @@index([userId])
   @@index([childId])
