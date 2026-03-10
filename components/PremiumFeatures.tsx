@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
 import {
-  Lock, Sparkles, Crown, Zap, BookOpen, Shield, ChevronRight,
-  Star, TrendingUp, Users, Clock, Gift, ArrowRight, Check,
+  Sparkles, Crown, BookOpen, Shield,
+  TrendingUp, Clock, Gift, ArrowRight, Check,
   Loader2, X, Download, Printer, AlertTriangle, CheckCircle,
   GraduationCap, FileText, ClipboardCheck, ChevronDown, ChevronUp,
   Brain, Target, Lightbulb, PlayCircle
@@ -14,8 +14,11 @@ import {
   generateFairnessPDF,
   generateLearningMaterialPDF
 } from '@/lib/pdf/generate-pdf'
-import { useLanguage } from '@/components/providers/LanguageProvider'
 import { getPremiumTranslation } from './premiumTranslations'
+
+import { useTimer } from '@/lib/hooks/useTimer'
+import { PremiumStatistics, FOMO_STATS } from '@/components/PremiumStatistics'
+import { LockedFeatureTeaser, PremiumBadge } from '@/components/LockedFeatureTeaser'
 
 // Languages that don't render correctly in jsPDF (non-Latin scripts)
 const NON_LATIN_LANGS = ['ar', 'fa', 'ku', 'kmr']
@@ -29,16 +32,6 @@ function printSectionOnly(section: 'flashcards' | 'fairness') {
     window.removeEventListener('afterprint', cleanup)
   }
   window.addEventListener('afterprint', cleanup)
-}
-
-// FOMO Statistics (can be fetched from API in production)
-const FOMO_STATS = {
-  upgradesThisWeek: 347,
-  parentsSatisfied: 94,
-  avgGradeImprovement: 0.8,
-  flashcardsGenerated: 12847,
-  fairnessChecksRun: 8293,
-  learningMaterialsGenerated: 5621,
 }
 
 interface PremiumFeatureProps {
@@ -61,1109 +54,6 @@ interface IndependentFeatureProps extends PremiumFeatureProps {
 // Keep backward compat alias
 type LearningMaterialProps = IndependentFeatureProps
 
-// UI chrome translations for premium features – supports all 9 app languages
-function getPremiumT(lang: string = 'de') {
-  // English base – fallback for all languages
-  const en = {
-    flashcardsTitle: 'Personalized Flashcards',
-    flashcardsDesc: (name: string) => `Tailored for ${name}`,
-    generateCards: 'Generate Flashcards',
-    generatingCards: 'Creating cards...',
-    studyPlan: 'Study Plan',
-    dailyGoal: 'Daily Goal:',
-    totalTime: 'Total Time:',
-    reviewSchedule: 'Review:',
-    easy: 'Easy',
-    medium: 'Medium',
-    hard: 'Hard',
-    clickToFlip: 'Click to flip',
-    cardLabel: 'Card',
-    questionFront: 'Question · Front',
-    answerBack: 'Answer · Back',
-    forWeakness: 'For:',
-    answer: 'Answer',
-    print: 'Print',
-    downloadPDF: 'Download PDF',
-    errorOccurred: 'An error occurred',
-    flashcardsLockedTitle: 'Personalized Flashcards',
-    flashcardsLockedDesc: (count: number, name: string) => `${count}+ flashcards tailored for ${name} based on test weaknesses`,
-    cardsCreated: 'Cards created',
-    gradeImprovement: 'Grade improvement',
-    fairnessTitle: 'Fairness Check',
-    fairnessDesc: 'Independent grading analysis',
-    fairnessLockedTitle: 'Grading Fairness Check',
-    fairnessLockedDesc: 'Was your child graded fairly? AI analysis with actionable recommendations',
-    checkFairness: 'Check Fairness',
-    analyzingIndependently: 'Analyzing independently...',
-    independentAIAnalysis: 'Independent AI Analysis',
-    questionsAnalyzed: 'questions analyzed',
-    concernsFound: 'concerns found',
-    generatedIn: 'Generated in',
-    fairnessScore: 'Fairness Score',
-    checksPerformed: 'Checks performed',
-    parentsSatisfied: 'Parents satisfied',
-    verdictFair: 'Grading is fair',
-    verdictMostlyFair: 'Mostly fair',
-    verdictSomeConcerns: 'Some concerns',
-    verdictQuestionable: 'Questionable',
-    verdictNeedsReview: 'Review recommended',
-    verdictNA: 'Not assessable',
-    gradingConsistency: 'Grading Consistency',
-    pointProportionality: 'Point Proportionality',
-    partialCredit: 'Partial Credit',
-    clarityOfExpectations: 'Clarity of Expectations',
-    feedbackQuality: 'Feedback Quality',
-    mathematicalAccuracy: 'Mathematical Accuracy',
-    consistency: 'Consistency',
-    clarity: 'Clarity',
-    proportionality: 'Proportionality',
-    tabOverview: 'Overview',
-    tabReconstruction: 'Test Reconstruction',
-    tabDetails: 'Detailed Analysis',
-    tabRecovery: 'Point Recovery',
-    dimensions: 'Grading Dimensions',
-    detailAnalysis: 'Detailed Analysis',
-    positiveFindings: 'Positive Findings',
-    concerns: 'Concerns',
-    severityCritical: 'Critical',
-    severitySignificant: 'Significant',
-    severityModerate: 'Moderate',
-    severityMinor: 'Minor',
-    evidence: 'Evidence:',
-    pointsAffected: 'Points affected:',
-    gradeBoundaryAnalysis: 'Grade Boundary Analysis',
-    currentGrade: 'Current Grade',
-    achieved: 'Achieved',
-    recoverable: 'Recoverable',
-    gradeChangePossible: 'Grade change possible?',
-    yes: 'Yes',
-    no: 'No',
-    testOverview: 'Test Overview (reconstructed)',
-    subjectLabel: 'Subject',
-    typeLabel: 'Type',
-    pointsLabel: 'Points',
-    gradeLabel: 'Grade',
-    pointDiscrepancy: 'Point discrepancy found!',
-    taskReconstruction: (count: number) => `Task Reconstruction (${count})`,
-    correct: 'Correct',
-    partial: 'Partial',
-    wrong: 'Wrong',
-    studentAnswer: 'Student answer:',
-    teacherCorrection: 'Teacher correction:',
-    deductionReason: 'Deduction reason:',
-    teacherComments: 'Teacher Comments',
-    marginNotes: 'Margin notes:',
-    overallTone: 'Overall tone:',
-    toneEncouraging: 'Encouraging',
-    toneCritical: 'Critical',
-    toneMixed: 'Mixed',
-    toneNeutral: 'Neutral',
-    potentialRecovery: 'Potential Point Recovery',
-    estimatedPotential: 'Estimated potential:',
-    strongArgument: 'Strong argument',
-    moderateArgument: 'Moderate argument',
-    weakArgument: 'Weak argument',
-    current: 'Current:',
-    possible: 'Possible:',
-    recommendation: 'Recommendation',
-    contactTeacher: 'Discussion with teacher recommended',
-    noContactNeeded: 'No discussion needed',
-    urgencyHigh: 'Urgent',
-    urgencyMedium: 'Soon',
-    urgencyLow: 'When convenient',
-    conversationOpener: 'Conversation opener:',
-    talkingPoints: 'Talking points:',
-    avoidThis: 'Avoid:',
-    recoverablePoints: 'Potentially recoverable points:',
-    disclaimer: 'This analysis is for guidance only and is based on OCR-extracted text. When in doubt, speak directly with the teacher.',
-    learningTitle: 'Personalized Learning Material',
-    learningDesc: (name: string) => `Lessons, worksheets & quizzes for ${name}`,
-    learningLockedTitle: 'Personalized Learning Material',
-    learningLockedDesc: (name: string) => `AI-generated lessons, worksheets and quizzes tailored for ${name} – based on the German curriculum`,
-    generateMaterial: 'Generate Learning Material',
-    generatingMaterial: 'Creating material...',
-    analyzingTest: 'Analyzing test independently...',
-    materialsCreated: 'Materials created',
-    learningPlanOverview: 'Learning Plan Overview',
-    estimatedTime: 'Estimated Time',
-    difficultyLevel: 'Difficulty Level',
-    focusAreas: 'Focus Areas',
-    immediately: 'Immediately:',
-    thisWeek: 'This Week:',
-    thisMonth: 'This Month:',
-    weaknessesDetected: 'weaknesses detected',
-    curriculumTopicsMatched: 'curriculum topics matched',
-    tabAnalysis: 'Analysis',
-    tabLessons: 'Lessons',
-    tabWorksheets: 'Worksheets',
-    tabQuizzes: 'Quizzes',
-    overallAssessment: 'Overall Assessment',
-    detectedWeaknesses: 'Detected Weaknesses',
-    severityLabels: { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' },
-    rootCause: 'Root cause:',
-    evidenceFromTest: 'Evidence from test:',
-    teacherFeedbackAnalysis: 'Teacher Feedback Analysis',
-    mainComments: 'Main comments:',
-    correctionPatterns: 'Correction patterns:',
-    tone: 'Tone:',
-    recognizedStrengths: 'Recognized Strengths',
-    prioritizedNeeds: 'Prioritized Learning Needs',
-    forTarget: 'For:',
-    foundation: 'Foundation',
-    building: 'Building',
-    mastery: 'Mastery',
-    prerequisiteCheck: 'Prerequisite Check:',
-    expectedAnswer: 'Expected answer:',
-    ifFailed: 'If failed:',
-    keyRules: 'Key Rules:',
-    example: 'Example',
-    task: 'Task:',
-    step: 'Step',
-    solution: 'Solution:',
-    commonMistake: 'Common mistake:',
-    practiceProblems: 'Practice Problems:',
-    hint: 'Hint:',
-    showAnswer: 'Show answer',
-    hideAnswer: 'Hide answer',
-    memoryAids: 'Memory Aids:',
-    memoryAid: 'Memory Aid:',
-    inEverydayLife: 'In everyday life:',
-    parentTip: 'Tip for parents:',
-    beginner: 'Beginner',
-    intermediate: 'Intermediate',
-    advanced: 'Advanced',
-    tasks: 'Tasks',
-    taskN: 'Task',
-    instructions: 'Instructions',
-    showSolutions: 'Show solutions',
-    hideSolutions: 'Hide solutions',
-    bonusChallenge: 'Bonus Challenge:',
-    questions: 'Questions',
-    questionN: 'Question',
-    passing: 'Passing:',
-    scoring: 'Scoring:',
-    ifWrong: 'If wrong:',
-    curriculumTopics: 'Curriculum Topics',
-    unlockWithPrime: 'Unlock with Prime',
-    parentsThisWeek: 'parents this week',
-    discountToday: '-40% today',
-    upgradeToPrime: 'Upgrade to Prime',
-    unlimitedFlashcards: 'Unlimited personalized flashcards',
-    fairnessCheckFeature: 'Fairness check for every test',
-    aiLearningMaterial: 'AI-generated learning material (lessons, worksheets, quizzes)',
-    detailedProgress: 'Detailed progress analysis',
-    prioritySupport: 'Priority support',
-    pdfExport: 'PDF export of all reports',
-    yourChild: 'your child',
-    teacherLabel: 'Teacher',
-    calculatedLabel: 'Calculated',
-  }
-
-  // Per-language overrides – only keys that differ from English
-  const overrides: Record<string, Partial<typeof en>> = {
-    de: {
-      flashcardsTitle: 'Personalisierte Lernkarten',
-      flashcardsDesc: (name: string) => `Maßgeschneidert für ${name}`,
-      generateCards: 'Lernkarten generieren',
-      generatingCards: 'Erstelle Karten...',
-      studyPlan: 'Lernplan',
-      dailyGoal: 'Tägliches Ziel:',
-      totalTime: 'Gesamtzeit:',
-      reviewSchedule: 'Wiederholung:',
-      easy: 'Leicht',
-      medium: 'Mittel',
-      hard: 'Schwer',
-      clickToFlip: 'Klicken zum Umdrehen',
-      cardLabel: 'Karte',
-      questionFront: 'Frage · Vorderseite',
-      answerBack: 'Antwort · Rückseite',
-      answer: 'Antwort',
-      print: 'Drucken',
-      downloadPDF: 'PDF herunterladen',
-      errorOccurred: 'Ein Fehler ist aufgetreten',
-      flashcardsLockedTitle: 'Personalisierte Lernkarten',
-      flashcardsLockedDesc: (count: number, name: string) => `${count}+ Lernkarten speziell für ${name} basierend auf den Testschwächen`,
-      cardsCreated: 'Karten erstellt',
-      gradeImprovement: 'Notenverbesserung',
-      fairnessTitle: 'Fairness-Check',
-      fairnessDesc: 'Unabhängige Analyse der Bewertung',
-      fairnessLockedTitle: 'Fairness-Check der Bewertung',
-      fairnessLockedDesc: 'Wurde Ihr Kind fair bewertet? KI-Analyse der Benotung mit konkreten Handlungsempfehlungen',
-      checkFairness: 'Fairness prüfen',
-      analyzingIndependently: 'Analysiere unabhängig...',
-      independentAIAnalysis: 'Unabhängige KI-Analyse',
-      questionsAnalyzed: 'Aufgaben analysiert',
-      concernsFound: 'Bedenken gefunden',
-      generatedIn: 'Generiert in',
-      fairnessScore: 'Fairness-Score',
-      checksPerformed: 'Checks durchgeführt',
-      parentsSatisfied: 'Eltern zufrieden',
-      verdictFair: 'Bewertung ist fair',
-      verdictMostlyFair: 'Überwiegend fair',
-      verdictSomeConcerns: 'Einige Bedenken',
-      verdictQuestionable: 'Fragwürdig',
-      verdictNeedsReview: 'Überprüfung empfohlen',
-      verdictNA: 'Nicht bewertbar',
-      gradingConsistency: 'Bewertungskonsistenz',
-      pointProportionality: 'Punktverhältnismäßigkeit',
-      partialCredit: 'Teilpunkte-Vergabe',
-      clarityOfExpectations: 'Klarheit der Erwartungen',
-      feedbackQuality: 'Feedback-Qualität',
-      mathematicalAccuracy: 'Rechnerische Korrektheit',
-      consistency: 'Konsistenz',
-      clarity: 'Klarheit',
-      proportionality: 'Verhältnismäßigkeit',
-      tabOverview: 'Übersicht',
-      tabReconstruction: 'Test-Rekonstruktion',
-      tabDetails: 'Detailanalyse',
-      tabRecovery: 'Punkte-Rückgewinnung',
-      dimensions: 'Bewertungsdimensionen',
-      detailAnalysis: 'Detailanalyse',
-      positiveFindings: 'Positiv aufgefallen',
-      concerns: 'Bedenken',
-      severityCritical: 'Kritisch',
-      severitySignificant: 'Wichtig',
-      severityModerate: 'Moderat',
-      severityMinor: 'Gering',
-      evidence: 'Beleg:',
-      pointsAffected: 'Betroffene Punkte:',
-      gradeBoundaryAnalysis: 'Notengrenzen-Analyse',
-      currentGrade: 'Aktuelle Note',
-      achieved: 'Erreicht',
-      recoverable: 'Rückgewinnbar',
-      gradeChangePossible: 'Notenänderung möglich?',
-      yes: 'Ja',
-      no: 'Nein',
-      testOverview: 'Test-Übersicht (rekonstruiert)',
-      subjectLabel: 'Fach',
-      typeLabel: 'Art',
-      pointsLabel: 'Punkte',
-      gradeLabel: 'Note',
-      pointDiscrepancy: 'Punktabweichung gefunden!',
-      taskReconstruction: (count: number) => `Aufgaben-Rekonstruktion (${count})`,
-      correct: 'Korrekt',
-      partial: 'Teilweise',
-      wrong: 'Falsch',
-      studentAnswer: 'Schülerantwort:',
-      teacherCorrection: 'Lehrerkorrektur:',
-      deductionReason: 'Abzugsgrund:',
-      teacherComments: 'Lehrerkommentare',
-      marginNotes: 'Randnotizen:',
-      overallTone: 'Gesamtton:',
-      toneEncouraging: 'Ermutigend',
-      toneCritical: 'Kritisch',
-      toneMixed: 'Gemischt',
-      toneNeutral: 'Neutral',
-      potentialRecovery: 'Potenzielle Punkte-Rückgewinnung',
-      estimatedPotential: 'Geschätztes Potenzial:',
-      strongArgument: 'Starkes Argument',
-      moderateArgument: 'Moderates Argument',
-      weakArgument: 'Schwaches Argument',
-      current: 'Aktuell:',
-      possible: 'Möglich:',
-      recommendation: 'Empfehlung',
-      contactTeacher: 'Gespräch mit Lehrkraft empfohlen',
-      noContactNeeded: 'Kein Gespräch nötig',
-      urgencyHigh: 'Dringend',
-      urgencyMedium: 'Zeitnah',
-      urgencyLow: 'Bei Gelegenheit',
-      conversationOpener: 'Gesprächseinstieg:',
-      talkingPoints: 'Gesprächspunkte:',
-      avoidThis: 'Vermeiden Sie:',
-      recoverablePoints: 'Möglicherweise erreichbare Punkte:',
-      disclaimer: 'Diese Analyse dient nur zur Orientierung und basiert auf OCR-extrahiertem Text. Im Zweifel sprechen Sie direkt mit der Lehrkraft.',
-      learningTitle: 'Personalisiertes Lernmaterial',
-      learningDesc: (name: string) => `Lektionen, Arbeitsblätter & Quizze für ${name}`,
-      learningLockedTitle: 'Personalisiertes Lernmaterial',
-      learningLockedDesc: (name: string) => `KI-generierte Lektionen, Arbeitsblätter und Quizze speziell für ${name} – basierend auf dem deutschen Lehrplan`,
-      generateMaterial: 'Lernmaterial generieren',
-      generatingMaterial: 'Erstelle Material...',
-      analyzingTest: 'Analysiere Test unabhängig...',
-      materialsCreated: 'Materialien erstellt',
-      learningPlanOverview: 'Lernplan-Übersicht',
-      estimatedTime: 'Geschätzte Zeit',
-      difficultyLevel: 'Schwierigkeitsgrad',
-      focusAreas: 'Schwerpunkte',
-      immediately: 'Sofort:',
-      thisWeek: 'Diese Woche:',
-      thisMonth: 'Diesen Monat:',
-      weaknessesDetected: 'Schwächen erkannt',
-      curriculumTopicsMatched: 'Lehrplan-Themen zugeordnet',
-      tabAnalysis: 'Analyse',
-      tabLessons: 'Lektionen',
-      tabWorksheets: 'Arbeitsblätter',
-      tabQuizzes: 'Quizze',
-      overallAssessment: 'Gesamtbewertung',
-      detectedWeaknesses: 'Erkannte Schwächen',
-      severityLabels: { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Gering' },
-      rootCause: 'Ursache:',
-      evidenceFromTest: 'Beleg aus dem Test:',
-      teacherFeedbackAnalysis: 'Lehrerkommentar-Analyse',
-      mainComments: 'Hauptkommentare:',
-      correctionPatterns: 'Korrekturmuster:',
-      tone: 'Ton:',
-      recognizedStrengths: 'Erkannte Stärken',
-      prioritizedNeeds: 'Priorisierte Lernbedürfnisse',
-      forTarget: 'Für:',
-      foundation: 'Grundlagen',
-      building: 'Aufbau',
-      mastery: 'Meisterung',
-      prerequisiteCheck: 'Voraussetzungsprüfung:',
-      expectedAnswer: 'Erwartete Antwort:',
-      ifFailed: 'Falls nicht bestanden:',
-      keyRules: 'Wichtige Regeln:',
-      example: 'Beispiel',
-      task: 'Aufgabe:',
-      step: 'Schritt',
-      solution: 'Lösung:',
-      commonMistake: 'Häufiger Fehler:',
-      practiceProblems: 'Übungsaufgaben:',
-      hint: 'Tipp:',
-      showAnswer: 'Antwort zeigen',
-      hideAnswer: 'Antwort verbergen',
-      memoryAids: 'Merkhilfen:',
-      memoryAid: 'Merkhilfe:',
-      inEverydayLife: 'Im Alltag:',
-      parentTip: 'Tipp für Eltern:',
-      beginner: 'Anfänger',
-      intermediate: 'Mittel',
-      advanced: 'Fortgeschritten',
-      tasks: 'Aufgaben',
-      taskN: 'Aufgabe',
-      instructions: 'Anleitung',
-      showSolutions: 'Lösungen anzeigen',
-      hideSolutions: 'Lösungen verbergen',
-      bonusChallenge: 'Bonus-Aufgabe:',
-      questions: 'Fragen',
-      questionN: 'Frage',
-      passing: 'Bestehen:',
-      scoring: 'Bewertung:',
-      ifWrong: 'Bei Fehler:',
-      curriculumTopics: 'Lehrplan-Themen (Curriculum)',
-      unlockWithPrime: 'Freischalten mit Prime',
-      parentsThisWeek: 'Eltern diese Woche',
-      discountToday: '-40% heute',
-      unlimitedFlashcards: 'Unbegrenzte personalisierte Lernkarten',
-      fairnessCheckFeature: 'Fairness-Check für jede Bewertung',
-      aiLearningMaterial: 'KI-generiertes Lernmaterial (Lektionen, Arbeitsblätter, Quizze)',
-      detailedProgress: 'Detaillierte Fortschrittsanalysen',
-      prioritySupport: 'Prioritäts-Support',
-      pdfExport: 'PDF-Export aller Berichte',
-      yourChild: 'Ihr Kind',
-      teacherLabel: 'Lehrer',
-      calculatedLabel: 'Berechnet',
-    },
-    fa: {
-      flashcardsTitle: 'کارت‌های یادگیری شخصی',
-      flashcardsDesc: (name: string) => `مخصوص ${name}`,
-      flashcardsLockedTitle: 'کارت‌های یادگیری شخصی',
-      flashcardsLockedDesc: (count: number, name: string) => `${count}+ کارت یادگیری مخصوص ${name} بر اساس نقاط ضعف آزمون`,
-      generateCards: 'ایجاد کارت‌ها',
-      generatingCards: 'در حال ایجاد...',
-      studyPlan: 'برنامه مطالعه',
-      dailyGoal: 'هدف روزانه:',
-      totalTime: 'مجموع زمان:',
-      reviewSchedule: 'مرور:',
-      easy: 'آسان',
-      medium: 'متوسط',
-      hard: 'سخت',
-      clickToFlip: 'کلیک کنید تا برگردد',
-      cardLabel: 'کارت',
-      questionFront: 'سوال · جلو',
-      answerBack: 'جواب · پشت',
-      answer: 'جواب',
-      print: 'چاپ',
-      downloadPDF: 'دانلود PDF',
-      errorOccurred: 'خطایی رخ داد',
-      cardsCreated: 'کارت ایجاد شد',
-      gradeImprovement: 'بهبود نمره',
-      fairnessTitle: 'بررسی عدالت',
-      fairnessDesc: 'تحلیل مستقل نمره‌دهی',
-      fairnessLockedTitle: 'بررسی عدالت در نمره‌دهی',
-      fairnessLockedDesc: 'آیا فرزند شما نمره منصفانه گرفت؟ تحلیل هوش مصنوعی با توصیه‌های عملی',
-      checkFairness: 'بررسی عدالت',
-      analyzingIndependently: 'در حال تحلیل...',
-      independentAIAnalysis: 'تحلیل مستقل هوش مصنوعی',
-      questionsAnalyzed: 'سوال تحلیل شد',
-      concernsFound: 'مشکل یافت شد',
-      generatedIn: 'تولید شده در',
-      fairnessScore: 'امتیاز عدالت',
-      checksPerformed: 'بررسی انجام شد',
-      parentsSatisfied: 'والدین راضی',
-      verdictFair: 'نمره‌دهی منصفانه است',
-      verdictMostlyFair: 'عمدتاً منصفانه',
-      verdictSomeConcerns: 'برخی نگرانی‌ها',
-      verdictQuestionable: 'قابل بحث',
-      verdictNeedsReview: 'نیاز به بررسی',
-      verdictNA: 'قابل ارزیابی نیست',
-      gradingConsistency: 'ثبات نمره‌دهی',
-      pointProportionality: 'تناسب امتیازات',
-      partialCredit: 'نمره جزئی',
-      clarityOfExpectations: 'وضوح انتظارات',
-      feedbackQuality: 'کیفیت بازخورد',
-      mathematicalAccuracy: 'دقت ریاضی',
-      consistency: 'ثبات',
-      clarity: 'وضوح',
-      proportionality: 'تناسب',
-      tabOverview: 'مرور کلی',
-      tabReconstruction: 'بازسازی آزمون',
-      tabDetails: 'تحلیل دقیق',
-      tabRecovery: 'بازیابی نمره',
-      dimensions: 'ابعاد ارزیابی',
-      detailAnalysis: 'تحلیل دقیق',
-      positiveFindings: 'یافته‌های مثبت',
-      concerns: 'نگرانی‌ها',
-      severityCritical: 'بحرانی',
-      severitySignificant: 'مهم',
-      severityModerate: 'متوسط',
-      severityMinor: 'جزئی',
-      evidence: 'شاهد:',
-      pointsAffected: 'امتیازات مؤثر:',
-      gradeBoundaryAnalysis: 'تحلیل مرز نمره',
-      currentGrade: 'نمره فعلی',
-      achieved: 'کسب‌شده',
-      recoverable: 'قابل بازیابی',
-      gradeChangePossible: 'تغییر نمره ممکن است؟',
-      yes: 'بله',
-      no: 'خیر',
-      testOverview: 'مرور آزمون (بازسازی شده)',
-      subjectLabel: 'درس',
-      typeLabel: 'نوع',
-      pointsLabel: 'امتیاز',
-      gradeLabel: 'نمره',
-      pointDiscrepancy: 'اختلاف امتیاز یافت شد!',
-      taskReconstruction: (count: number) => `بازسازی تکالیف (${count})`,
-      correct: 'درست',
-      partial: 'جزئی',
-      wrong: 'نادرست',
-      studentAnswer: 'جواب دانش‌آموز:',
-      teacherCorrection: 'تصحیح معلم:',
-      deductionReason: 'دلیل کسر:',
-      teacherComments: 'نظرات معلم',
-      marginNotes: 'یادداشت‌های حاشیه:',
-      overallTone: 'لحن کلی:',
-      toneEncouraging: 'تشویقی',
-      toneCritical: 'انتقادی',
-      toneMixed: 'مختلط',
-      toneNeutral: 'خنثی',
-      potentialRecovery: 'بازیابی بالقوه امتیاز',
-      estimatedPotential: 'پتانسیل تخمینی:',
-      strongArgument: 'استدلال قوی',
-      moderateArgument: 'استدلال متوسط',
-      weakArgument: 'استدلال ضعیف',
-      current: 'فعلی:',
-      possible: 'ممکن:',
-      recommendation: 'توصیه',
-      contactTeacher: 'صحبت با معلم توصیه می‌شود',
-      noContactNeeded: 'نیازی به صحبت نیست',
-      urgencyHigh: 'فوری',
-      urgencyMedium: 'زودتر',
-      urgencyLow: 'در فرصت مناسب',
-      conversationOpener: 'شروع مکالمه:',
-      talkingPoints: 'نکات گفتگو:',
-      avoidThis: 'اجتناب کنید از:',
-      recoverablePoints: 'امتیازات قابل بازیابی:',
-      disclaimer: 'این تحلیل فقط برای راهنمایی است و بر اساس متن استخراج‌شده توسط OCR می‌باشد. در صورت شک، مستقیماً با معلم صحبت کنید.',
-      learningTitle: 'مواد یادگیری شخصی',
-      learningDesc: (name: string) => `درس‌ها، کاربرگ‌ها و آزمون‌ها برای ${name}`,
-      learningLockedTitle: 'مواد یادگیری شخصی',
-      learningLockedDesc: (name: string) => `درس‌ها، کاربرگ‌ها و آزمون‌های تولید شده توسط هوش مصنوعی برای ${name}`,
-      generateMaterial: 'ایجاد مواد یادگیری',
-      generatingMaterial: 'در حال ایجاد...',
-      analyzingTest: 'در حال تحلیل آزمون...',
-      materialsCreated: 'مواد ایجاد شد',
-      learningPlanOverview: 'مرور برنامه یادگیری',
-      estimatedTime: 'زمان تخمینی',
-      difficultyLevel: 'سطح دشواری',
-      focusAreas: 'حوزه‌های تمرکز',
-      immediately: 'فوری:',
-      thisWeek: 'این هفته:',
-      thisMonth: 'این ماه:',
-      weaknessesDetected: 'نقاط ضعف شناسایی شد',
-      curriculumTopicsMatched: 'موضوعات برنامه درسی مطابقت دارد',
-      tabAnalysis: 'تحلیل',
-      tabLessons: 'درس‌ها',
-      tabWorksheets: 'کاربرگ‌ها',
-      tabQuizzes: 'آزمون‌ها',
-      overallAssessment: 'ارزیابی کلی',
-      detectedWeaknesses: 'نقاط ضعف شناسایی شده',
-      severityLabels: { critical: 'بحرانی', high: 'بالا', medium: 'متوسط', low: 'پایین' },
-      rootCause: 'علت اصلی:',
-      evidenceFromTest: 'شاهد از آزمون:',
-      teacherFeedbackAnalysis: 'تحلیل بازخورد معلم',
-      mainComments: 'نظرات اصلی:',
-      correctionPatterns: 'الگوهای تصحیح:',
-      tone: 'لحن:',
-      recognizedStrengths: 'نقاط قوت شناسایی شده',
-      prioritizedNeeds: 'نیازهای یادگیری اولویت‌بندی شده',
-      forTarget: 'برای:',
-      foundation: 'پایه',
-      building: 'ساخت',
-      mastery: 'تسلط',
-      prerequisiteCheck: 'بررسی پیش‌نیاز:',
-      expectedAnswer: 'پاسخ مورد انتظار:',
-      ifFailed: 'در صورت عدم موفقیت:',
-      keyRules: 'قوانین کلیدی:',
-      example: 'مثال',
-      task: 'تکلیف:',
-      step: 'مرحله',
-      solution: 'راه‌حل:',
-      commonMistake: 'اشتباه رایج:',
-      practiceProblems: 'تمرین‌ها:',
-      hint: 'راهنما:',
-      showAnswer: 'نمایش جواب',
-      hideAnswer: 'پنهان کردن جواب',
-      memoryAids: 'کمک‌های حفظ:',
-      memoryAid: 'کمک حفظ:',
-      inEverydayLife: 'در زندگی روزمره:',
-      parentTip: 'نکته برای والدین:',
-      beginner: 'مبتدی',
-      intermediate: 'متوسط',
-      advanced: 'پیشرفته',
-      tasks: 'تکالیف',
-      taskN: 'تکلیف',
-      instructions: 'دستورالعمل',
-      showSolutions: 'نمایش راه‌حل‌ها',
-      hideSolutions: 'پنهان کردن راه‌حل‌ها',
-      bonusChallenge: 'چالش اضافی:',
-      questions: 'سوالات',
-      questionN: 'سوال',
-      passing: 'قبولی:',
-      scoring: 'نمره‌دهی:',
-      ifWrong: 'در صورت اشتباه:',
-      curriculumTopics: 'موضوعات برنامه درسی',
-      unlockWithPrime: 'با Prime باز کنید',
-      parentsThisWeek: 'والدین این هفته',
-      discountToday: '-۴۰٪ امروز',
-      upgradeToPrime: 'ارتقا به Prime',
-      unlimitedFlashcards: 'کارت‌های یادگیری نامحدود',
-      fairnessCheckFeature: 'بررسی عدالت برای هر آزمون',
-      aiLearningMaterial: 'مواد یادگیری تولید شده توسط هوش مصنوعی',
-      detailedProgress: 'تحلیل‌های دقیق پیشرفت',
-      prioritySupport: 'پشتیبانی اولویت‌دار',
-      pdfExport: 'خروجی PDF همه گزارش‌ها',
-      yourChild: 'فرزند شما',
-      teacherLabel: 'معلم',
-      calculatedLabel: 'محاسبه شده',
-    },
-    ar: {
-      flashcardsTitle: 'بطاقات التعلم الشخصية',
-      flashcardsDesc: (name: string) => `مخصص لـ ${name}`,
-      flashcardsLockedTitle: 'بطاقات التعلم الشخصية',
-      flashcardsLockedDesc: (count: number, name: string) => `${count}+ بطاقة تعلم مخصصة لـ ${name} بناءً على نقاط الضعف`,
-      generateCards: 'إنشاء البطاقات',
-      generatingCards: 'جاري الإنشاء...',
-      studyPlan: 'خطة الدراسة',
-      dailyGoal: 'الهدف اليومي:',
-      totalTime: 'إجمالي الوقت:',
-      reviewSchedule: 'المراجعة:',
-      easy: 'سهل',
-      medium: 'متوسط',
-      hard: 'صعب',
-      clickToFlip: 'انقر للقلب',
-      cardLabel: 'بطاقة',
-      questionFront: 'سؤال · الأمام',
-      answerBack: 'جواب · الخلف',
-      answer: 'جواب',
-      print: 'طباعة',
-      downloadPDF: 'تحميل PDF',
-      errorOccurred: 'حدث خطأ',
-      cardsCreated: 'بطاقة تم إنشاؤها',
-      gradeImprovement: 'تحسين الدرجة',
-      fairnessTitle: 'فحص العدالة',
-      fairnessDesc: 'تحليل مستقل للتقييم',
-      fairnessLockedTitle: 'فحص عدالة التقييم',
-      fairnessLockedDesc: 'هل تلقى طفلك تقييمًا عادلًا؟ تحليل الذكاء الاصطناعي مع توصيات عملية',
-      checkFairness: 'فحص العدالة',
-      analyzingIndependently: 'جاري التحليل...',
-      independentAIAnalysis: 'تحليل الذكاء الاصطناعي المستقل',
-      questionsAnalyzed: 'سؤال تم تحليله',
-      concernsFound: 'مخاوف وجدت',
-      generatedIn: 'تم الإنشاء في',
-      fairnessScore: 'درجة العدالة',
-      checksPerformed: 'فحوصات أُجريت',
-      parentsSatisfied: 'آباء راضون',
-      verdictFair: 'التقييم عادل',
-      verdictMostlyFair: 'عادل في معظمه',
-      verdictSomeConcerns: 'بعض المخاوف',
-      verdictQuestionable: 'مشكوك فيه',
-      verdictNeedsReview: 'يُنصح بالمراجعة',
-      verdictNA: 'غير قابل للتقييم',
-      gradingConsistency: 'اتساق التقييم',
-      pointProportionality: 'تناسب النقاط',
-      partialCredit: 'الائتمان الجزئي',
-      clarityOfExpectations: 'وضوح التوقعات',
-      feedbackQuality: 'جودة التغذية الراجعة',
-      mathematicalAccuracy: 'الدقة الحسابية',
-      consistency: 'الاتساق',
-      clarity: 'الوضوح',
-      proportionality: 'التناسب',
-      tabOverview: 'نظرة عامة',
-      tabReconstruction: 'إعادة بناء الاختبار',
-      tabDetails: 'تحليل مفصل',
-      tabRecovery: 'استرداد النقاط',
-      dimensions: 'أبعاد التقييم',
-      detailAnalysis: 'تحليل مفصل',
-      positiveFindings: 'النتائج الإيجابية',
-      concerns: 'المخاوف',
-      severityCritical: 'حرج',
-      severitySignificant: 'مهم',
-      severityModerate: 'معتدل',
-      severityMinor: 'بسيط',
-      evidence: 'الدليل:',
-      pointsAffected: 'النقاط المتأثرة:',
-      gradeBoundaryAnalysis: 'تحليل حدود الدرجة',
-      currentGrade: 'الدرجة الحالية',
-      achieved: 'المحقق',
-      recoverable: 'قابل للاسترداد',
-      gradeChangePossible: 'هل تغيير الدرجة ممكن؟',
-      yes: 'نعم',
-      no: 'لا',
-      testOverview: 'نظرة عامة على الاختبار (مُعاد بناؤه)',
-      subjectLabel: 'المادة',
-      typeLabel: 'النوع',
-      pointsLabel: 'النقاط',
-      gradeLabel: 'الدرجة',
-      pointDiscrepancy: 'اختلاف في النقاط!',
-      taskReconstruction: (count: number) => `إعادة بناء المهام (${count})`,
-      correct: 'صحيح',
-      partial: 'جزئي',
-      wrong: 'خاطئ',
-      studentAnswer: 'إجابة الطالب:',
-      teacherCorrection: 'تصحيح المعلم:',
-      deductionReason: 'سبب الخصم:',
-      teacherComments: 'تعليقات المعلم',
-      marginNotes: 'ملاحظات الهامش:',
-      overallTone: 'النبرة العامة:',
-      toneEncouraging: 'تشجيعي',
-      toneCritical: 'نقدي',
-      toneMixed: 'مختلط',
-      toneNeutral: 'محايد',
-      potentialRecovery: 'استرداد النقاط المحتمل',
-      estimatedPotential: 'الإمكانية المقدرة:',
-      strongArgument: 'حجة قوية',
-      moderateArgument: 'حجة معتدلة',
-      weakArgument: 'حجة ضعيفة',
-      current: 'الحالي:',
-      possible: 'الممكن:',
-      recommendation: 'التوصية',
-      contactTeacher: 'يُنصح بمناقشة المعلم',
-      noContactNeeded: 'لا حاجة لمناقشة',
-      urgencyHigh: 'عاجل',
-      urgencyMedium: 'قريبًا',
-      urgencyLow: 'عند الفرصة',
-      conversationOpener: 'مقدمة المحادثة:',
-      talkingPoints: 'نقاط الحوار:',
-      avoidThis: 'تجنب:',
-      recoverablePoints: 'النقاط القابلة للاسترداد:',
-      disclaimer: 'هذا التحليل للتوجيه فقط ومبني على نص مستخرج بـ OCR. عند الشك، تحدث مع المعلم مباشرة.',
-      learningTitle: 'مواد التعلم الشخصية',
-      learningDesc: (name: string) => `دروس وأوراق عمل واختبارات لـ ${name}`,
-      learningLockedTitle: 'مواد التعلم الشخصية',
-      learningLockedDesc: (name: string) => `دروس وأوراق عمل واختبارات مُنشأة بالذكاء الاصطناعي لـ ${name}`,
-      generateMaterial: 'إنشاء مواد التعلم',
-      generatingMaterial: 'جاري الإنشاء...',
-      analyzingTest: 'جاري تحليل الاختبار...',
-      materialsCreated: 'مواد تم إنشاؤها',
-      learningPlanOverview: 'نظرة عامة على خطة التعلم',
-      estimatedTime: 'الوقت المقدر',
-      difficultyLevel: 'مستوى الصعوبة',
-      focusAreas: 'مجالات التركيز',
-      immediately: 'فورًا:',
-      thisWeek: 'هذا الأسبوع:',
-      thisMonth: 'هذا الشهر:',
-      weaknessesDetected: 'نقاط ضعف مكتشفة',
-      curriculumTopicsMatched: 'موضوعات المنهج متطابقة',
-      tabAnalysis: 'تحليل',
-      tabLessons: 'دروس',
-      tabWorksheets: 'أوراق عمل',
-      tabQuizzes: 'اختبارات',
-      overallAssessment: 'التقييم العام',
-      detectedWeaknesses: 'نقاط الضعف المكتشفة',
-      severityLabels: { critical: 'حرج', high: 'عالٍ', medium: 'معتدل', low: 'منخفض' },
-      rootCause: 'السبب الجذري:',
-      evidenceFromTest: 'الدليل من الاختبار:',
-      teacherFeedbackAnalysis: 'تحليل تغذية المعلم الراجعة',
-      mainComments: 'التعليقات الرئيسية:',
-      correctionPatterns: 'أنماط التصحيح:',
-      tone: 'النبرة:',
-      recognizedStrengths: 'نقاط القوة المعترف بها',
-      prioritizedNeeds: 'احتياجات التعلم ذات الأولوية',
-      forTarget: 'لـ:',
-      foundation: 'الأساس',
-      building: 'البناء',
-      mastery: 'الإتقان',
-      prerequisiteCheck: 'فحص المتطلبات:',
-      expectedAnswer: 'الإجابة المتوقعة:',
-      ifFailed: 'عند الفشل:',
-      keyRules: 'القواعد الأساسية:',
-      example: 'مثال',
-      task: 'المهمة:',
-      step: 'خطوة',
-      solution: 'الحل:',
-      commonMistake: 'الخطأ الشائع:',
-      practiceProblems: 'تمارين:',
-      hint: 'تلميح:',
-      showAnswer: 'إظهار الجواب',
-      hideAnswer: 'إخفاء الجواب',
-      memoryAids: 'وسائل مساعدة للحفظ:',
-      memoryAid: 'وسيلة حفظ:',
-      inEverydayLife: 'في الحياة اليومية:',
-      parentTip: 'نصيحة للوالدين:',
-      beginner: 'مبتدئ',
-      intermediate: 'متوسط',
-      advanced: 'متقدم',
-      tasks: 'مهام',
-      taskN: 'مهمة',
-      instructions: 'تعليمات',
-      showSolutions: 'إظهار الحلول',
-      hideSolutions: 'إخفاء الحلول',
-      bonusChallenge: 'تحدي إضافي:',
-      questions: 'أسئلة',
-      questionN: 'سؤال',
-      passing: 'النجاح:',
-      scoring: 'التقييم:',
-      ifWrong: 'عند الخطأ:',
-      curriculumTopics: 'موضوعات المنهج',
-      unlockWithPrime: 'افتح مع Prime',
-      parentsThisWeek: 'آباء هذا الأسبوع',
-      discountToday: '-40% اليوم',
-      upgradeToPrime: 'الترقية إلى Prime',
-      unlimitedFlashcards: 'بطاقات تعلم غير محدودة',
-      fairnessCheckFeature: 'فحص العدالة لكل اختبار',
-      aiLearningMaterial: 'مواد تعلم بالذكاء الاصطناعي',
-      detailedProgress: 'تحليلات تقدم مفصلة',
-      prioritySupport: 'دعم ذو أولوية',
-      pdfExport: 'تصدير PDF لجميع التقارير',
-      yourChild: 'طفلك',
-      teacherLabel: 'المعلم',
-      calculatedLabel: 'محسوب',
-    },
-    tr: {
-      flashcardsTitle: 'Kişiselleştirilmiş Öğrenme Kartları',
-      flashcardsDesc: (name: string) => `${name} için özelleştirilmiş`,
-      flashcardsLockedTitle: 'Kişiselleştirilmiş Öğrenme Kartları',
-      flashcardsLockedDesc: (count: number, name: string) => `${name} için ${count}+ öğrenme kartı`,
-      generateCards: 'Kartları Oluştur',
-      generatingCards: 'Kartlar oluşturuluyor...',
-      studyPlan: 'Çalışma Planı',
-      dailyGoal: 'Günlük Hedef:',
-      totalTime: 'Toplam Süre:',
-      reviewSchedule: 'Tekrar:',
-      easy: 'Kolay',
-      medium: 'Orta',
-      hard: 'Zor',
-      clickToFlip: 'Çevirmek için tıklayın',
-      cardLabel: 'Kart',
-      questionFront: 'Soru · Ön Yüz',
-      answerBack: 'Cevap · Arka Yüz',
-      answer: 'Cevap',
-      print: 'Yazdır',
-      downloadPDF: 'PDF İndir',
-      errorOccurred: 'Hata oluştu',
-      cardsCreated: 'Kart oluşturuldu',
-      gradeImprovement: 'Not iyileştirme',
-      fairnessTitle: 'Adalet Kontrolü',
-      fairnessDesc: 'Bağımsız not analizi',
-      fairnessLockedTitle: 'Not Adaleti Kontrolü',
-      fairnessLockedDesc: 'Çocuğunuz adil not aldı mı? Yapay zeka analizi ile somut öneriler',
-      checkFairness: 'Adaleti Kontrol Et',
-      analyzingIndependently: 'Analiz ediliyor...',
-      independentAIAnalysis: 'Bağımsız Yapay Zeka Analizi',
-      questionsAnalyzed: 'soru analiz edildi',
-      concernsFound: 'endişe bulundu',
-      generatedIn: 'Oluşturulma süresi',
-      fairnessScore: 'Adalet Puanı',
-      checksPerformed: 'kontrol yapıldı',
-      parentsSatisfied: 'veli memnun',
-      verdictFair: 'Değerlendirme adil',
-      verdictMostlyFair: 'Çoğunlukla adil',
-      verdictSomeConcerns: 'Bazı endişeler',
-      verdictQuestionable: 'Sorgulanabilir',
-      verdictNeedsReview: 'İnceleme önerilir',
-      verdictNA: 'Değerlendirilemez',
-      gradingConsistency: 'Değerlendirme tutarlılığı',
-      pointProportionality: 'Puan orantısallığı',
-      partialCredit: 'Kısmi Kredi',
-      clarityOfExpectations: 'Beklentilerin netliği',
-      feedbackQuality: 'Geri bildirim kalitesi',
-      mathematicalAccuracy: 'Matematiksel doğruluk',
-      consistency: 'Tutarlılık',
-      clarity: 'Netlik',
-      proportionality: 'Orantısallık',
-      tabOverview: 'Genel Bakış',
-      tabReconstruction: 'Test Yeniden Yapılandırma',
-      tabDetails: 'Detaylı Analiz',
-      tabRecovery: 'Puan Kurtarma',
-      dimensions: 'Değerlendirme Boyutları',
-      detailAnalysis: 'Detaylı Analiz',
-      positiveFindings: 'Olumlu Bulgular',
-      concerns: 'Endişeler',
-      severityCritical: 'Kritik',
-      severitySignificant: 'Önemli',
-      severityModerate: 'Orta',
-      severityMinor: 'Az',
-      evidence: 'Kanıt:',
-      pointsAffected: 'Etkilenen puanlar:',
-      gradeBoundaryAnalysis: 'Not Sınırı Analizi',
-      currentGrade: 'Mevcut Not',
-      achieved: 'Ulaşılan',
-      recoverable: 'Kurtarılabilir',
-      gradeChangePossible: 'Not değişikliği mümkün mü?',
-      yes: 'Evet',
-      no: 'Hayır',
-      testOverview: 'Test Genel Bakışı (yeniden yapılandırılmış)',
-      subjectLabel: 'Ders',
-      typeLabel: 'Tür',
-      pointsLabel: 'Puan',
-      gradeLabel: 'Not',
-      pointDiscrepancy: 'Puan farklılığı bulundu!',
-      taskReconstruction: (count: number) => `Görev Yeniden Yapılandırma (${count})`,
-      correct: 'Doğru',
-      partial: 'Kısmi',
-      wrong: 'Yanlış',
-      studentAnswer: 'Öğrenci cevabı:',
-      teacherCorrection: 'Öğretmen düzeltmesi:',
-      deductionReason: 'Kesinti nedeni:',
-      teacherComments: 'Öğretmen Yorumları',
-      marginNotes: 'Kenar notları:',
-      overallTone: 'Genel ton:',
-      toneEncouraging: 'Teşvik edici',
-      toneCritical: 'Eleştirel',
-      toneMixed: 'Karma',
-      toneNeutral: 'Nötr',
-      potentialRecovery: 'Potansiyel Puan Kurtarma',
-      estimatedPotential: 'Tahmini potansiyel:',
-      strongArgument: 'Güçlü argüman',
-      moderateArgument: 'Orta argüman',
-      weakArgument: 'Zayıf argüman',
-      current: 'Mevcut:',
-      possible: 'Olası:',
-      recommendation: 'Öneri',
-      contactTeacher: 'Öğretmenle görüşme önerilir',
-      noContactNeeded: 'Görüşme gerekmiyor',
-      urgencyHigh: 'Acil',
-      urgencyMedium: 'Yakında',
-      urgencyLow: 'Uygun zamanda',
-      conversationOpener: 'Konuşma başlangıcı:',
-      talkingPoints: 'Konuşma noktaları:',
-      avoidThis: 'Kaçının:',
-      recoverablePoints: 'Kurtarılabilir puanlar:',
-      disclaimer: 'Bu analiz yalnızca rehberlik içindir. Şüphe durumunda öğretmenle doğrudan konuşun.',
-      learningTitle: 'Kişiselleştirilmiş Öğrenme Materyali',
-      learningDesc: (name: string) => `${name} için dersler, çalışma kağıtları ve quizler`,
-      learningLockedTitle: 'Kişiselleştirilmiş Öğrenme Materyali',
-      learningLockedDesc: (name: string) => `${name} için yapay zeka tarafından oluşturulmuş dersler, çalışma kağıtları ve quizler`,
-      generateMaterial: 'Öğrenme Materyali Oluştur',
-      generatingMaterial: 'Materyal oluşturuluyor...',
-      analyzingTest: 'Test analiz ediliyor...',
-      materialsCreated: 'Materyal oluşturuldu',
-      learningPlanOverview: 'Öğrenme Planı Genel Bakışı',
-      estimatedTime: 'Tahmini Süre',
-      difficultyLevel: 'Zorluk Seviyesi',
-      focusAreas: 'Odak Alanları',
-      immediately: 'Hemen:',
-      thisWeek: 'Bu hafta:',
-      thisMonth: 'Bu ay:',
-      weaknessesDetected: 'zayıflık tespit edildi',
-      curriculumTopicsMatched: 'müfredat konusu eşleşti',
-      tabAnalysis: 'Analiz',
-      tabLessons: 'Dersler',
-      tabWorksheets: 'Çalışma Kağıtları',
-      tabQuizzes: 'Quizler',
-      overallAssessment: 'Genel Değerlendirme',
-      detectedWeaknesses: 'Tespit Edilen Zayıflıklar',
-      severityLabels: { critical: 'Kritik', high: 'Yüksek', medium: 'Orta', low: 'Düşük' },
-      rootCause: 'Kök neden:',
-      evidenceFromTest: 'Testten kanıt:',
-      teacherFeedbackAnalysis: 'Öğretmen Geri Bildirimi Analizi',
-      mainComments: 'Ana yorumlar:',
-      correctionPatterns: 'Düzeltme kalıpları:',
-      tone: 'Ton:',
-      recognizedStrengths: 'Tanınan Güçlü Yönler',
-      prioritizedNeeds: 'Öncelikli Öğrenme İhtiyaçları',
-      forTarget: 'İçin:',
-      foundation: 'Temel',
-      building: 'Yapı',
-      mastery: 'Ustalık',
-      prerequisiteCheck: 'Ön koşul kontrolü:',
-      expectedAnswer: 'Beklenen cevap:',
-      ifFailed: 'Başarısız olursa:',
-      keyRules: 'Temel kurallar:',
-      example: 'Örnek',
-      task: 'Görev:',
-      step: 'Adım',
-      solution: 'Çözüm:',
-      commonMistake: 'Yaygın hata:',
-      practiceProblems: 'Alıştırmalar:',
-      hint: 'İpucu:',
-      showAnswer: 'Cevabı Göster',
-      hideAnswer: 'Cevabı Gizle',
-      memoryAids: 'Hafıza Yardımcıları:',
-      memoryAid: 'Hafıza Yardımcısı:',
-      inEverydayLife: 'Günlük hayatta:',
-      parentTip: 'Ebeveynler için ipucu:',
-      beginner: 'Başlangıç',
-      intermediate: 'Orta',
-      advanced: 'İleri',
-      tasks: 'Görevler',
-      taskN: 'Görev',
-      instructions: 'Talimatlar',
-      showSolutions: 'Çözümleri göster',
-      hideSolutions: 'Çözümleri gizle',
-      bonusChallenge: 'Bonus Görev:',
-      questions: 'Sorular',
-      questionN: 'Soru',
-      passing: 'Geçme:',
-      scoring: 'Puanlama:',
-      ifWrong: 'Yanlışsa:',
-      curriculumTopics: 'Müfredat Konuları',
-      unlockWithPrime: "Prime ile Aç",
-      parentsThisWeek: 'veli bu hafta',
-      discountToday: 'Bugün -40%',
-      upgradeToPrime: "Prime'e Yükselt",
-      unlimitedFlashcards: 'Sınırsız kişiselleştirilmiş öğrenme kartları',
-      fairnessCheckFeature: 'Her test için adalet kontrolü',
-      aiLearningMaterial: 'Yapay zeka destekli öğrenme materyali',
-      detailedProgress: 'Detaylı ilerleme analizleri',
-      prioritySupport: 'Öncelikli destek',
-      pdfExport: 'Tüm raporların PDF dışa aktarımı',
-      yourChild: 'çocuğunuz',
-      teacherLabel: 'Öğretmen',
-      calculatedLabel: 'Hesaplanan',
-    },
-    ro: {
-      flashcardsTitle: 'Carduri de Învățare Personalizate',
-      studyPlan: 'Plan de Studiu',
-      dailyGoal: 'Obiectiv zilnic:',
-      easy: 'Ușor',
-      medium: 'Mediu',
-      hard: 'Greu',
-      clickToFlip: 'Clic pentru a întoarce',
-      cardLabel: 'Card',
-      questionFront: 'Întrebare · Față',
-      answerBack: 'Răspuns · Spate',
-      print: 'Tipărire',
-      downloadPDF: 'Descarcă PDF',
-      fairnessTitle: 'Verificare Corectitudine',
-      fairnessScore: 'Scor Corectitudine',
-      positiveFindings: 'Constatări Pozitive',
-      concerns: 'Îngrijorări',
-      severityModerate: 'Moderat',
-      severityCritical: 'Critic',
-      severitySignificant: 'Semnificativ',
-      severityMinor: 'Minor',
-      gradeBoundaryAnalysis: 'Analiza Limitei de Notă',
-      currentGrade: 'Nota Curentă',
-      achieved: 'Atins',
-      recoverable: 'Recuperabil',
-      gradeChangePossible: 'Schimbarea notei este posibilă?',
-      tabOverview: 'Prezentare Generală',
-      tabReconstruction: 'Reconstrucție Test',
-      tabDetails: 'Analiză Detaliată',
-      tabRecovery: 'Recuperare Puncte',
-      contactTeacher: 'Discuție cu profesorul recomandată',
-      noContactNeeded: 'Nu e necesară discuție',
-      urgencyHigh: 'Urgent',
-      urgencyMedium: 'Curând',
-      urgencyLow: 'Când e convenabil',
-      conversationOpener: 'Deschidere conversație:',
-      talkingPoints: 'Puncte de discuție:',
-      recommendation: 'Recomandare',
-      yes: 'Da',
-      no: 'Nu',
-      correct: 'Corect',
-      partial: 'Parțial',
-      wrong: 'Greșit',
-      yourChild: 'copilul dvs.',
-      teacherLabel: 'Profesor',
-      calculatedLabel: 'Calculat',
-    },
-    ru: {
-      flashcardsTitle: 'Персонализированные Учебные Карточки',
-      studyPlan: 'План Обучения',
-      dailyGoal: 'Дневная цель:',
-      easy: 'Легко',
-      medium: 'Средне',
-      hard: 'Сложно',
-      clickToFlip: 'Нажмите для переворота',
-      cardLabel: 'Карточка',
-      questionFront: 'Вопрос · Лицевая сторона',
-      answerBack: 'Ответ · Обратная сторона',
-      print: 'Печать',
-      downloadPDF: 'Скачать PDF',
-      fairnessTitle: 'Проверка Справедливости',
-      fairnessScore: 'Оценка Справедливости',
-      positiveFindings: 'Положительные Выводы',
-      concerns: 'Замечания',
-      severityModerate: 'Умеренный',
-      severityCritical: 'Критический',
-      severitySignificant: 'Значительный',
-      severityMinor: 'Незначительный',
-      gradeBoundaryAnalysis: 'Анализ Границы Оценки',
-      currentGrade: 'Текущая Оценка',
-      achieved: 'Достигнуто',
-      recoverable: 'Можно вернуть',
-      gradeChangePossible: 'Изменение оценки возможно?',
-      tabOverview: 'Обзор',
-      tabReconstruction: 'Реконструкция Теста',
-      tabDetails: 'Детальный Анализ',
-      tabRecovery: 'Восстановление Баллов',
-      contactTeacher: 'Рекомендуется поговорить с учителем',
-      noContactNeeded: 'Разговор не нужен',
-      urgencyHigh: 'Срочно',
-      urgencyMedium: 'Скоро',
-      urgencyLow: 'При возможности',
-      conversationOpener: 'Начало разговора:',
-      talkingPoints: 'Темы для разговора:',
-      recommendation: 'Рекомендация',
-      yes: 'Да',
-      no: 'Нет',
-      correct: 'Правильно',
-      partial: 'Частично',
-      wrong: 'Неверно',
-      yourChild: 'ваш ребёнок',
-      teacherLabel: 'Учитель',
-      calculatedLabel: 'Вычислено',
-    },
-  }
-
-  return { ...en, ...(overrides[lang] || {}) }
-}
-
-// Animated counter for FOMO effect
-function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; duration?: number | undefined; suffix?: string | undefined }) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    let startTime: number
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * end))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [end, duration])
-
-  return <span>{count.toLocaleString()}{suffix}</span>
-}
-
-// Premium Badge Component
-export function PremiumBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' | undefined }) {
-  const sizes = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-1.5',
-  }
-
-  return (
-    <span className={`inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold rounded-full ${sizes[size]} shadow-lg`}>
-      <Crown className="h-3 w-3" />
-      PRIME
-    </span>
-  )
-}
 
 // Upgrade CTA Button with urgency
 export function UpgradeButton({
@@ -1175,6 +65,9 @@ export function UpgradeButton({
   showDiscount?: boolean | undefined
   onClick?: (() => void) | undefined
 }) {
+  const { language: globalLang } = useLanguage()
+  const pt = getPremiumTranslation(globalLang)
+
   const variants = {
     primary: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl',
     secondary: 'bg-white border-2 border-amber-500 text-amber-600 hover:bg-amber-50',
@@ -1187,89 +80,14 @@ export function UpgradeButton({
       className={`${variants[variant]} px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-105 flex items-center gap-2`}
     >
       <Crown className="h-5 w-5" />
-      <span>Upgrade to Prime</span>
+      <span>{pt.upgradeToPrime}</span>
       {showDiscount && variant === 'primary' && (
-        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded text-xs">-40% heute</span>
+        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded text-xs">{pt.discountToday}</span>
       )}
     </button>
   )
 }
 
-// Locked Feature Teaser Component
-export function LockedFeatureTeaser({
-  title,
-  description,
-  icon: Icon,
-  previewContent,
-  stats,
-  onUpgrade,
-}: {
-  title: string
-  description: string
-  icon: any
-  previewContent?: React.ReactNode | undefined
-  stats?: { label: string; value: string }[] | undefined
-  onUpgrade?: (() => void) | undefined
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
-      {/* Premium badge */}
-      <div className="absolute top-4 right-4">
-        <PremiumBadge size="sm" />
-      </div>
-
-      {/* Icon and title */}
-      <div className="flex items-start gap-4 mb-4">
-        <div className="p-3 bg-amber-100 rounded-xl">
-          <Icon className="h-8 w-8 text-amber-600" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            {title}
-            <Lock className="h-4 w-4 text-amber-500" />
-          </h3>
-          <p className="text-gray-600 mt-1">{description}</p>
-        </div>
-      </div>
-
-      {/* Blurred preview */}
-      {previewContent && (
-        <div className="relative mb-4">
-          <div className="blur-sm opacity-60 pointer-events-none">
-            {previewContent}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-white/80 to-transparent">
-            <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-              <Lock className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-medium text-gray-700">Freischalten mit Prime</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      {stats && (
-        <div className="flex gap-4 mb-4">
-          {stats.map((stat, i) => (
-            <div key={i} className="text-center">
-              <div className="text-2xl font-bold text-amber-600">{stat.value}</div>
-              <div className="text-xs text-gray-500">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* CTA */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500 flex items-center gap-1">
-          <Users className="h-4 w-4" />
-          <AnimatedCounter end={FOMO_STATS.upgradesThisWeek} /> Eltern diese Woche
-        </div>
-        <UpgradeButton variant="primary" onClick={onUpgrade} />
-      </div>
-    </div>
-  )
-}
 
 // Flashcards Premium Section
 export function FlashcardsPremiumSection({
@@ -1346,11 +164,7 @@ export function FlashcardsPremiumSection({
     return (
       <LockedFeatureTeaser
         title={pt.personalizedFlashcards}
-        description={
-          ('de' === 'de'
-            ? `${analysisData?.weaknesses?.length || 3}+ Lernkarten speziell für ${childName || 'Ihr Kind'} basierend auf den Testschwächen`
-            : `${analysisData?.weaknesses?.length || 3}+ flashcards tailored for ${childName || 'your child'} based on test weaknesses`)
-        }
+        description={pt.flashcardsLockedDesc(analysisData?.weaknesses?.length || 3, childName || '')}
         icon={BookOpen}
         previewContent={
           <div className="grid grid-cols-2 gap-3">
@@ -1385,7 +199,7 @@ export function FlashcardsPremiumSection({
               <PremiumBadge size="sm" />
             </h3>
             <p className="text-sm text-gray-600">
-              pt.tailoredFor(childName || '')
+              {pt.tailoredFor(childName || '')}
             </p>
           </div>
         </div>
@@ -1478,7 +292,7 @@ export function FlashcardsPremiumSection({
                   <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-md transition-all hover:shadow-lg">
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{pt.answer}</span>
-                      <span className="text-xs opacity-70">{'Click to flip'}</span>
+                      <span className="text-xs opacity-70">{pt.clickToFlip}</span>
                     </div>
                     <p className="text-lg font-medium">{card.back}</p>
                     {card.tip && (
@@ -1642,7 +456,7 @@ export function FairnessCheckPremiumSection({
             </div>
             <div className="bg-white rounded-lg p-3 border">
               <span className="text-gray-500">
-                {'de' === 'de' ? (
+                {globalLang === 'de' ? (
                   <>Wir haben <strong className="text-amber-600">3 mögliche Bedenken</strong> gefunden...</>
                 ) : (
                   <>We found <strong className="text-amber-600">3 potential concerns</strong>...</>
@@ -1854,7 +668,7 @@ export function FairnessCheckPremiumSection({
                         </div>
                         {concern.detail && <p className="text-sm text-gray-600">{concern.detail}</p>}
                         {concern.evidence && (
-                          <p className="text-xs text-gray-500 mt-1 italic">{pt.evidence} "{concern.evidence}"</p>
+                          <p className="text-xs text-gray-500 mt-1 italic">{pt.evidence} &quot;{concern.evidence}&quot;</p>
                         )}
                         {concern.pointsAffected && (
                           <p className="text-xs text-amber-600 mt-1 font-medium">{pt.pointsAffected} {concern.pointsAffected}</p>
@@ -2013,7 +827,7 @@ export function FairnessCheckPremiumSection({
                   <h4 className="font-bold text-blue-800 mb-3">{pt.teacherComments}</h4>
                   {testRecon.teacherComments.finalComment && (
                     <blockquote className="border-l-4 border-blue-400 pl-4 py-2 italic text-gray-700 bg-white rounded-r-lg mb-3">
-                      "{testRecon.teacherComments.finalComment}"
+                      &quot;{testRecon.teacherComments.finalComment}&quot;
                     </blockquote>
                   )}
                   {testRecon.teacherComments.marginNotes?.length > 0 && (
@@ -2059,7 +873,7 @@ export function FairnessCheckPremiumSection({
                   {dim.examples?.length > 0 && (
                     <div className="space-y-1 mb-2">
                       {dim.examples.map((ex: string, i: number) => (
-                        <p key={i} className="text-xs text-gray-500 bg-gray-50 p-2 rounded">"{ex}"</p>
+                        <p key={i} className="text-xs text-gray-500 bg-gray-50 p-2 rounded">&quot;{ex}&quot;</p>
                       ))}
                     </div>
                   )}
@@ -2142,7 +956,7 @@ export function FairnessCheckPremiumSection({
                 {analysis.recommendation.sampleOpener && (
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                     <p className="text-xs font-medium text-blue-700 mb-1">{pt.conversationOpener}</p>
-                    <p className="text-sm text-gray-700 italic">"{analysis.recommendation.sampleOpener}"</p>
+                    <p className="text-sm text-gray-700 italic">&quot;{analysis.recommendation.sampleOpener}&quot;</p>
                   </div>
                 )}
 
@@ -2436,13 +1250,13 @@ export function LearningMaterialPremiumSection({
               <div className="flex items-center gap-3">
                 <Brain className="h-5 w-5 text-purple-600" />
                 <div>
-                  <p className="font-medium text-purple-800">{'Independent AI Analysis'}</p>
+                  <p className="font-medium text-purple-800">{pt.independentAIAnalysis}</p>
                   <p className="text-sm text-purple-600">
                     {learningMaterial.metadata.weaknessesFound} {pt.weaknessesDetected}
                     {' '}&bull;{' '}
                     {learningMaterial.metadata.curriculumTopicsMatched} {pt.curriculumTopicsMatched}
                     {' '}&bull;{' '}
-                    {'Generated in'} {learningMaterial.metadata.totalGenerationTime}
+                    {pt.generatedIn} {learningMaterial.metadata.totalGenerationTime}
                   </p>
                 </div>
               </div>
@@ -2508,9 +1322,9 @@ export function LearningMaterialPremiumSection({
                                   w.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
                                     'bg-gray-100 text-gray-600'
                                 }`}>
-                                {w.severity === 'critical' ? ('Critical') :
-                                  w.severity === 'high' ? (pt.high) :
-                                    w.severity === 'medium' ? ('Medium') : (pt.low)}
+                                {w.severity === 'critical' ? pt.critical :
+                                  w.severity === 'high' ? pt.high :
+                                    w.severity === 'medium' ? pt.medium : pt.low}
                               </span>
                               <span className="font-medium text-gray-800">{w.title}</span>
                             </div>
@@ -2532,7 +1346,7 @@ export function LearningMaterialPremiumSection({
                               {w.evidenceFromTest && (
                                 <div className="bg-gray-50 rounded p-2">
                                   <span className="text-xs font-medium text-gray-500">{pt.evidenceFromTest} </span>
-                                  <span className="text-sm text-gray-600 italic">"{w.evidenceFromTest}"</span>
+                                  <span className="text-sm text-gray-600 italic">&quot;{w.evidenceFromTest}&quot;</span>
                                 </div>
                               )}
                               {w.affectedSkills?.length > 0 && (
@@ -3109,15 +1923,21 @@ export function UpgradeModal({
   onClose: () => void
   feature?: 'flashcards' | 'fairness' | 'learning' | undefined
 }) {
+  const { language: globalLang } = useLanguage()
+  const pt = getPremiumTranslation(globalLang)
+
+  // Real countdown timer hook
+  const timeLeft = useTimer(23, 47, 12);
+
   if (!isOpen) return null
 
-  const features = [
-    { icon: BookOpen, text: 'Unbegrenzte personalisierte Lernkarten' },
-    { icon: Shield, text: 'Fairness-Check für jede Bewertung' },
-    { icon: GraduationCap, text: 'KI-generiertes Lernmaterial (Lektionen, Arbeitsblätter, Quizze)' },
-    { icon: TrendingUp, text: 'Detaillierte Fortschrittsanalysen' },
-    { icon: Sparkles, text: 'Prioritäts-Support' },
-    { icon: Download, text: 'PDF-Export aller Berichte' },
+  const featuresList = [
+    { icon: BookOpen, text: pt.unlimitedFlashcards },
+    { icon: Shield, text: pt.fairnessCheckEvery },
+    { icon: GraduationCap, text: pt.aiLearningMaterial },
+    { icon: TrendingUp, text: pt.detailedProgress },
+    { icon: Sparkles, text: pt.prioritySupport },
+    { icon: Download, text: pt.pdfExport },
   ]
 
   return (
@@ -3132,14 +1952,14 @@ export function UpgradeModal({
             <Crown className="h-10 w-10" />
             <div>
               <h2 className="text-2xl font-bold">GradeAI Prime</h2>
-              <p className="opacity-90">Das Beste für Ihr Kind</p>
+              <p className="opacity-90">{pt.bestForYourChild}</p>
             </div>
           </div>
           <div className="mt-4 bg-white/20 rounded-lg p-3 text-center">
             <span className="text-3xl font-bold">€9.99</span>
-            <span className="text-lg">/Monat</span>
+            <span className="text-lg">{pt.perMonth}</span>
             <span className="ml-3 line-through opacity-70">€16.99</span>
-            <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded text-sm font-bold">-40%</span>
+            <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded text-sm font-bold">{pt.discountToday}</span>
           </div>
         </div>
 
@@ -3149,14 +1969,14 @@ export function UpgradeModal({
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-3">
             <Clock className="h-5 w-5 text-red-500" />
             <div>
-              <p className="font-medium text-red-700">Angebot endet bald!</p>
-              <p className="text-sm text-red-600">Nur noch 23:47:12 verbleibend</p>
+              <p className="font-medium text-red-700">{pt.offerEndsSoon}</p>
+              <p className="text-sm text-red-600">{pt.timeRemaining.replace('23:47:12', timeLeft)}</p>
             </div>
           </div>
 
           {/* Features list */}
           <ul className="space-y-3 mb-6">
-            {features.map((f, i) => (
+            {featuresList.map((f, i) => (
               <li key={i} className="flex items-center gap-3">
                 <div className="p-1.5 bg-amber-100 rounded-lg">
                   <f.icon className="h-4 w-4 text-amber-600" />
@@ -3166,33 +1986,17 @@ export function UpgradeModal({
             ))}
           </ul>
 
-          {/* Social proof */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 border-2 border-white" />
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">+<AnimatedCounter end={FOMO_STATS.upgradesThisWeek} /> diese Woche</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
-              ))}
-              <span className="text-sm text-gray-600 ml-2">{FOMO_STATS.parentsSatisfied}% zufriedene Eltern</span>
-            </div>
-          </div>
+          <PremiumStatistics />
 
-          {/* CTA buttons */}
+          {/* CTA button */}
           <button className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
             <Gift className="h-5 w-5" />
-            Jetzt Prime werden
+            {pt.becomePrime}
             <ArrowRight className="h-5 w-5" />
           </button>
 
           <p className="text-center text-sm text-gray-500 mt-4">
-            Jederzeit kündbar • 30 Tage Geld-zurück-Garantie
+            {pt.cancelAnytime}
           </p>
         </div>
       </div>
