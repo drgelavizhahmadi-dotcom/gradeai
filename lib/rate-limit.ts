@@ -250,5 +250,8 @@ export const signupRateLimiter = new RateLimiter(5, 60 * 60 * 1000)
 // Login: 10 attempts per hour
 export const loginRateLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
+// Password Reset: 3 attempts per hour
+export const passwordResetRateLimiter = new RateLimiter(3, 60 * 60 * 1000)
+
 // General API: 100 requests per minute (for future use)
 export const apiRateLimiter = new RateLimiter(100, 60 * 1000)

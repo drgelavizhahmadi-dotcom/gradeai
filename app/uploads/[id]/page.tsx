@@ -16,8 +16,27 @@ import { ParentReport } from '@/components/ParentReport'
 import { TestAnalysis } from '@/lib/ai/prompts'
 import { transformToReportFormat } from '@/lib/ai/transformToReportFormat'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { FlashcardsPremiumSection, FairnessCheckPremiumSection, LearningMaterialPremiumSection, UpgradeModal } from '@/components/PremiumFeatures'
 import { useLanguage } from '@/components/providers/LanguageProvider'
+import { Language } from '@/lib/translations'
+import {
+  FlashcardsPremiumSection,
+  FairnessCheckPremiumSection,
+  LearningMaterialPremiumSection,
+  UpgradeModal
+} from '@/components/PremiumFeatures'
+
+// Supported languages for report translation (matches Language selector)
+const REPORT_LANGUAGES: Record<Language, { name: string; native: string; flag: string }> = {
+  de: { name: 'German', native: 'Deutsch', flag: '🇩🇪' },
+  en: { name: 'English', native: 'English', flag: '🇬🇧' },
+  ar: { name: 'Arabic', native: 'العربية', flag: '🇸🇦' },
+  fa: { name: 'Persian', native: 'فارسی', flag: '🇮🇷' },
+  ku: { name: 'Kurdish (Sorani)', native: 'کوردی', flag: '🇮🇶' },
+  kmr: { name: 'Kurdish (Kurmanji)', native: 'Kurmancî', flag: '🏳️' },
+  tr: { name: 'Turkish', native: 'Türkçe', flag: '🇹🇷' },
+  ro: { name: 'Romanian', native: 'Română', flag: '🇷🇴' },
+  ru: { name: 'Russian', native: 'Русский', flag: '🇷🇺' },
+}
 
 interface Upload {
   id: string
@@ -61,9 +80,11 @@ export default function UploadDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const { language } = useLanguage()
 
-  // Report translation state
+  // Global Language translation state
+  const { language: globalLanguage, t } = useLanguage()
+  // Local Report translation state
+  const [reportLanguage, setReportLanguage] = useState<Language>('de')
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
@@ -83,7 +104,7 @@ export default function UploadDetailPage() {
 
   // Check for duplicate detection message
   const isDuplicate = searchParams.get('duplicate') === 'true'
-  const duplicateMessage = searchParams.get('message') || 'This test was already uploaded. Showing existing analysis.'
+  const duplicateMessage = searchParams.get('message') || (t.upload?.duplicateMessage || 'This test was already uploaded. Showing existing analysis.')
   const [showDuplicateMessage, setShowDuplicateMessage] = useState(isDuplicate)
 
   const fetchUpload = async () => {
@@ -204,9 +225,16 @@ export default function UploadDetailPage() {
     }
   }
 
-  // Translate report when global UI language changes
-  useEffect(() => {
-    if (!originalReport) return
+  // Handle language change for instant translation
+  const handleLanguageChange = async (newLanguage: Language) => {
+    if (newLanguage === reportLanguage) {
+      setShowLanguageMenu(false)
+      return
+    }
+
+    setShowLanguageMenu(false)
+    setReportLanguage(newLanguage)
+    setTranslationError(null)
 
     // German is the base language — use original
     if (language === 'de') {
@@ -218,21 +246,25 @@ export default function UploadDetailPage() {
     const currentLang = originalReport?._meta?.language?.code
     if (currentLang === language) {
       setTranslatedReport(originalReport)
+    // Need to translate
+    if (!originalReport) {
+      setTranslationError(t.common.error ? t.common.error : 'No report available to translate')
       return
     }
 
     setTranslationError(null)
     setIsTranslating(true)
 
-    fetch('/api/ai/translate-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report: originalReport, targetLanguage: language }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.success) throw new Error(data.error || 'Translation failed')
-        setTranslatedReport(data.translatedReport)
+    try {
+      // The translate-report API checks DB cache first, then translates + saves if not cached
+      const response = await fetch('/api/ai/translate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          report: originalReport,
+          targetLanguage: newLanguage,
+          uploadId: uploadId,
+        }),
       })
       .catch((err) => {
         console.error('Translation error:', err)
@@ -256,6 +288,7 @@ export default function UploadDetailPage() {
         setTranslatedReport(analysisData)
 
         // Language is now driven by the global useLanguage() context
+
       }
     }
   }, [upload?.analysis])
@@ -296,7 +329,7 @@ export default function UploadDetailPage() {
           ? 'Excellent work!'
           : 'Analysis complete!'
       case 'failed': return 'Let\'s try again!'
-      case 'processing': return 'Analyzing...'
+      case 'processing': return t.upload.analyzing || 'Analyzing...'
       case 'pending': return 'Getting ready...'
       default: return 'Let\'s learn together!'
     }
@@ -306,10 +339,10 @@ export default function UploadDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <OwlMascot mood="thinking" size="lg" message="Loading test details..." />
+          <OwlMascot mood="thinking" size="lg" message={t.common.loading || 'Loading test details...'} />
           <div className="mt-6">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-[var(--primary)]" />
-            <p className="text-[var(--gray-600)] mt-2 font-medium">Loading...</p>
+            <p className="text-[var(--gray-600)] mt-2 font-medium">{t.common.loading || 'Loading...'}</p>
           </div>
         </div>
       </div>
@@ -321,19 +354,19 @@ export default function UploadDetailPage() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
         <div className="max-w-md w-full">
           <div className="text-center mb-6">
-            <OwlMascot mood="encouraging" size="lg" message="Oops! Something went wrong" />
+            <OwlMascot mood="encouraging" size="lg" message={t.errors.generic || 'Oops! Something went wrong'} />
           </div>
           <div className="card-story p-6 border-2 border-[var(--coral)]">
             <XCircle className="w-12 h-12 text-[var(--coral)] mx-auto mb-4" />
             <h2 className="text-xl font-bold text-[var(--gray-800)] text-center mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-              Error
+              {t.common.error || 'Error'}
             </h2>
             <p className="text-[var(--gray-600)] text-center mb-4">{error}</p>
             <button
               onClick={() => router.push('/dashboard')}
               className="btn-primary w-full"
             >
-              Back to Dashboard
+              {'Back to Dashboard'}
             </button>
           </div>
         </div>
@@ -345,10 +378,10 @@ export default function UploadDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <OwlMascot mood="thinking" size="lg" message="Where did it go?" />
-          <p className="text-[var(--gray-600)] mt-4">Upload not found</p>
+          <OwlMascot mood="thinking" size="lg" message={'Where did it go?'} />
+          <p className="text-[var(--gray-600)] mt-4">{'Upload not found'}</p>
           <Link href="/dashboard" className="btn-primary inline-block mt-4">
-            Back to Dashboard
+            {'Back to Dashboard'}
           </Link>
         </div>
       </div>
@@ -361,34 +394,34 @@ export default function UploadDetailPage() {
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gold)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--gold-dark)]">
             <Clock className="h-4 w-4" />
-            Pending
+            {t.status.pending || 'Pending'}
           </span>
         )
       case 'processing':
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--primary)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--primary-dark)]">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Processing
+            {t.status.processing || 'Processing'}
           </span>
         )
       case 'completed':
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--success)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--success-dark)]">
             <CheckCircle className="h-4 w-4" />
-            Completed
+            {t.status.completed || 'Completed'}
           </span>
         )
       case 'failed':
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--coral)]/20 px-4 py-1.5 text-sm font-semibold text-[var(--coral)]">
             <AlertCircle className="h-4 w-4" />
-            Failed
+            {t.status.failed || 'Failed'}
           </span>
         )
       default:
         return (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gray-200)] px-4 py-1.5 text-sm font-semibold text-[var(--gray-600)]">
-            Unknown
+            {'Unknown'}
           </span>
         )
     }
@@ -401,18 +434,18 @@ export default function UploadDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-bounce-in">
             <div className="text-center mb-4">
-              <OwlMascot mood="thinking" size="md" message="Are you sure?" showMessage={false} />
+              <OwlMascot mood="thinking" size="md" message={t.common.confirmDelete || 'Are you sure?'} showMessage={false} />
             </div>
             <div className="mb-4 flex items-center gap-3 justify-center">
               <div className="rounded-full bg-[var(--coral)]/20 p-3">
                 <Trash2 className="h-6 w-6 text-[var(--coral)]" />
               </div>
               <h2 className="text-xl font-bold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
-                Delete Test?
+                {t.upload.deleteTestConfirm || 'Delete Test?'}
               </h2>
             </div>
             <p className="mb-6 text-[var(--gray-600)] text-center">
-              Are you sure you want to delete this test? This action cannot be undone and will permanently remove the test and its analysis.
+              {t.upload.deleteTestWarning || 'Are you sure you want to delete this test? This action cannot be undone and will permanently remove the test and its analysis.'}
             </p>
             <div className="flex gap-3">
               <button
@@ -450,7 +483,7 @@ export default function UploadDetailPage() {
             className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to {upload.child?.name || 'Dashboard'}
+            {t.common?.backTo || 'Back to'} {upload.child?.name || t.common?.dashboard || 'Dashboard'}
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-center gap-6">
@@ -459,7 +492,7 @@ export default function UploadDetailPage() {
                 <StatusBadge />
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                Test Analysis
+                {t.analysis?.title || 'Test Analysis'}
               </h1>
               <p className="text-white/80 text-lg">
                 {upload.subject ? (
@@ -468,7 +501,7 @@ export default function UploadDetailPage() {
                     {upload.subject}
                   </span>
                 ) : (
-                  'View details and analysis for this test'
+                  t.analysis?.description || 'View details and analysis for this test'
                 )}
               </p>
 
@@ -510,7 +543,7 @@ export default function UploadDetailPage() {
               <Info className="h-5 w-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-[var(--primary-dark)] mb-1">
-                  Duplicate Upload Detected
+                  {t.upload?.duplicateTitle || 'Duplicate Upload Detected'}
                 </h3>
                 <p className="text-sm text-[var(--gray-700)]">
                   {duplicateMessage}
@@ -536,12 +569,14 @@ export default function UploadDetailPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-[var(--gray-800)]" style={{ fontFamily: 'var(--font-display)' }}>
-                  {upload.analysisStatus === 'pending' ? 'Preparing Analysis' : 'Analyzing Your Test'}
+                  {upload.analysisStatus === 'pending'
+                    ? (t.upload?.preparing || 'Preparing Analysis')
+                    : (t.upload?.analyzingTest || 'Analyzing Your Test')}
                 </h3>
                 <p className="text-sm text-[var(--gray-600)]">
                   {upload.analysisStatus === 'pending'
-                    ? 'Your test will be analyzed shortly...'
-                    : 'AI is reading and analyzing the test. This page will refresh automatically.'}
+                    ? (t.upload?.preparingDesc || 'Your test will be analyzed shortly...')
+                    : (t.upload?.analyzingDesc || 'AI is reading and analyzing the test. This page will refresh automatically.')}
                 </p>
               </div>
             </div>
@@ -563,10 +598,10 @@ export default function UploadDetailPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-[var(--coral)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                  Analysis Failed
+                  {t.upload?.analysisFailed || 'Analysis Failed'}
                 </h3>
                 <p className="text-[var(--gray-700)]">
-                  {upload.errorMessage || 'An error occurred while analyzing the test. Please try again.'}
+                  {upload.errorMessage || t.upload?.analysisErrorDesc || 'An error occurred while analyzing the test. Please try again.'}
                 </p>
               </div>
             </div>
@@ -599,7 +634,7 @@ export default function UploadDetailPage() {
                 <div className="card-story p-4 border-l-4 border-[var(--primary)]">
                   <div className="flex items-center gap-2 mb-2">
                     <BookOpen className="h-5 w-5 text-[var(--primary)]" />
-                    <p className="text-sm font-medium text-[var(--gray-600)]">Subject</p>
+                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.upload?.subject || 'Subject'}</p>
                   </div>
                   <SubjectTag subject={upload.subject} size="lg" />
                 </div>
@@ -609,7 +644,7 @@ export default function UploadDetailPage() {
                 <div className="card-story p-4 border-l-4 border-[var(--success)]">
                   <div className="flex items-center gap-2 mb-2">
                     <GraduationCap className="h-5 w-5 text-[var(--success)]" />
-                    <p className="text-sm font-medium text-[var(--gray-600)]">Grade Received</p>
+                    <p className="text-sm font-medium text-[var(--gray-600)]">{t.upload?.gradeReceived || 'Grade Received'}</p>
                   </div>
                   <GradeBadge grade={Math.round(upload.grade)} size="lg" showLabel />
                 </div>
@@ -618,7 +653,7 @@ export default function UploadDetailPage() {
               <div className="card-story p-4 border-l-4 border-[var(--lavender)]">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="h-5 w-5 text-[var(--lavender)]" />
-                  <p className="text-sm font-medium text-[var(--gray-600)]">Analyzed</p>
+                  <p className="text-sm font-medium text-[var(--gray-600)]">{t.analysis?.analyzedAt || 'Analyzed'}</p>
                 </div>
                 <p className="text-lg font-bold text-[var(--gray-800)]">
                   {upload.processedAt ? formatDate(upload.processedAt) : formatDate(upload.uploadedAt)}
@@ -626,11 +661,56 @@ export default function UploadDetailPage() {
               </div>
             </div>
 
-            {/* Translation indicator */}
-            {isTranslating && (
-              <div className="mb-4 flex items-center gap-2 text-sm text-[var(--gray-600)]">
-                <Loader2 className="h-4 w-4 animate-spin text-[var(--primary)]" />
-                <span>Translating report...</span>
+            {/* Language Selector for Report */}
+            {upload.analysis && (
+              <div dir="ltr" className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-[var(--gray-600)]">
+                  <Globe className="h-4 w-4" />
+                  <span>{t.analysis?.reportLanguage || 'Report Language:'}</span>
+                </div>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                    disabled={isTranslating}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border-2 border-[var(--gray-200)] hover:border-[var(--primary)] transition-colors disabled:opacity-50"
+                  >
+                    {isTranslating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-[var(--primary)]" />
+                        <span className="text-sm font-medium">{t.common?.translating || 'Translating...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg">{REPORT_LANGUAGES[reportLanguage].flag}</span>
+                        <span className="text-sm font-medium">{REPORT_LANGUAGES[reportLanguage].native}</span>
+                        <ChevronDown className={`h-4 w-4 text-[var(--gray-500)] transition-transform ${showLanguageMenu ? 'rotate-180' : ''}`} />
+                      </>
+                    )}
+                  </button>
+
+                  {/* Language Dropdown */}
+                  {showLanguageMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-[var(--gray-200)] py-2 z-50">
+                      {Object.entries(REPORT_LANGUAGES).map(([code, lang]) => (
+                        <button
+                          key={code}
+                          onClick={() => handleLanguageChange(code as Language)}
+                          className={`w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-[var(--primary-soft)] transition-colors ${reportLanguage === code ? 'bg-[var(--primary-soft)] text-[var(--primary-dark)]' : ''
+                            }`}
+                        >
+                          <span className="text-lg">{lang.flag}</span>
+                          <div>
+                            <p className="text-sm font-medium">{lang.native}</p>
+                            <p className="text-xs text-[var(--gray-500)]">{lang.name}</p>
+                          </div>
+                          {reportLanguage === code && (
+                            <CheckCircle className="h-4 w-4 text-[var(--primary)] ml-auto" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -665,13 +745,13 @@ export default function UploadDetailPage() {
                               <AlertCircle className="h-6 w-6 text-[var(--coral)] flex-shrink-0 mt-0.5" />
                               <div>
                                 <h3 className="text-lg font-semibold text-[var(--coral)] mb-2">
-                                  Report Display Error
+                                  {t.errors?.reportDisplay || 'Report Display Error'}
                                 </h3>
                                 <p className="text-[var(--gray-700)] mb-3">
-                                  The analysis completed successfully, but there was an error displaying the report.
+                                  {t.errors?.reportDisplayDesc || 'The analysis completed successfully, but there was an error displaying the report.'}
                                 </p>
                                 <p className="text-sm text-[var(--gray-600)]">
-                                  Raw analysis data is available below. Please try refreshing the page.
+                                  {t.errors?.rawAnalysisData || 'Raw analysis data is available below. Please try refreshing the page.'}
                                 </p>
                               </div>
                             </div>
@@ -708,6 +788,7 @@ export default function UploadDetailPage() {
                       >
                         <GradeAIParentReport
                           analysisData={transformedData}
+                          uploadId={uploadId}
                         />
                       </ErrorBoundary>
                     );
@@ -718,10 +799,10 @@ export default function UploadDetailPage() {
                           <Sparkles className="h-6 w-6 text-[var(--gold)] flex-shrink-0 mt-0.5" />
                           <div>
                             <h3 className="text-lg font-semibold text-[var(--gold-dark)] mb-2">
-                              Report Generation in Progress
+                              {t.upload?.reportGenerationProgress || 'Report Generation in Progress'}
                             </h3>
                             <p className="text-[var(--gray-700)] mb-3">
-                              Text extraction completed successfully. The structured report is being generated.
+                              {t.upload?.reportGenerationDesc || 'Text extraction completed successfully. The structured report is being generated.'}
                             </p>
                           </div>
                         </div>
@@ -739,13 +820,13 @@ export default function UploadDetailPage() {
                   <AlertCircle className="h-6 w-6 text-[var(--gold)] flex-shrink-0 mt-0.5" />
                   <div>
                     <h3 className="text-lg font-semibold text-[var(--gold-dark)] mb-2">
-                      AI Analysis Unavailable
+                      {t.errors?.aiUnavailable || 'AI Analysis Unavailable'}
                     </h3>
                     <p className="text-[var(--gray-700)] mb-3">
-                      The text was extracted successfully, but AI analysis could not be completed.
+                      {t.errors?.aiUnavailableDesc || 'The text was extracted successfully, but AI analysis could not be completed.'}
                     </p>
                     <p className="text-sm text-[var(--gray-600)]">
-                      Error: {upload.analysis.aiError}
+                      {t.common?.errorLabel || 'Error:'} {upload.analysis.aiError}
                     </p>
                   </div>
                 </div>
@@ -794,18 +875,18 @@ export default function UploadDetailPage() {
             <details className="mb-6 card-story overflow-hidden">
               <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
                 <FileText className="h-5 w-5 text-[var(--primary)]" />
-                Upload Details
+                {'Upload Details'}
               </summary>
               <div className="px-4 pb-4 border-t border-[var(--gray-200)]">
                 <dl className="space-y-3 mt-4">
                   <div className="flex justify-between">
-                    <dt className="font-medium text-[var(--gray-600)]">Student:</dt>
+                    <dt className="font-medium text-[var(--gray-600)]">{t.child.name || 'Student'}:</dt>
                     <dd className="text-[var(--gray-800)]">{upload.child.name}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-[var(--gray-600)]">Class:</dt>
+                    <dt className="font-medium text-[var(--gray-600)]">{t.child.grade || 'Class'}:</dt>
                     <dd className="text-[var(--gray-800)]">
-                      {upload.child.grade} • {upload.child.schoolType}
+                      {upload.child.grade} • {t.schoolTypes[upload.child.schoolType as keyof typeof t.schoolTypes] || upload.child.schoolType}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -817,12 +898,12 @@ export default function UploadDetailPage() {
                     <dd className="text-[var(--gray-800)]">{formatFileSize(upload.fileSize)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-[var(--gray-600)]">Uploaded:</dt>
+                    <dt className="font-medium text-[var(--gray-600)]">{t.upload.uploaded || 'Uploaded'}:</dt>
                     <dd className="text-[var(--gray-800)]">{formatDate(upload.uploadedAt)}</dd>
                   </div>
                   {upload.processedAt && (
                     <div className="flex justify-between">
-                      <dt className="font-medium text-[var(--gray-600)]">Processed:</dt>
+                      <dt className="font-medium text-[var(--gray-600)]">{'Processed'}:</dt>
                       <dd className="text-[var(--gray-800)]">{formatDate(upload.processedAt)}</dd>
                     </div>
                   )}
@@ -835,7 +916,7 @@ export default function UploadDetailPage() {
               <details className="mb-6 card-story overflow-hidden">
                 <summary className="cursor-pointer p-4 font-semibold text-[var(--gray-800)] flex items-center gap-2 hover:bg-[var(--gray-100)] transition-colors">
                   <FileText className="h-5 w-5 text-[var(--lavender)]" />
-                  View Extracted Text
+                  {t.analysis.extractedText || 'View Extracted Text'}
                 </summary>
                 <div className="px-4 pb-4 border-t border-[var(--gray-200)]">
                   <div className="mt-4 max-h-96 overflow-y-auto rounded-xl border border-[var(--gray-200)] bg-[var(--gray-100)] p-4">
@@ -856,14 +937,14 @@ export default function UploadDetailPage() {
             className="btn-secondary inline-flex items-center gap-2"
           >
             <ArrowLeft className="h-5 w-5" />
-            Back
+            {t.common.back || 'Back'}
           </Link>
           <Link
             href="/uploads"
             className="btn-primary inline-flex items-center gap-2"
           >
             <Sparkles className="h-5 w-5" />
-            Upload Another Test
+            {t.upload.uploadAnother || 'Upload Another Test'}
           </Link>
           {upload.analysisStatus === 'completed' && (upload.analysis || upload.extractedText) && (
             <button
@@ -873,7 +954,7 @@ export default function UploadDetailPage() {
               className="btn-gold inline-flex items-center gap-2"
             >
               <Download className="h-5 w-5" />
-              Download PDF
+              {t.analysis.downloadPDF || 'Download PDF'}
             </button>
           )}
           <button
@@ -881,7 +962,7 @@ export default function UploadDetailPage() {
             className="btn-ghost inline-flex items-center gap-2 text-[var(--coral)] hover:bg-[var(--coral)]/10"
           >
             <Trash2 className="h-5 w-5" />
-            Delete
+            {t.common.delete || 'Delete'}
           </button>
         </div>
       </div>

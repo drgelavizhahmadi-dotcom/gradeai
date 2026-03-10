@@ -28,6 +28,10 @@ export interface Translations {
     yes: string
     no: string
     selectAll: string
+    translating?: string
+    errorLabel?: string
+    backTo?: string
+    dashboard?: string
   }
 
   // Navigation
@@ -87,6 +91,30 @@ export interface Translations {
     deleteConfirm: string
     confirmDeleteMessage: string
     deleteWarning: string
+    // Add child page
+    addNewTitle: string
+    addNewDesc: string
+    fullName: string
+    gradeLevel: string
+    gradeHelperText: string
+    adding: string
+    addChildButton: string
+    // Child detail page
+    noTestsUploadedDesc: string
+    failedToLoadProfile: string
+    childNotFound: string
+    childNotFoundDesc: string
+    backToDashboard: string
+    gradeLabel: string
+    // Validation
+    nameRequired: string
+    nameMinLength: string
+    gradeRequired: string
+    gradeRange: string
+    // Status
+    loadingProfile: string
+    gettingReady: string
+    tryAgain: string
   }
 
   // Upload
@@ -114,6 +142,29 @@ export interface Translations {
     bulkDelete: string
     bulkDeleteMessage: string
     bulkDeleteWarning: string
+    preparing?: string
+    preparingDesc?: string
+    analyzingTest?: string
+    analyzingDesc?: string
+    analysisFailed?: string
+    analysisErrorDesc?: string
+    duplicateTitle?: string
+    duplicateMessage?: string
+    reportGenerationProgress?: string
+    reportGenerationDesc?: string
+    // Upload page keys
+    backToDashboard: string
+    uploadTestDesc: string
+    selectChildLabel: string
+    selectChildPlaceholder: string
+    loadingChildren: string
+    loadError: string
+    noChildYet: string
+    noChildYetDesc: string
+    addFirstChild: string
+    classLabel: string
+    mascotReady: string
+    mascotNoChild: string
   }
 
   // Analysis
@@ -141,6 +192,10 @@ export interface Translations {
     rationale: string
     downloadPDF: string
     executiveSummary: string
+    description?: string
+    gradeReceived?: string
+    analyzedAt?: string
+    reportLanguage?: string
   }
 
   // Auth
@@ -167,6 +222,11 @@ export interface Translations {
     unauthorized: string
     deleteFailed: string
     saveFailed: string
+    reportDisplay?: string
+    reportDisplayDesc?: string
+    rawAnalysisData?: string
+    aiUnavailable?: string
+    aiUnavailableDesc?: string
   }
 
   // School Types
@@ -281,6 +341,43 @@ export interface Translations {
       unknown: string
     }
   }
+
+  // Progress Page
+  progress: {
+    title: string
+    learningJourney: string
+    averageGrade: string
+    recentTrend: string
+    improving: string
+    declining: string
+    stable: string
+    notEnoughData: string
+    vsLastTest: string
+    weaknessesResolved: string
+    stillActive: string
+    bestGrade: string
+    gradeHistory: string
+    noTestsYet: string
+    best: string
+    worst: string
+    bySubject: string
+    noSubjectData: string
+    weaknessTracker: string
+    noWeaknessesYet: string
+    uploadMoreTests: string
+    resolved: string
+    active: string
+    seen: string
+    inSubjects: string
+    recentTests: string
+    failedToLoad: string
+    tryAgain: string
+    backToProfile: string
+    amazingProgress: string
+    needsFocus: string
+    testCount: string
+    moreWeaknesses: string
+  }
 }
 
 export const translations: Record<Language, Translations> = {
@@ -307,6 +404,10 @@ export const translations: Record<Language, Translations> = {
       yes: 'Ja',
       no: 'Nein',
       selectAll: 'Alle auswählen',
+      translating: 'Übersetzen...',
+      errorLabel: 'Fehler:',
+      backTo: 'Zurück zu',
+      dashboard: 'Dashboard',
     },
     nav: {
       dashboard: 'Dashboard',
@@ -341,7 +442,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Kinderprofil',
       addNew: 'Neues Kind',
       editProfile: 'Profil bearbeiten',
       name: 'Name',
@@ -360,6 +461,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Sind Sie sicher?',
       confirmDeleteMessage: 'Möchten Sie wirklich löschen',
       deleteWarning: 'Diese Aktion kann nicht rückgängig gemacht werden und löscht alle zugehörigen Tests.',
+      // Add child page
+      addNewTitle: 'Neues Kind hinzufügen',
+      addNewDesc: 'Geben Sie die Daten Ihres Kindes ein, um seinen schulischen Fortschritt zu verfolgen',
+      fullName: 'Vollständiger Name des Kindes',
+      gradeLevel: 'Klassenstufe',
+      gradeHelperText: 'Klassenstufe von 1 bis 13 eingeben',
+      adding: 'Wird hinzugefügt...',
+      addChildButton: 'Kind hinzufügen',
+      // Child detail page
+      noTestsUploadedDesc: 'Laden Sie den ersten Test von {name} hoch, um den Fortschritt zu verfolgen und KI-gestützte Einblicke zu erhalten',
+      failedToLoadProfile: 'Profil konnte nicht geladen werden',
+      childNotFound: 'Kind nicht gefunden',
+      childNotFoundDesc: 'Das gesuchte Kinderprofil existiert nicht oder wurde gelöscht.',
+      backToDashboard: 'Zurück zum Dashboard',
+      gradeLabel: 'Klasse {grade}',
+      // Validation
+      nameRequired: 'Name ist erforderlich',
+      nameMinLength: 'Name muss mindestens 2 Zeichen lang sein',
+      gradeRequired: 'Klasse ist erforderlich',
+      gradeRange: 'Klasse muss zwischen 1 und 13 liegen',
+      // Status
+      loadingProfile: 'Profil wird geladen...',
+      gettingReady: 'Alles wird vorbereitet...',
+      tryAgain: 'Erneut versuchen',
     },
     upload: {
       title: 'Test hochladen',
@@ -385,6 +510,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Mehrere Tests löschen?',
       bulkDeleteMessage: 'Möchten Sie wirklich',
       bulkDeleteWarning: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+      // Upload page keys
+      backToDashboard: 'Zurück zum Dashboard',
+      uploadTestDesc: 'Laden Sie ein Foto oder PDF des Tests hoch – unsere KI analysiert ihn sofort',
+      selectChildLabel: 'Kind auswählen',
+      selectChildPlaceholder: 'Kind auswählen...',
+      loadingChildren: 'Kinder werden geladen...',
+      loadError: 'Fehler beim Laden',
+      noChildYet: 'Noch kein Kind angelegt?',
+      noChildYetDesc: 'Sie haben noch kein Kind angelegt. Fügen Sie zuerst ein Kind hinzu.',
+      addFirstChild: 'Erstes Kind hinzufügen',
+      classLabel: 'Klasse {grade}',
+      mascotReady: 'Ich bin bereit!',
+      mascotNoChild: 'Noch kein Kind angelegt?',
     },
     analysis: {
       title: 'Analyse',
@@ -410,6 +548,10 @@ export const translations: Record<Language, Translations> = {
       rationale: 'Begründung',
       downloadPDF: 'PDF-Bericht herunterladen',
       executiveSummary: 'Zusammenfassung',
+      description: 'Details und Analyse für diesen Test anzeigen',
+      gradeReceived: 'Erhaltene Note',
+      analyzedAt: 'Analysiert am',
+      reportLanguage: 'Berichts-Sprache:',
     },
     auth: {
       login: 'Anmelden',
@@ -538,6 +680,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'Fairness nicht beurteilbar',
       },
     },
+    progress: {
+      title: 'Fortschritts-Dashboard',
+      learningJourney: 'Lernreise von {name}',
+      averageGrade: 'Durchschnittsnote',
+      recentTrend: 'Aktueller Trend',
+      improving: '🚀 Verbesserung!',
+      declining: 'Braucht Aufmerksamkeit',
+      stable: '➡️ Stabil',
+      notEnoughData: 'Nicht genug Daten',
+      vsLastTest: 'vs. letzter Test',
+      weaknessesResolved: 'Schwächen behoben',
+      stillActive: 'noch aktiv',
+      bestGrade: 'Beste Note',
+      gradeHistory: 'Notenverlauf',
+      noTestsYet: 'Noch keine Tests hochgeladen',
+      best: '1 (Beste)',
+      worst: '6 (Schlechteste)',
+      bySubject: 'Nach Fach',
+      noSubjectData: 'Noch keine Fachdaten',
+      weaknessTracker: 'Schwächen-Tracker',
+      noWeaknessesYet: 'Noch keine Schwächen gefunden!',
+      uploadMoreTests: 'Laden Sie mehr Tests hoch, um den Fortschritt zu verfolgen',
+      resolved: '✓ Behoben!',
+      active: '⚠ Aktiv',
+      seen: 'Gesehen {count}x',
+      inSubjects: 'In:',
+      recentTests: 'Letzte Tests',
+      failedToLoad: 'Fortschrittsdaten konnten nicht geladen werden',
+      tryAgain: 'Erneut versuchen',
+      backToProfile: 'Zurück zum Profil',
+      amazingProgress: 'Toller Fortschritt!',
+      needsFocus: 'Braucht Aufmerksamkeit',
+      testCount: '{count} Test(s)',
+      moreWeaknesses: '+{count} weitere',
+    },
   },
 
   // English
@@ -597,7 +774,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profile',
+      profile: 'Child Profile',
       addNew: 'New Child',
       editProfile: 'Edit Profile',
       name: 'Name',
@@ -616,6 +793,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Are you sure?',
       confirmDeleteMessage: 'Are you sure you want to delete',
       deleteWarning: 'This action cannot be undone and will delete all associated tests.',
+      // Add child page
+      addNewTitle: 'Add New Child',
+      addNewDesc: 'Enter your child\'s information to start tracking their academic progress',
+      fullName: 'Child\'s Full Name',
+      gradeLevel: 'Grade Level',
+      gradeHelperText: 'Enter grade level from 1 to 13',
+      adding: 'Adding...',
+      addChildButton: 'Add Child',
+      // Child detail page
+      noTestsUploadedDesc: 'Upload {name}\'s first test to start tracking their progress and get AI-powered insights',
+      failedToLoadProfile: 'Failed to Load Profile',
+      childNotFound: 'Child Not Found',
+      childNotFoundDesc: 'The child profile you\'re looking for doesn\'t exist or may have been deleted.',
+      backToDashboard: 'Back to Dashboard',
+      gradeLabel: 'Grade {grade}',
+      // Validation
+      nameRequired: 'Name is required',
+      nameMinLength: 'Name must be at least 2 characters',
+      gradeRequired: 'Grade is required',
+      gradeRange: 'Grade must be between 1 and 13',
+      // Status
+      loadingProfile: 'Loading profile...',
+      gettingReady: 'Getting everything ready...',
+      tryAgain: 'Try Again',
     },
     upload: {
       title: 'Upload Test',
@@ -641,6 +842,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Delete Multiple Tests?',
       bulkDeleteMessage: 'Are you sure you want to delete',
       bulkDeleteWarning: 'This action cannot be undone.',
+      // Upload page keys
+      backToDashboard: 'Back to Dashboard',
+      uploadTestDesc: 'Upload a photo or PDF of the test – our AI will analyze it instantly',
+      selectChildLabel: 'Select Child',
+      selectChildPlaceholder: 'Select a child...',
+      loadingChildren: 'Loading children...',
+      loadError: 'Loading Error',
+      noChildYet: 'No child registered yet?',
+      noChildYetDesc: 'You haven\'t registered any children yet. Add a child first.',
+      addFirstChild: 'Add First Child',
+      classLabel: 'Grade {grade}',
+      mascotReady: 'I\'m ready!',
+      mascotNoChild: 'No child registered yet?',
     },
     analysis: {
       title: 'Analysis',
@@ -794,6 +1008,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'Cannot assess fairness',
       },
     },
+    progress: {
+      title: 'Progress Dashboard',
+      learningJourney: '{name}\'s learning journey',
+      averageGrade: 'Average Grade',
+      recentTrend: 'Recent Trend',
+      improving: '🚀 Improving!',
+      declining: 'Needs Focus',
+      stable: '➡️ Stable',
+      notEnoughData: 'Not enough data',
+      vsLastTest: 'vs last test',
+      weaknessesResolved: 'Weaknesses Resolved',
+      stillActive: 'still active',
+      bestGrade: 'Best Grade',
+      gradeHistory: 'Grade History',
+      noTestsYet: 'No tests uploaded yet',
+      best: '1 (Best)',
+      worst: '6 (Worst)',
+      bySubject: 'By Subject',
+      noSubjectData: 'No subject data yet',
+      weaknessTracker: 'Weakness Tracker',
+      noWeaknessesYet: 'No weaknesses found yet!',
+      uploadMoreTests: 'Upload more tests to start tracking progress',
+      resolved: '✓ Resolved!',
+      active: '⚠ Active',
+      seen: 'Seen {count}x',
+      inSubjects: 'In:',
+      recentTests: 'Recent Tests',
+      failedToLoad: 'Failed to load progress',
+      tryAgain: 'Try Again',
+      backToProfile: 'Back to Profile',
+      amazingProgress: 'Amazing Progress!',
+      needsFocus: 'Needs Focus',
+      testCount: '{count} test(s)',
+      moreWeaknesses: '+{count} more',
+    },
   },
 
   // Arabic
@@ -853,7 +1102,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'الملف الشخصي',
+      profile: 'ملف الطفل',
       addNew: 'طفل جديد',
       editProfile: 'تعديل الملف',
       name: 'الاسم',
@@ -872,6 +1121,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'هل أنت متأكد؟',
       confirmDeleteMessage: 'هل أنت متأكد أنك تريد الحذف',
       deleteWarning: 'لا يمكن التراجع عن هذا الإجراء وسيتم حذف جميع الاختبارات المرتبطة.',
+      // Add child page
+      addNewTitle: 'إضافة طفل جديد',
+      addNewDesc: 'أدخل بيانات طفلك لبدء تتبع تقدمه الدراسي',
+      fullName: 'الاسم الكامل للطفل',
+      gradeLevel: 'المرحلة الدراسية',
+      gradeHelperText: 'أدخل المرحلة الدراسية من 1 إلى 13',
+      adding: 'جاري الإضافة...',
+      addChildButton: 'إضافة طفل',
+      // Child detail page
+      noTestsUploadedDesc: 'قم بتحميل أول اختبار لـ {name} لبدء تتبع تقدمه والحصول على تحليلات ذكية',
+      failedToLoadProfile: 'فشل في تحميل الملف الشخصي',
+      childNotFound: 'الطفل غير موجود',
+      childNotFoundDesc: 'الملف الشخصي الذي تبحث عنه غير موجود أو ربما تم حذفه.',
+      backToDashboard: 'العودة إلى لوحة التحكم',
+      gradeLabel: 'الصف {grade}',
+      // Validation
+      nameRequired: 'الاسم مطلوب',
+      nameMinLength: 'يجب أن يكون الاسم حرفين على الأقل',
+      gradeRequired: 'المرحلة الدراسية مطلوبة',
+      gradeRange: 'يجب أن تكون المرحلة بين 1 و 13',
+      // Status
+      loadingProfile: 'جاري تحميل الملف الشخصي...',
+      gettingReady: 'جاري تجهيز كل شيء...',
+      tryAgain: 'حاول مرة أخرى',
     },
     upload: {
       title: 'رفع اختبار',
@@ -897,6 +1170,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'حذف اختبارات متعددة؟',
       bulkDeleteMessage: 'هل أنت متأكد أنك تريد الحذف',
       bulkDeleteWarning: 'لا يمكن التراجع عن هذا الإجراء.',
+      // Upload page keys
+      backToDashboard: 'العودة إلى لوحة التحكم',
+      uploadTestDesc: 'قم بتحميل صورة أو ملف PDF للاختبار – سيقوم الذكاء الاصطناعي بتحليله فوراً',
+      selectChildLabel: 'اختر طفلاً',
+      selectChildPlaceholder: 'اختر طفلاً...',
+      loadingChildren: 'جاري تحميل الأطفال...',
+      loadError: 'خطأ في التحميل',
+      noChildYet: 'لم يُسجَّل طفل بعد؟',
+      noChildYetDesc: 'لم تقم بتسجيل أي أطفال بعد. أضف طفلاً أولاً.',
+      addFirstChild: 'أضف أول طفل',
+      classLabel: 'الصف {grade}',
+      mascotReady: 'أنا جاهز!',
+      mascotNoChild: 'لم يُسجَّل طفل بعد؟',
     },
     analysis: {
       title: 'التحليل',
@@ -1050,6 +1336,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'لا يمكن تقييم العدالة',
       },
     },
+    progress: {
+      title: 'لوحة التقدم',
+      learningJourney: 'رحلة تعلم {name}',
+      averageGrade: 'متوسط الدرجة',
+      recentTrend: 'الاتجاه الأخير',
+      improving: '🚀 تحسن!',
+      declining: 'يحتاج تركيز',
+      stable: '➡️ مستقر',
+      notEnoughData: 'بيانات غير كافية',
+      vsLastTest: 'مقارنة بالاختبار الأخير',
+      weaknessesResolved: 'نقاط ضعف تم حلها',
+      stillActive: 'لا تزال نشطة',
+      bestGrade: 'أفضل درجة',
+      gradeHistory: 'سجل الدرجات',
+      noTestsYet: 'لم يتم تحميل اختبارات بعد',
+      best: '1 (الأفضل)',
+      worst: '6 (الأسوأ)',
+      bySubject: 'حسب المادة',
+      noSubjectData: 'لا توجد بيانات للمواد بعد',
+      weaknessTracker: 'متتبع نقاط الضعف',
+      noWeaknessesYet: 'لم يتم العثور على نقاط ضعف بعد!',
+      uploadMoreTests: 'قم بتحميل المزيد من الاختبارات لبدء تتبع التقدم',
+      resolved: '✓ تم الحل!',
+      active: '⚠ نشط',
+      seen: 'شوهد {count} مرة',
+      inSubjects: 'في:',
+      recentTests: 'الاختبارات الأخيرة',
+      failedToLoad: 'فشل في تحميل التقدم',
+      tryAgain: 'حاول مرة أخرى',
+      backToProfile: 'العودة إلى الملف الشخصي',
+      amazingProgress: 'تقدم مذهل!',
+      needsFocus: 'يحتاج تركيز',
+      testCount: '{count} اختبار(ات)',
+      moreWeaknesses: '+{count} أخرى',
+    },
   },
 
   // Turkish
@@ -1109,7 +1430,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Çocuk Profili',
       addNew: 'Yeni Çocuk',
       editProfile: 'Profili Düzenle',
       name: 'İsim',
@@ -1128,6 +1449,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Emin misiniz?',
       confirmDeleteMessage: 'Silmek istediğinizden emin misiniz',
       deleteWarning: 'Bu işlem geri alınamaz ve ilgili tüm testler silinecektir.',
+      // Add child page
+      addNewTitle: 'Yeni Çocuk Ekle',
+      addNewDesc: 'Akademik ilerlemesini takip etmeye başlamak için çocuğunuzun bilgilerini girin',
+      fullName: 'Çocuğun Tam Adı',
+      gradeLevel: 'Sınıf Düzeyi',
+      gradeHelperText: 'Sınıf düzeyini 1 ile 13 arasında girin',
+      adding: 'Ekleniyor...',
+      addChildButton: 'Çocuk Ekle',
+      // Child detail page
+      noTestsUploadedDesc: '{name} için ilk testi yükleyerek ilerlemeyi takip edin ve yapay zeka destekli içgörüler alın',
+      failedToLoadProfile: 'Profil yüklenemedi',
+      childNotFound: 'Çocuk bulunamadı',
+      childNotFoundDesc: 'Aradığınız çocuk profili mevcut değil veya silinmiş olabilir.',
+      backToDashboard: 'Panele dön',
+      gradeLabel: 'Sınıf {grade}',
+      // Validation
+      nameRequired: 'İsim gereklidir',
+      nameMinLength: 'İsim en az 2 karakter olmalıdır',
+      gradeRequired: 'Sınıf gereklidir',
+      gradeRange: 'Sınıf 1 ile 13 arasında olmalıdır',
+      // Status
+      loadingProfile: 'Profil yükleniyor...',
+      gettingReady: 'Her şey hazırlanıyor...',
+      tryAgain: 'Tekrar dene',
     },
     upload: {
       title: 'Test Yükle',
@@ -1153,6 +1498,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Birden Fazla Test Silinsin mi?',
       bulkDeleteMessage: 'Silmek istediğinizden emin misiniz',
       bulkDeleteWarning: 'Bu işlem geri alınamaz.',
+      // Upload page keys
+      backToDashboard: 'Panele dön',
+      uploadTestDesc: 'Testin fotoğrafını veya PDF\'sini yükleyin – yapay zekamız anında analiz eder',
+      selectChildLabel: 'Çocuk seçin',
+      selectChildPlaceholder: 'Çocuk seçin...',
+      loadingChildren: 'Çocuklar yükleniyor...',
+      loadError: 'Yükleme hatası',
+      noChildYet: 'Henüz çocuk eklenmemiş mi?',
+      noChildYetDesc: 'Henüz çocuk eklemediniz. Önce bir çocuk ekleyin.',
+      addFirstChild: 'İlk çocuğu ekle',
+      classLabel: 'Sınıf {grade}',
+      mascotReady: 'Hazırım!',
+      mascotNoChild: 'Henüz çocuk eklenmemiş mi?',
     },
     analysis: {
       title: 'Analiz',
@@ -1306,6 +1664,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'Adillik değerlendirilemiyor',
       },
     },
+    progress: {
+      title: 'İlerleme Paneli',
+      learningJourney: '{name} öğrenme yolculuğu',
+      averageGrade: 'Ortalama Not',
+      recentTrend: 'Son Trend',
+      improving: '🚀 Gelişiyor!',
+      declining: 'Odaklanma gerekli',
+      stable: '➡️ Sabit',
+      notEnoughData: 'Yeterli veri yok',
+      vsLastTest: 'son teste göre',
+      weaknessesResolved: 'Çözülen Zayıflıklar',
+      stillActive: 'hâlâ aktif',
+      bestGrade: 'En İyi Not',
+      gradeHistory: 'Not Geçmişi',
+      noTestsYet: 'Henüz test yüklenmedi',
+      best: '1 (En iyi)',
+      worst: '6 (En kötü)',
+      bySubject: 'Derse Göre',
+      noSubjectData: 'Henüz ders verisi yok',
+      weaknessTracker: 'Zayıflık Takipçisi',
+      noWeaknessesYet: 'Henüz zayıflık bulunamadı!',
+      uploadMoreTests: 'İlerlemeyi takip etmek için daha fazla test yükleyin',
+      resolved: '✓ Çözüldü!',
+      active: '⚠ Aktif',
+      seen: '{count} kez görüldü',
+      inSubjects: 'İçinde:',
+      recentTests: 'Son Testler',
+      failedToLoad: 'İlerleme yüklenemedi',
+      tryAgain: 'Tekrar dene',
+      backToProfile: 'Profile dön',
+      amazingProgress: 'Harika İlerleme!',
+      needsFocus: 'Odaklanma gerekli',
+      testCount: '{count} test',
+      moreWeaknesses: '+{count} daha',
+    },
   },
 
   // Romanian
@@ -1365,7 +1758,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profil',
+      profile: 'Profilul Copilului',
       addNew: 'Copil nou',
       editProfile: 'Editează profilul',
       name: 'Nume',
@@ -1384,6 +1777,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Ești sigur?',
       confirmDeleteMessage: 'Sigur doriți să ștergeți',
       deleteWarning: 'Această acțiune nu poate fi anulată și va șterge toate testele asociate.',
+      // Add child page
+      addNewTitle: 'Adaugă copil nou',
+      addNewDesc: 'Introduceți datele copilului pentru a-i urmări progresul academic',
+      fullName: 'Numele complet al copilului',
+      gradeLevel: 'Nivelul clasei',
+      gradeHelperText: 'Introduceți nivelul clasei de la 1 la 13',
+      adding: 'Se adaugă...',
+      addChildButton: 'Adaugă copil',
+      // Child detail page
+      noTestsUploadedDesc: 'Încărcați primul test al lui {name} pentru a-i urmări progresul și a obține analize inteligente',
+      failedToLoadProfile: 'Profilul nu a putut fi încărcat',
+      childNotFound: 'Copilul nu a fost găsit',
+      childNotFoundDesc: 'Profilul copilului pe care îl căutați nu există sau a fost șters.',
+      backToDashboard: 'Înapoi la panou',
+      gradeLabel: 'Clasa {grade}',
+      // Validation
+      nameRequired: 'Numele este obligatoriu',
+      nameMinLength: 'Numele trebuie să aibă cel puțin 2 caractere',
+      gradeRequired: 'Clasa este obligatorie',
+      gradeRange: 'Clasa trebuie să fie între 1 și 13',
+      // Status
+      loadingProfile: 'Se încarcă profilul...',
+      gettingReady: 'Se pregătește totul...',
+      tryAgain: 'Încearcă din nou',
     },
     upload: {
       title: 'Încarcă test',
@@ -1409,6 +1826,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Șterge Teste Multiple?',
       bulkDeleteMessage: 'Sigur doriți să ștergeți',
       bulkDeleteWarning: 'Această acțiune nu poate fi anulată.',
+      // Upload page keys
+      backToDashboard: 'Înapoi la panou',
+      uploadTestDesc: 'Încărcați o fotografie sau un PDF al testului – inteligența noastră artificială îl va analiza instant',
+      selectChildLabel: 'Selectați copilul',
+      selectChildPlaceholder: 'Selectați un copil...',
+      loadingChildren: 'Se încarcă copiii...',
+      loadError: 'Eroare la încărcare',
+      noChildYet: 'Niciun copil înregistrat?',
+      noChildYetDesc: 'Nu ați înregistrat niciun copil încă. Adăugați un copil mai întâi.',
+      addFirstChild: 'Adaugă primul copil',
+      classLabel: 'Clasa {grade}',
+      mascotReady: 'Sunt gata!',
+      mascotNoChild: 'Niciun copil înregistrat?',
     },
     analysis: {
       title: 'Analiză',
@@ -1562,6 +1992,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'Nu se poate evalua corectitudinea',
       },
     },
+    progress: {
+      title: 'Panou de progres',
+      learningJourney: 'Parcursul de învățare al lui {name}',
+      averageGrade: 'Nota medie',
+      recentTrend: 'Tendința recentă',
+      improving: '🚀 Se îmbunătățește!',
+      declining: 'Necesită atenție',
+      stable: '➡️ Stabil',
+      notEnoughData: 'Date insuficiente',
+      vsLastTest: 'față de ultimul test',
+      weaknessesResolved: 'Puncte slabe rezolvate',
+      stillActive: 'încă active',
+      bestGrade: 'Cea mai bună notă',
+      gradeHistory: 'Istoricul notelor',
+      noTestsYet: 'Niciun test încărcat încă',
+      best: '1 (Cel mai bun)',
+      worst: '6 (Cel mai slab)',
+      bySubject: 'Pe materie',
+      noSubjectData: 'Niciun date pe materie încă',
+      weaknessTracker: 'Urmărirea punctelor slabe',
+      noWeaknessesYet: 'Nu s-au găsit puncte slabe!',
+      uploadMoreTests: 'Încărcați mai multe teste pentru a urmări progresul',
+      resolved: '✓ Rezolvat!',
+      active: '⚠ Activ',
+      seen: 'Văzut de {count} ori',
+      inSubjects: 'În:',
+      recentTests: 'Teste recente',
+      failedToLoad: 'Progresul nu a putut fi încărcat',
+      tryAgain: 'Încearcă din nou',
+      backToProfile: 'Înapoi la profil',
+      amazingProgress: 'Progres uimitor!',
+      needsFocus: 'Necesită atenție',
+      testCount: '{count} test(e)',
+      moreWeaknesses: '+{count} altele',
+    },
   },
 
   // Russian
@@ -1621,7 +2086,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Профиль',
+      profile: 'Профиль ребёнка',
       addNew: 'Новый ребенок',
       editProfile: 'Редактировать профиль',
       name: 'Имя',
@@ -1640,6 +2105,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Вы уверены?',
       confirmDeleteMessage: 'Вы уверены, что хотите удалить',
       deleteWarning: 'Это действие нельзя отменить, и все связанные тесты будут удалены.',
+      // Add child page
+      addNewTitle: 'Добавить нового ребёнка',
+      addNewDesc: 'Введите данные ребёнка, чтобы начать отслеживать его успеваемость',
+      fullName: 'Полное имя ребёнка',
+      gradeLevel: 'Класс',
+      gradeHelperText: 'Введите класс от 1 до 13',
+      adding: 'Добавление...',
+      addChildButton: 'Добавить ребёнка',
+      // Child detail page
+      noTestsUploadedDesc: 'Загрузите первый тест {name}, чтобы отслеживать прогресс и получать аналитику на основе ИИ',
+      failedToLoadProfile: 'Не удалось загрузить профиль',
+      childNotFound: 'Ребёнок не найден',
+      childNotFoundDesc: 'Профиль ребёнка, который вы ищете, не существует или был удалён.',
+      backToDashboard: 'Назад к панели',
+      gradeLabel: 'Класс {grade}',
+      // Validation
+      nameRequired: 'Имя обязательно',
+      nameMinLength: 'Имя должно содержать не менее 2 символов',
+      gradeRequired: 'Класс обязателен',
+      gradeRange: 'Класс должен быть от 1 до 13',
+      // Status
+      loadingProfile: 'Загрузка профиля...',
+      gettingReady: 'Подготовка...',
+      tryAgain: 'Попробовать снова',
     },
     upload: {
       title: 'Загрузить тест',
@@ -1665,6 +2154,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Удалить несколько тестов?',
       bulkDeleteMessage: 'Вы уверены, что хотите удалить',
       bulkDeleteWarning: 'Это действие нельзя отменить.',
+      // Upload page keys
+      backToDashboard: 'Назад к панели',
+      uploadTestDesc: 'Загрузите фото или PDF теста – наш ИИ мгновенно его проанализирует',
+      selectChildLabel: 'Выберите ребёнка',
+      selectChildPlaceholder: 'Выберите ребёнка...',
+      loadingChildren: 'Загрузка детей...',
+      loadError: 'Ошибка загрузки',
+      noChildYet: 'Ещё нет детей?',
+      noChildYetDesc: 'Вы ещё не зарегистрировали детей. Сначала добавьте ребёнка.',
+      addFirstChild: 'Добавить первого ребёнка',
+      classLabel: 'Класс {grade}',
+      mascotReady: 'Я готов!',
+      mascotNoChild: 'Ещё нет детей?',
     },
     analysis: {
       title: 'Анализ',
@@ -1818,6 +2320,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'Невозможно оценить справедливость',
       },
     },
+    progress: {
+      title: 'Панель прогресса',
+      learningJourney: 'Учебный путь {name}',
+      averageGrade: 'Средняя оценка',
+      recentTrend: 'Последний тренд',
+      improving: '🚀 Улучшение!',
+      declining: 'Требуется внимание',
+      stable: '➡️ Стабильно',
+      notEnoughData: 'Недостаточно данных',
+      vsLastTest: 'по сравнению с последним тестом',
+      weaknessesResolved: 'Слабости устранены',
+      stillActive: 'всё ещё активны',
+      bestGrade: 'Лучшая оценка',
+      gradeHistory: 'История оценок',
+      noTestsYet: 'Тесты ещё не загружены',
+      best: '1 (Лучшая)',
+      worst: '6 (Худшая)',
+      bySubject: 'По предмету',
+      noSubjectData: 'Данные по предметам отсутствуют',
+      weaknessTracker: 'Отслеживание слабостей',
+      noWeaknessesYet: 'Слабости не обнаружены!',
+      uploadMoreTests: 'Загрузите больше тестов для отслеживания прогресса',
+      resolved: '✓ Решено!',
+      active: '⚠ Активно',
+      seen: 'Замечено {count} раз',
+      inSubjects: 'В:',
+      recentTests: 'Последние тесты',
+      failedToLoad: 'Не удалось загрузить прогресс',
+      tryAgain: 'Попробовать снова',
+      backToProfile: 'Назад к профилю',
+      amazingProgress: 'Потрясающий прогресс!',
+      needsFocus: 'Требуется внимание',
+      testCount: '{count} тест(ов)',
+      moreWeaknesses: '+{count} ещё',
+    },
   },
 
   // Farsi (Persian)
@@ -1877,7 +2414,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'پروفایل',
+      profile: 'پروفایل فرزند',
       addNew: 'فرزند جدید',
       editProfile: 'ویرایش پروفایل',
       name: 'نام',
@@ -1896,6 +2433,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'آیا مطمئن هستید؟',
       confirmDeleteMessage: 'آیا می خواهید حذف کنید',
       deleteWarning: 'این عمل قابل بازگشت نیست و تمام آزمون های مرتبط حذف خواهند شد.',
+      // Add child page
+      addNewTitle: 'افزودن فرزند جدید',
+      addNewDesc: 'اطلاعات فرزند خود را وارد کنید تا پیشرفت تحصیلی او را پیگیری کنید',
+      fullName: 'نام کامل فرزند',
+      gradeLevel: 'پایه تحصیلی',
+      gradeHelperText: 'پایه تحصیلی را از 1 تا 13 وارد کنید',
+      adding: 'در حال افزودن...',
+      addChildButton: 'افزودن فرزند',
+      // Child detail page
+      noTestsUploadedDesc: 'اولین آزمون {name} را بارگذاری کنید تا پیشرفت را پیگیری کنید و تحلیل‌های هوشمند دریافت کنید',
+      failedToLoadProfile: 'بارگذاری پروفایل ناموفق بود',
+      childNotFound: 'فرزند یافت نشد',
+      childNotFoundDesc: 'پروفایل فرزندی که به دنبال آن هستید وجود ندارد یا حذف شده است.',
+      backToDashboard: 'بازگشت به داشبورد',
+      gradeLabel: 'پایه {grade}',
+      // Validation
+      nameRequired: 'نام الزامی است',
+      nameMinLength: 'نام باید حداقل 2 حرف باشد',
+      gradeRequired: 'پایه تحصیلی الزامی است',
+      gradeRange: 'پایه باید بین 1 تا 13 باشد',
+      // Status
+      loadingProfile: 'در حال بارگذاری پروفایل...',
+      gettingReady: 'در حال آماده‌سازی...',
+      tryAgain: 'تلاش مجدد',
     },
     upload: {
       title: 'آپلود آزمون',
@@ -1921,6 +2482,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'حذف چندین آزمون؟',
       bulkDeleteMessage: 'آیا مطمئن هستید که می خواهید حذف کنید',
       bulkDeleteWarning: 'این عمل قابل بازگشت نیست.',
+      // Upload page keys
+      backToDashboard: 'بازگشت به داشبورد',
+      uploadTestDesc: 'عکس یا فایل PDF آزمون را بارگذاری کنید – هوش مصنوعی ما فوراً آن را تحلیل می‌کند',
+      selectChildLabel: 'فرزند را انتخاب کنید',
+      selectChildPlaceholder: 'فرزند را انتخاب کنید...',
+      loadingChildren: 'در حال بارگذاری فرزندان...',
+      loadError: 'خطا در بارگذاری',
+      noChildYet: 'هنوز فرزندی ثبت نشده؟',
+      noChildYetDesc: 'شما هنوز فرزندی ثبت نکرده‌اید. ابتدا یک فرزند اضافه کنید.',
+      addFirstChild: 'اولین فرزند را اضافه کنید',
+      classLabel: 'پایه {grade}',
+      mascotReady: 'آماده‌ام!',
+      mascotNoChild: 'هنوز فرزندی ثبت نشده؟',
     },
     analysis: {
       title: 'تجزیه و تحلیل',
@@ -2074,6 +2648,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'نمی‌توان منصفانه بودن را ارزیابی کرد',
       },
     },
+    progress: {
+      title: 'داشبورد پیشرفت',
+      learningJourney: 'مسیر یادگیری {name}',
+      averageGrade: 'میانگین نمره',
+      recentTrend: 'روند اخیر',
+      improving: '🚀 در حال بهبود!',
+      declining: 'نیاز به توجه',
+      stable: '➡️ ثابت',
+      notEnoughData: 'داده‌های کافی نیست',
+      vsLastTest: 'در مقایسه با آخرین آزمون',
+      weaknessesResolved: 'نقاط ضعف رفع شده',
+      stillActive: 'هنوز فعال',
+      bestGrade: 'بهترین نمره',
+      gradeHistory: 'تاریخچه نمرات',
+      noTestsYet: 'هنوز آزمونی بارگذاری نشده',
+      best: '1 (بهترین)',
+      worst: '6 (بدترین)',
+      bySubject: 'بر اساس درس',
+      noSubjectData: 'هنوز داده درسی موجود نیست',
+      weaknessTracker: 'پیگیری نقاط ضعف',
+      noWeaknessesYet: 'هنوز نقطه ضعفی پیدا نشده!',
+      uploadMoreTests: 'آزمون‌های بیشتری بارگذاری کنید تا پیشرفت را پیگیری کنید',
+      resolved: '✓ حل شد!',
+      active: '⚠ فعال',
+      seen: '{count} بار مشاهده شده',
+      inSubjects: 'در:',
+      recentTests: 'آزمون‌های اخیر',
+      failedToLoad: 'بارگذاری پیشرفت ناموفق بود',
+      tryAgain: 'تلاش مجدد',
+      backToProfile: 'بازگشت به پروفایل',
+      amazingProgress: 'پیشرفت شگفت‌انگیز!',
+      needsFocus: 'نیاز به توجه',
+      testCount: '{count} آزمون',
+      moreWeaknesses: '+{count} مورد دیگر',
+    },
   },
 
   // Kurdish (Sorani)
@@ -2133,7 +2742,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'پروفایل',
+      profile: 'پرۆفایلی منداڵ',
       addNew: 'منداڵی نوێ',
       editProfile: 'پروفایل ده‌ستکاری بکه‌',
       name: 'ناو',
@@ -2152,6 +2761,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'ئایا دڵنیا یت؟',
       confirmDeleteMessage: 'ئایا دڵنیا یت کە دەتەوێت سڕی بکه‌یت',
       deleteWarning: 'ئه‌م کردار ناتوانریت به‌غاوه‌ بگه‌ڕێت و هه‌مووی تێست‌ه‌کانی به‌پێوه‌ند سڕاینه‌وه‌.',
+      // Add child page
+      addNewTitle: 'منداڵی نوێ زیاد بکە',
+      addNewDesc: 'زانیاری منداڵەکەت بنووسە بۆ پاش ئاگاداربوون لە پێشکەوتنی وانەکانی',
+      fullName: 'ناوی تەواوی منداڵ',
+      gradeLevel: 'ئاستی پۆل',
+      gradeHelperText: 'ئاستی پۆل لە 1 بۆ 13 بنووسە',
+      adding: 'زیادکردن...',
+      addChildButton: 'منداڵ زیادبکە',
+      // Child detail page
+      noTestsUploadedDesc: 'یەکەم تاقیکردنەوەی {name} بار بکە بۆ پاش ئاگاداربوون لە پێشکەوتنی',
+      failedToLoadProfile: 'پرۆفایل بار نەکرا',
+      childNotFound: 'منداڵ نەدۆزرایەوە',
+      childNotFoundDesc: 'ئەو پرۆفایلەی منداڵ کە بەدوایدا دەگەڕێی بوونی نییە یان سڕدراوەتەوە.',
+      backToDashboard: 'گەڕانەوە بۆ داشبۆرد',
+      gradeLabel: 'پۆل {grade}',
+      // Validation
+      nameRequired: 'ناو پێویستە',
+      nameMinLength: 'ناو دەبێت لانیکەم 2 پیت بێت',
+      gradeRequired: 'پۆل پێویستە',
+      gradeRange: 'پۆل دەبێت لە نێوان 1 و 13 بێت',
+      // Status
+      loadingProfile: 'پرۆفایل باردەکرێت...',
+      gettingReady: 'ئامادەکاری...',
+      tryAgain: 'دووبارە هەوڵبدە',
     },
     upload: {
       title: 'تێست بارکردن',
@@ -2177,6 +2810,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'چه‌ند تێست سڕی بکه‌م؟',
       bulkDeleteMessage: 'ئایا دڵنیا یت کە دەتەوێت سڕی بکه‌یت',
       bulkDeleteWarning: 'ئه‌م کردار ناتوانریت به‌غاوه‌ بگه‌ڕێت.',
+      // Upload page keys
+      backToDashboard: 'گەڕانەوە بۆ داشبۆرد',
+      uploadTestDesc: 'وێنە یان PDF ی تاقیکردنەوەکە بار بکە – زیرەکی دەستکرد ئاوێنەی دەکات',
+      selectChildLabel: 'منداڵ هەڵبژێرە',
+      selectChildPlaceholder: 'منداڵ هەڵبژێرە...',
+      loadingChildren: 'منداڵەکان باردەکرێن...',
+      loadError: 'هەڵە لە بارکردن',
+      noChildYet: 'هێشتا هیچ منداڵێکت نییە؟',
+      noChildYetDesc: 'تۆ هێشتا هیچ منداڵێکت تۆمار نەکردووە. سەرەتا منداڵێک زیاد بکە.',
+      addFirstChild: 'یەکەم منداڵ زیاد بکە',
+      classLabel: 'پۆل {grade}',
+      mascotReady: 'ئامادەم!',
+      mascotNoChild: 'هێشتا هیچ منداڵێکت نییە؟',
     },
     analysis: {
       title: 'تێکۆشان',
@@ -2330,6 +2976,41 @@ export const translations: Record<Language, Translations> = {
         unknown: 'ناتوانرێت دادپەروەری هەڵسەنگێندرێت',
       },
     },
+    progress: {
+      title: 'داشبۆردی پێشکەوتن',
+      learningJourney: 'ڕێگای فێربوونی {name}',
+      averageGrade: 'نمرەی ناوەندی',
+      recentTrend: 'ڕەوتی کۆتایی',
+      improving: '🚀 باشتربوون!',
+      declining: 'پێویستی بە تەرکیز هەیە',
+      stable: '➡️ جێگیر',
+      notEnoughData: 'داتا بەسی نییە',
+      vsLastTest: 'بەرامبەر بە تاقیکردنەوەی کۆتایی',
+      weaknessesResolved: 'لاوازییەکان چارەسەر کران',
+      stillActive: 'هێشتا چالاکە',
+      bestGrade: 'باشترین نمرە',
+      gradeHistory: 'مێژووی نمرەکان',
+      noTestsYet: 'هێشتا تاقیکردنەوەیەک بار نەکراوە',
+      best: '1 (باشترین)',
+      worst: '6 (خراپترین)',
+      bySubject: 'بەپێی وانە',
+      noSubjectData: 'هێشتا داتای وانە نییە',
+      weaknessTracker: 'شوێنکەوتنی لاوازییەکان',
+      noWeaknessesYet: 'هێشتا لاوازییەک نەدۆزرایەوە!',
+      uploadMoreTests: 'تاقیکردنەوەی زیاتر بار بکە بۆ شوێنکەوتنی پێشکەوتن',
+      resolved: '✓ چارەسەرکرا!',
+      active: '⚠ چالاک',
+      seen: '{count} جار بینراو',
+      inSubjects: 'لە:',
+      recentTests: 'تاقیکردنەوەکانی کۆتایی',
+      failedToLoad: 'پێشکەوتن باری نەکرا',
+      tryAgain: 'دووبارە هەوڵبدە',
+      backToProfile: 'گەڕانەوە بۆ پرۆفایل',
+      amazingProgress: 'پێشکەوتنی نایاب!',
+      needsFocus: 'پێویستی بە تەرکیز هەیە',
+      testCount: '{count} تاقیکردنەوە',
+      moreWeaknesses: '+{count} زیاتر',
+    },
   },
 
   // Kurdish (Kurmanci)
@@ -2389,7 +3070,7 @@ export const translations: Record<Language, Translations> = {
       },
     },
     child: {
-      profile: 'Profîl',
+      profile: 'Profîla Zarok',
       addNew: 'Zarokê nû',
       editProfile: 'Profîlê sererast bike',
       name: 'Nav',
@@ -2408,6 +3089,30 @@ export const translations: Record<Language, Translations> = {
       deleteConfirm: 'Tu bawer î?',
       confirmDeleteMessage: 'Tu bawer î ku dixwazî jê bibî',
       deleteWarning: 'Ev kirar nayê vegerandin û hemû testên girêdayî dê werin jêbirin.',
+      // Add child page
+      addNewTitle: 'Zarokeke nû lê zêde bike',
+      addNewDesc: 'Agahdariya zarokê xwe binivîse da ku pêşketina wî/wê bişopîne',
+      fullName: 'Navê tevahî yê zarok',
+      gradeLevel: 'Asta polê',
+      gradeHelperText: 'Asta polê ji 1 heta 13 binivîse',
+      adding: 'Tê zêdekirin...',
+      addChildButton: 'Zarok lê zêde bike',
+      // Child detail page
+      noTestsUploadedDesc: 'Ceribandina yekem a {name} bar bike da ku pêşketinê bişopîne',
+      failedToLoadProfile: 'Profîl bar nebû',
+      childNotFound: 'Zarok nehat dîtin',
+      childNotFoundDesc: 'Profîla zarokê ku tu lê digerî tune ye an jî hatiye jêbirin.',
+      backToDashboard: 'Vegere dashboardê',
+      gradeLabel: 'Pol {grade}',
+      // Validation
+      nameRequired: 'Nav pêwîst e',
+      nameMinLength: 'Nav divê herî kêm 2 tîp be',
+      gradeRequired: 'Pol pêwîst e',
+      gradeRange: 'Pol divê di navbera 1 û 13 de be',
+      // Status
+      loadingProfile: 'Profîl tê barkirin...',
+      gettingReady: 'Amadekarî...',
+      tryAgain: 'Dîsa biceribîne',
     },
     upload: {
       title: 'Teste bar bike',
@@ -2433,6 +3138,19 @@ export const translations: Record<Language, Translations> = {
       bulkDelete: 'Çend testan jê bibim?',
       bulkDeleteMessage: 'Tu bawer î ku dixwazî jê bibî',
       bulkDeleteWarning: 'Ev kirar nayê vegerandin.',
+      // Upload page keys
+      backToDashboard: 'Vegere dashboardê',
+      uploadTestDesc: 'Wêneyek an PDF ya ceribandinê bar bike – AI ya me wê tavilê analîz bike',
+      selectChildLabel: 'Zarok hilbijêre',
+      selectChildPlaceholder: 'Zarok hilbijêre...',
+      loadingChildren: 'Zarok tên barkirin...',
+      loadError: 'Çewtiya barkirin',
+      noChildYet: 'Hîn zarok nehatiye zêdekirin?',
+      noChildYetDesc: 'Te hîn zarokek qeyd nekiriye. Berî her tiştî zarokek lê zêde bike.',
+      addFirstChild: 'Zarokê yekem zêde bike',
+      classLabel: 'Pol {grade}',
+      mascotReady: 'Ez amade me!',
+      mascotNoChild: 'Hîn zarok nehatiye zêdekirin?',
     },
     analysis: {
       title: 'Analîz',
@@ -2585,6 +3303,41 @@ export const translations: Record<Language, Translations> = {
         unfair: 'Nirxdanê divê were lêkolîn kirin',
         unknown: 'Nikare dadperweriyê binirxîne',
       },
+    },
+    progress: {
+      title: 'Panela pêşketinê',
+      learningJourney: 'Rêwîtiya fêrbûna {name}',
+      averageGrade: 'Nota navînî',
+      recentTrend: 'Meyla dawîn',
+      improving: '🚀 Baştir dibe!',
+      declining: 'Bala hewce dike',
+      stable: '➡️ Aram',
+      notEnoughData: 'Dane bes nine',
+      vsLastTest: 'li gorî ceribandina dawîn',
+      weaknessesResolved: 'Qelsiyên çareserkirî',
+      stillActive: 'hîn çalak',
+      bestGrade: 'Nota çêtirîn',
+      gradeHistory: 'Dîroka notan',
+      noTestsYet: 'Hîn ceribandinek nehatiye barkirin',
+      best: '1 (Çêtirîn)',
+      worst: '6 (Xerabtirîn)',
+      bySubject: 'Li gorî dersê',
+      noSubjectData: 'Hîn daneya dersê tune',
+      weaknessTracker: 'Şopandina qelsiyan',
+      noWeaknessesYet: 'Hîn qelsî nehat dîtin!',
+      uploadMoreTests: 'Ceribandinên bêtir bar bike da ku pêşketinê bişopîne',
+      resolved: '✓ Hat çareserkirin!',
+      active: '⚠ Çalak',
+      seen: '{count} car hatiye dîtin',
+      inSubjects: 'Di:',
+      recentTests: 'Ceribandinên dawîn',
+      failedToLoad: 'Pêşketin bar nebû',
+      tryAgain: 'Dîsa biceribîne',
+      backToProfile: 'Vegere profîlê',
+      amazingProgress: 'Pêşketina ecêb!',
+      needsFocus: 'Bala hewce dike',
+      testCount: '{count} ceribandîn',
+      moreWeaknesses: '+{count} din',
     },
   },
 }

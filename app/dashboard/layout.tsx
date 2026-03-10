@@ -67,6 +67,10 @@ export default function DashboardLayout({
     { name: t.nav?.communication || 'Schulpost', href: '/dashboard/communication', icon: Mail },
     { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
     { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
+    { key: 'dashboard', name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { key: 'children', name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
+    { key: 'uploadTest', name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
+    { key: 'subscription', name: 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
   ]
 
   const isActive = (href: string) => {
@@ -101,11 +105,10 @@ export default function DashboardLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
-                    active
-                      ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
-                      : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${active
+                    ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                    : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   {item.name}
@@ -193,9 +196,8 @@ export default function DashboardLayout({
       {/* Mobile Sidebar (always LTR layout) */}
       <aside
         dir="ltr"
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* User Info - Mobile */}
@@ -221,11 +223,10 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
-                    active
-                      ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
-                      : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${active
+                    ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white shadow-lg'
+                    : 'text-[var(--gray-700)] hover:bg-[var(--primary-soft)]'
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   {item.name}

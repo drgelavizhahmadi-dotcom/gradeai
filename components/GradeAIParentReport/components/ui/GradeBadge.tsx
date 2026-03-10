@@ -1,6 +1,6 @@
 'use client'
 
-import { useLanguage } from '../../LanguageContext'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 
 interface GradeBadgeProps {
   grade: string
@@ -9,8 +9,9 @@ interface GradeBadgeProps {
 }
 
 export default function GradeBadge({ grade, percentage, size = 'large' }: GradeBadgeProps) {
-  const { isRTL } = useLanguage()
-  
+  const { language } = useLanguage()
+  const isRTL = ['ar', 'fa', 'ku'].includes(language)
+
   // Color coding based on grade/percentage
   const getGradeColor = () => {
     if (percentage >= 70) return 'from-emerald-500 to-green-600'
