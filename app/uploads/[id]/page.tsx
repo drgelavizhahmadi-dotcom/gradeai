@@ -237,15 +237,18 @@ export default function UploadDetailPage() {
     setTranslationError(null)
 
     // German is the base language — use original
-    if (language === 'de') {
+    if (newLanguage === 'de') {
       setTranslatedReport(originalReport)
       return
     }
 
     // Check if report is already in the target language
     const currentLang = originalReport?._meta?.language?.code
-    if (currentLang === language) {
+    if (currentLang === newLanguage) {
       setTranslatedReport(originalReport)
+      return
+    }
+
     // Need to translate
     if (!originalReport) {
       setTranslationError(t.common.error ? t.common.error : 'No report available to translate')
@@ -256,7 +259,6 @@ export default function UploadDetailPage() {
     setIsTranslating(true)
 
     try {
-      // The translate-report API checks DB cache first, then translates + saves if not cached
       const response = await fetch('/api/ai/translate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -266,14 +268,15 @@ export default function UploadDetailPage() {
           uploadId: uploadId,
         }),
       })
-      .catch((err) => {
-        console.error('Translation error:', err)
-        setTranslationError(err instanceof Error ? err.message : 'Translation failed')
-      })
-      .finally(() => {
-        setIsTranslating(false)
-      })
-  }, [language, originalReport])
+      const data = await response.json()
+      if (data.translatedReport) setTranslatedReport(data.translatedReport)
+    } catch (err) {
+      console.error('Translation error:', err)
+      setTranslationError(err instanceof Error ? err.message : 'Translation failed')
+    } finally {
+      setIsTranslating(false)
+    }
+  }
 
   // Store original report when upload changes
   useEffect(() => {
