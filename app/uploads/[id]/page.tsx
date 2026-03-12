@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Loader2, CheckCircle, XCircle, RefreshCw, FileText,
   BookOpen, GraduationCap, ArrowLeft, Clock, AlertCircle, Download, Info, Trash2,
-  Sparkles, Calendar, User
+  Sparkles, Calendar, User, Globe, ChevronDown
 } from 'lucide-react'
 import { OwlMascot } from '@/components/mascots'
 import { GradeBadge } from '@/components/ui/GradeBadge'
@@ -85,6 +85,7 @@ export default function UploadDetailPage() {
   const { language: globalLanguage, t } = useLanguage()
   // Local Report translation state
   const [reportLanguage, setReportLanguage] = useState<Language>('de')
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
