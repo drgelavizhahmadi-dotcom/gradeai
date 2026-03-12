@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export const maxDuration = 300
 
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { extractedText, childName, grade, subject, schoolType, language = 'de' } = await request.json()
+    const { extractedText, childName, grade, subject, schoolType, language = 'de', uploadId } = await request.json()
 
     if (!extractedText) {
       return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
@@ -150,7 +151,7 @@ Reconstruct the test and analyze grading fairness. Be thorough but concise.`
     const totalTime = Date.now() - startTime
     console.log(`[Independent Fairness API] Complete in ${totalTime}ms. Score: ${fairnessAnalysis.overallScore}`)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       testReconstruction,
       fairnessAnalysis,
@@ -164,7 +165,22 @@ Reconstruct the test and analyze grading fairness. Be thorough but concise.`
         concernsFound: fairnessAnalysis.concerns?.length || 0,
         language,
       }
-    })
+    }
+
+    // Save to DB if uploadId provided
+    if (uploadId) {
+      try {
+        await db.upload.update({
+          where: { id: uploadId, userId: session.user.id },
+          data: { fairnessCheck: responseData as any },
+        })
+        console.log('[Independent Fairness API] Saved to DB for uploadId:', uploadId)
+      } catch (dbErr) {
+        console.error('[Independent Fairness API] DB save failed (non-fatal):', dbErr)
+      }
+    }
+
+    return NextResponse.json(responseData)
 
   } catch (error) {
     console.error('[Independent Fairness API] Error:', error)

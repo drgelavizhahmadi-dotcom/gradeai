@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useLanguage } from '@/components/providers/LanguageProvider'
 import {
-  Lock, Sparkles, Crown, Zap, BookOpen, Shield, ChevronRight,
-  Star, TrendingUp, Users, Clock, Gift, ArrowRight, Check,
+  Sparkles, Crown, BookOpen, Shield,
+  TrendingUp, Clock, Gift, ArrowRight, Check,
   Loader2, X, Download, Printer, AlertTriangle, CheckCircle,
   GraduationCap, FileText, ClipboardCheck, ChevronDown, ChevronUp,
   Brain, Target, Lightbulb, PlayCircle
@@ -13,17 +14,23 @@ import {
   generateFairnessPDF,
   generateLearningMaterialPDF
 } from '@/lib/pdf/generate-pdf'
-import { useLanguage } from '@/components/providers/LanguageProvider'
-import { getPremiumTranslation } from './premiumTranslations'
 
-// FOMO Statistics (can be fetched from API in production)
-const FOMO_STATS = {
-  upgradesThisWeek: 347,
-  parentsSatisfied: 94,
-  avgGradeImprovement: 0.8,
-  flashcardsGenerated: 12847,
-  fairnessChecksRun: 8293,
-  learningMaterialsGenerated: 5621,
+import { useTimer } from '@/lib/hooks/useTimer'
+import { PremiumStatistics, FOMO_STATS } from '@/components/PremiumStatistics'
+import { LockedFeatureTeaser, PremiumBadge } from '@/components/LockedFeatureTeaser'
+
+// Languages that don't render correctly in jsPDF (non-Latin scripts)
+const NON_LATIN_LANGS = ['ar', 'fa', 'ku', 'kmr']
+
+// Print only a specific section — sets a body attribute so CSS can isolate it
+function printSectionOnly(section: 'flashcards' | 'fairness') {
+  document.body.setAttribute('data-printing', section)
+  window.print()
+  const cleanup = () => {
+    document.body.removeAttribute('data-printing')
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
 }
 
 interface PremiumFeatureProps {
@@ -39,44 +46,13 @@ interface IndependentFeatureProps extends PremiumFeatureProps {
   subject?: string | undefined
   schoolType?: string | undefined
   language?: string | undefined
+  uploadId?: string | undefined
+  cachedData?: any | undefined
 }
 
 // Keep backward compat alias
 type LearningMaterialProps = IndependentFeatureProps
 
-// Animated counter for FOMO effect
-function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; duration?: number | undefined; suffix?: string | undefined }) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    let startTime: number
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * end))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [end, duration])
-
-  return <span>{count.toLocaleString()}{suffix}</span>
-}
-
-// Premium Badge Component
-export function PremiumBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' | undefined }) {
-  const sizes = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-1.5',
-  }
-
-  return (
-    <span className={`inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold rounded-full ${sizes[size]} shadow-lg`}>
-      <Crown className="h-3 w-3" />
-      PRIME
-    </span>
-  )
-}
 
 // Upgrade CTA Button with urgency
 export function UpgradeButton({
@@ -88,6 +64,9 @@ export function UpgradeButton({
   showDiscount?: boolean | undefined
   onClick?: (() => void) | undefined
 }) {
+  const { t } = useLanguage()
+  const pt = t.premium
+
   const variants = {
     primary: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl',
     secondary: 'bg-white border-2 border-amber-500 text-amber-600 hover:bg-amber-50',
@@ -100,89 +79,14 @@ export function UpgradeButton({
       className={`${variants[variant]} px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-105 flex items-center gap-2`}
     >
       <Crown className="h-5 w-5" />
-      <span>Upgrade to Prime</span>
+      <span>{pt.upgradeToPrime}</span>
       {showDiscount && variant === 'primary' && (
-        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded text-xs">-40% heute</span>
+        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded text-xs">{pt.discountToday}</span>
       )}
     </button>
   )
 }
 
-// Locked Feature Teaser Component
-export function LockedFeatureTeaser({
-  title,
-  description,
-  icon: Icon,
-  previewContent,
-  stats,
-  onUpgrade,
-}: {
-  title: string
-  description: string
-  icon: any
-  previewContent?: React.ReactNode | undefined
-  stats?: { label: string; value: string }[] | undefined
-  onUpgrade?: (() => void) | undefined
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
-      {/* Premium badge */}
-      <div className="absolute top-4 right-4">
-        <PremiumBadge size="sm" />
-      </div>
-
-      {/* Icon and title */}
-      <div className="flex items-start gap-4 mb-4">
-        <div className="p-3 bg-amber-100 rounded-xl">
-          <Icon className="h-8 w-8 text-amber-600" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            {title}
-            <Lock className="h-4 w-4 text-amber-500" />
-          </h3>
-          <p className="text-gray-600 mt-1">{description}</p>
-        </div>
-      </div>
-
-      {/* Blurred preview */}
-      {previewContent && (
-        <div className="relative mb-4">
-          <div className="blur-sm opacity-60 pointer-events-none">
-            {previewContent}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-white/80 to-transparent">
-            <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-              <Lock className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-medium text-gray-700">Freischalten mit Prime</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      {stats && (
-        <div className="flex gap-4 mb-4">
-          {stats.map((stat, i) => (
-            <div key={i} className="text-center">
-              <div className="text-2xl font-bold text-amber-600">{stat.value}</div>
-              <div className="text-xs text-gray-500">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* CTA */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500 flex items-center gap-1">
-          <Users className="h-4 w-4" />
-          <AnimatedCounter end={FOMO_STATS.upgradesThisWeek} /> Eltern diese Woche
-        </div>
-        <UpgradeButton variant="primary" onClick={onUpgrade} />
-      </div>
-    </div>
-  )
-}
 
 // Flashcards Premium Section
 export function FlashcardsPremiumSection({
@@ -195,13 +99,16 @@ export function FlashcardsPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: IndependentFeatureProps) {
+  const { language: uiLang } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [flashcards, setFlashcards] = useState<any>(null)
+  const [flashcards, setFlashcards] = useState<any | null>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const generateFlashcards = async () => {
     setIsGenerating(true)
@@ -217,7 +124,8 @@ export function FlashcardsPremiumSection({
           grade: grade || analysisData?.student?.class || 5,
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
-          language: language,
+          language,
+          uploadId,
         }),
       })
 
@@ -229,7 +137,7 @@ export function FlashcardsPremiumSection({
 
       setFlashcards(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : ('An error occurred'))
+      setError(err instanceof Error ? err.message : ('An error occurred to generate flashcards'))
     } finally {
       setIsGenerating(false)
     }
@@ -255,11 +163,7 @@ export function FlashcardsPremiumSection({
     return (
       <LockedFeatureTeaser
         title={pt.personalizedFlashcards}
-        description={
-          ('de' === 'de'
-            ? `${analysisData?.weaknesses?.length || 3}+ Lernkarten speziell für ${childName || 'Ihr Kind'} basierend auf den Testschwächen`
-            : `${analysisData?.weaknesses?.length || 3}+ flashcards tailored for ${childName || 'your child'} based on test weaknesses`)
-        }
+        description={pt.flashcardsLockedDesc(analysisData?.weaknesses?.length || 3, childName || '')}
         icon={BookOpen}
         previewContent={
           <div className="grid grid-cols-2 gap-3">
@@ -282,7 +186,7 @@ export function FlashcardsPremiumSection({
 
   // Premium user - full feature
   return (
-    <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-amber-200">
+    <div data-print="flashcards" className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-amber-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-amber-100 rounded-xl">
@@ -294,7 +198,7 @@ export function FlashcardsPremiumSection({
               <PremiumBadge size="sm" />
             </h3>
             <p className="text-sm text-gray-600">
-              pt.tailoredFor(childName || '')
+              {pt.tailoredFor(childName || '')}
             </p>
           </div>
         </div>
@@ -353,13 +257,13 @@ export function FlashcardsPremiumSection({
             </div>
           )}
 
-          {/* Flashcards grid */}
+          {/* Flashcards grid — always shows both sides; click to highlight answer */}
           <div className="grid md:grid-cols-2 gap-4">
             {flashcards.flashcards?.map((card: any, i: number) => (
               <div
                 key={i}
                 onClick={() => toggleCard(i)}
-                className="cursor-pointer"
+                className="cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all border-2 border-amber-200"
               >
                 {/* Front */}
                 {!flippedCards.has(i) && (
@@ -387,7 +291,7 @@ export function FlashcardsPremiumSection({
                   <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-md transition-all hover:shadow-lg">
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{pt.answer}</span>
-                      <span className="text-xs opacity-70">{'Click to flip'}</span>
+                      <span className="text-xs opacity-70">{pt.clickToFlip}</span>
                     </div>
                     <p className="text-lg font-medium">{card.back}</p>
                     {card.tip && (
@@ -404,17 +308,23 @@ export function FlashcardsPremiumSection({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => window.print()}
+              onClick={() => printSectionOnly('flashcards')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Printer className="h-4 w-4" />
               {pt.print}
             </button>
             <button
-              onClick={() => generateFlashcardsPDF(flashcards, {
-                childName,
-                subject: analysisData?.test?.subject,
-              })}
+              onClick={() => {
+                if (NON_LATIN_LANGS.includes(uiLang)) {
+                  printSectionOnly('flashcards')
+                } else {
+                  generateFlashcardsPDF(flashcards, {
+                    childName,
+                    subject: analysisData?.test?.subject,
+                  })
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Download className="h-4 w-4" />
@@ -438,14 +348,17 @@ export function FairnessCheckPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: IndependentFeatureProps) {
+  const { language: uiLang } = useLanguage()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [fairnessData, setFairnessData] = useState<any>(null)
+  const [fairnessData, setFairnessData] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'reconstruction' | 'details' | 'recovery'>('overview')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedItems)
@@ -472,7 +385,8 @@ export function FairnessCheckPremiumSection({
           grade: grade || analysisData?.student?.class || 5,
           subject: subject || analysisData?.test?.subject || 'Unknown',
           schoolType: schoolType || 'Gymnasium',
-          language: language,
+          language,
+          uploadId,
         }),
       })
 
@@ -541,7 +455,7 @@ export function FairnessCheckPremiumSection({
             </div>
             <div className="bg-white rounded-lg p-3 border">
               <span className="text-gray-500">
-                {'de' === 'de' ? (
+                {language === 'de' ? (
                   <>Wir haben <strong className="text-amber-600">3 mögliche Bedenken</strong> gefunden...</>
                 ) : (
                   <>We found <strong className="text-amber-600">3 potential concerns</strong>...</>
@@ -565,7 +479,7 @@ export function FairnessCheckPremiumSection({
 
   // Premium user - full feature
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+    <div data-print="fairness" className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-xl">
@@ -753,7 +667,7 @@ export function FairnessCheckPremiumSection({
                         </div>
                         {concern.detail && <p className="text-sm text-gray-600">{concern.detail}</p>}
                         {concern.evidence && (
-                          <p className="text-xs text-gray-500 mt-1 italic">{pt.evidence} "{concern.evidence}"</p>
+                          <p className="text-xs text-gray-500 mt-1 italic">{pt.evidence} &quot;{concern.evidence}&quot;</p>
                         )}
                         {concern.pointsAffected && (
                           <p className="text-xs text-amber-600 mt-1 font-medium">{pt.pointsAffected} {concern.pointsAffected}</p>
@@ -912,7 +826,7 @@ export function FairnessCheckPremiumSection({
                   <h4 className="font-bold text-blue-800 mb-3">{pt.teacherComments}</h4>
                   {testRecon.teacherComments.finalComment && (
                     <blockquote className="border-l-4 border-blue-400 pl-4 py-2 italic text-gray-700 bg-white rounded-r-lg mb-3">
-                      "{testRecon.teacherComments.finalComment}"
+                      &quot;{testRecon.teacherComments.finalComment}&quot;
                     </blockquote>
                   )}
                   {testRecon.teacherComments.marginNotes?.length > 0 && (
@@ -958,7 +872,7 @@ export function FairnessCheckPremiumSection({
                   {dim.examples?.length > 0 && (
                     <div className="space-y-1 mb-2">
                       {dim.examples.map((ex: string, i: number) => (
-                        <p key={i} className="text-xs text-gray-500 bg-gray-50 p-2 rounded">"{ex}"</p>
+                        <p key={i} className="text-xs text-gray-500 bg-gray-50 p-2 rounded">&quot;{ex}&quot;</p>
                       ))}
                     </div>
                   )}
@@ -1041,7 +955,7 @@ export function FairnessCheckPremiumSection({
                 {analysis.recommendation.sampleOpener && (
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                     <p className="text-xs font-medium text-blue-700 mb-1">{pt.conversationOpener}</p>
-                    <p className="text-sm text-gray-700 italic">"{analysis.recommendation.sampleOpener}"</p>
+                    <p className="text-sm text-gray-700 italic">&quot;{analysis.recommendation.sampleOpener}&quot;</p>
                   </div>
                 )}
 
@@ -1085,17 +999,28 @@ export function FairnessCheckPremiumSection({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => window.print()}
+              onClick={() => printSectionOnly('fairness')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Printer className="h-4 w-4" />
               {pt.print}
             </button>
             <button
-              onClick={() => generateFairnessPDF(fairnessData, {
-                childName,
-                subject: analysisData?.test?.subject,
-              })}
+              onClick={() => {
+                if (NON_LATIN_LANGS.includes(uiLang)) {
+                  printSectionOnly('fairness')
+                } else {
+                  try {
+                    generateFairnessPDF(fairnessData, {
+                      childName,
+                      subject: analysisData?.test?.subject,
+                    })
+                  } catch (err) {
+                    console.error('Fairness PDF generation failed:', err)
+                    alert('PDF konnte nicht erstellt werden. Bitte versuche es erneut.')
+                  }
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
             >
               <Download className="h-4 w-4" />
@@ -1124,16 +1049,19 @@ export function LearningMaterialPremiumSection({
   subject,
   schoolType,
   language = 'de',
+  uploadId,
+  cachedData,
 }: LearningMaterialProps) {
+  const { language: uiLang } = useLanguage()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [learningMaterial, setLearningMaterial] = useState<any>(null)
+  const [learningMaterial, setLearningMaterial] = useState<any>(cachedData || null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'analysis' | 'lessons' | 'worksheets' | 'quizzes'>('analysis')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [generationProgress, setGenerationProgress] = useState<string>('')
 
-  const { t, language: globalLang } = useLanguage()
-  const pt = getPremiumTranslation(globalLang)
+  const { t } = useLanguage()
+  const pt = t.premium
 
   const generateLearningMaterial = async () => {
     setIsGenerating(true)
@@ -1153,6 +1081,7 @@ export function LearningMaterialPremiumSection({
           schoolType: schoolType || 'Gymnasium',
           language,
           contentTypes: ['lessons', 'worksheets', 'quizzes'],
+          uploadId,
         }),
       })
 
@@ -1320,13 +1249,13 @@ export function LearningMaterialPremiumSection({
               <div className="flex items-center gap-3">
                 <Brain className="h-5 w-5 text-purple-600" />
                 <div>
-                  <p className="font-medium text-purple-800">{'Independent AI Analysis'}</p>
+                  <p className="font-medium text-purple-800">{pt.independentAIAnalysis}</p>
                   <p className="text-sm text-purple-600">
                     {learningMaterial.metadata.weaknessesFound} {pt.weaknessesDetected}
                     {' '}&bull;{' '}
                     {learningMaterial.metadata.curriculumTopicsMatched} {pt.curriculumTopicsMatched}
                     {' '}&bull;{' '}
-                    {'Generated in'} {learningMaterial.metadata.totalGenerationTime}
+                    {pt.generatedIn} {learningMaterial.metadata.totalGenerationTime}
                   </p>
                 </div>
               </div>
@@ -1392,9 +1321,9 @@ export function LearningMaterialPremiumSection({
                                   w.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
                                     'bg-gray-100 text-gray-600'
                                 }`}>
-                                {w.severity === 'critical' ? ('Critical') :
-                                  w.severity === 'high' ? (pt.high) :
-                                    w.severity === 'medium' ? ('Medium') : (pt.low)}
+                                {w.severity === 'critical' ? pt.critical :
+                                  w.severity === 'high' ? pt.high :
+                                    w.severity === 'medium' ? pt.medium : pt.low}
                               </span>
                               <span className="font-medium text-gray-800">{w.title}</span>
                             </div>
@@ -1416,7 +1345,7 @@ export function LearningMaterialPremiumSection({
                               {w.evidenceFromTest && (
                                 <div className="bg-gray-50 rounded p-2">
                                   <span className="text-xs font-medium text-gray-500">{pt.evidenceFromTest} </span>
-                                  <span className="text-sm text-gray-600 italic">"{w.evidenceFromTest}"</span>
+                                  <span className="text-sm text-gray-600 italic">&quot;{w.evidenceFromTest}&quot;</span>
                                 </div>
                               )}
                               {w.affectedSkills?.length > 0 && (
@@ -1993,15 +1922,21 @@ export function UpgradeModal({
   onClose: () => void
   feature?: 'flashcards' | 'fairness' | 'learning' | undefined
 }) {
+  const { t } = useLanguage()
+  const pt = t.premium
+
+  // Real countdown timer hook
+  const timeLeft = useTimer(23, 47, 12);
+
   if (!isOpen) return null
 
-  const features = [
-    { icon: BookOpen, text: 'Unbegrenzte personalisierte Lernkarten' },
-    { icon: Shield, text: 'Fairness-Check für jede Bewertung' },
-    { icon: GraduationCap, text: 'KI-generiertes Lernmaterial (Lektionen, Arbeitsblätter, Quizze)' },
-    { icon: TrendingUp, text: 'Detaillierte Fortschrittsanalysen' },
-    { icon: Sparkles, text: 'Prioritäts-Support' },
-    { icon: Download, text: 'PDF-Export aller Berichte' },
+  const featuresList = [
+    { icon: BookOpen, text: pt.unlimitedFlashcards },
+    { icon: Shield, text: pt.fairnessCheckEvery },
+    { icon: GraduationCap, text: pt.aiLearningMaterial },
+    { icon: TrendingUp, text: pt.detailedProgress },
+    { icon: Sparkles, text: pt.prioritySupport },
+    { icon: Download, text: pt.pdfExport },
   ]
 
   return (
@@ -2016,14 +1951,14 @@ export function UpgradeModal({
             <Crown className="h-10 w-10" />
             <div>
               <h2 className="text-2xl font-bold">GradeAI Prime</h2>
-              <p className="opacity-90">Das Beste für Ihr Kind</p>
+              <p className="opacity-90">{pt.bestForYourChild}</p>
             </div>
           </div>
           <div className="mt-4 bg-white/20 rounded-lg p-3 text-center">
             <span className="text-3xl font-bold">€9.99</span>
-            <span className="text-lg">/Monat</span>
+            <span className="text-lg">{pt.perMonth}</span>
             <span className="ml-3 line-through opacity-70">€16.99</span>
-            <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded text-sm font-bold">-40%</span>
+            <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded text-sm font-bold">{pt.discountToday}</span>
           </div>
         </div>
 
@@ -2033,14 +1968,14 @@ export function UpgradeModal({
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-3">
             <Clock className="h-5 w-5 text-red-500" />
             <div>
-              <p className="font-medium text-red-700">Angebot endet bald!</p>
-              <p className="text-sm text-red-600">Nur noch 23:47:12 verbleibend</p>
+              <p className="font-medium text-red-700">{pt.offerEndsSoon}</p>
+              <p className="text-sm text-red-600">{pt.timeRemaining.replace('23:47:12', timeLeft)}</p>
             </div>
           </div>
 
           {/* Features list */}
           <ul className="space-y-3 mb-6">
-            {features.map((f, i) => (
+            {featuresList.map((f, i) => (
               <li key={i} className="flex items-center gap-3">
                 <div className="p-1.5 bg-amber-100 rounded-lg">
                   <f.icon className="h-4 w-4 text-amber-600" />
@@ -2050,33 +1985,17 @@ export function UpgradeModal({
             ))}
           </ul>
 
-          {/* Social proof */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 border-2 border-white" />
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">+<AnimatedCounter end={FOMO_STATS.upgradesThisWeek} /> diese Woche</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
-              ))}
-              <span className="text-sm text-gray-600 ml-2">{FOMO_STATS.parentsSatisfied}% zufriedene Eltern</span>
-            </div>
-          </div>
+          <PremiumStatistics />
 
-          {/* CTA buttons */}
+          {/* CTA button */}
           <button className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
             <Gift className="h-5 w-5" />
-            Jetzt Prime werden
+            {pt.becomePrime}
             <ArrowRight className="h-5 w-5" />
           </button>
 
           <p className="text-center text-sm text-gray-500 mt-4">
-            Jederzeit kündbar • 30 Tage Geld-zurück-Garantie
+            {pt.cancelAnytime}
           </p>
         </div>
       </div>
