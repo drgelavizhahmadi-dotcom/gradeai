@@ -18,11 +18,11 @@ model User {
   updatedAt          DateTime  @updatedAt
   emailVerified      DateTime?
   image              String?
-
-  accounts Account[]
-  children Child[]
-  sessions Session[]
-  uploads  Upload[]
+  accounts           Account[]
+  children           Child[]
+  sessions           Session[]
+  uploads            Upload[]
+  schoolDocuments    SchoolDocument[]
 
   // Stripe fields
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
@@ -79,25 +79,26 @@ model Child {
   userId     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  uploads    Upload[]
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploads         Upload[]
+  schoolDocuments SchoolDocument[]
 
   @@index([userId])
 }
 
 model Upload {
-  id               String              @id @default(cuid())
-  userId           String
-  childId          String
-  fileName         String
-  fileUrl          String
-  fileSize         Int
-  mimeType         String
+  id             String    @id @default(cuid())
+  userId         String
+  childId        String
+  fileName       String
+  fileUrl        String
+  fileSize       Int
+  mimeType       String
   subject          String?
   grade            Float?
   teacherComment   String?
   extractedText    String?
-  analysisStatus   String              @default("pending")
+  analysisStatus   String   @default("pending")
   analysis         Json?
   flashcards       Json?
   fairnessCheck    Json?
@@ -121,8 +122,43 @@ model ReportTranslation {
   language  String
   report    Json
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   upload    Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  @@unique([uploadId, language])
+  @@unique([uploadId, language], name: "uploadId_language")
   @@index([uploadId])
+}
+
+model SchoolDocument {
+  id            String    @id @default(cuid())
+  userId        String
+  childId       String
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  mimeType      String
+
+  // AI-extracted fields
+  category      String?
+  title         String?
+  summary       String?
+  actionNeeded  String?
+  deadline      DateTime?
+  extractedData Json?
+
+  // Status tracking
+  status        String    @default("pending")
+  markedDoneAt  DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([childId])
+  @@index([status])
+  @@index([deadline])
+  @@index([createdAt])
 }

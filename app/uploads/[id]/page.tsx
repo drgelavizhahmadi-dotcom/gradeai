@@ -38,7 +38,6 @@ const REPORT_LANGUAGES: Record<Language, { name: string; native: string; flag: s
   ru: { name: 'Russian', native: 'Русский', flag: '🇷🇺' },
 }
 
-
 interface Upload {
   id: string
   fileName: string
@@ -57,6 +56,9 @@ interface Upload {
     ai: TestAnalysis | null
     aiError: string | null
   } | null
+  flashcards: any | null
+  fairnessCheck: any | null
+  learningMaterial: any | null
   child: {
     id?: string
     name: string
@@ -78,15 +80,15 @@ export default function UploadDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+
   // Global Language translation state
   const { language: globalLanguage, t } = useLanguage()
-
   // Local Report translation state
   const [reportLanguage, setReportLanguage] = useState<Language>('de')
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [translatedReport, setTranslatedReport] = useState<any>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [translationError, setTranslationError] = useState<string | null>(null)
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [originalReport, setOriginalReport] = useState<any>(null)
 
   // Premium features state
@@ -227,16 +229,21 @@ export default function UploadDetailPage() {
   // Handle language change for instant translation
   const handleLanguageChange = async (newLanguage: Language) => {
     if (newLanguage === reportLanguage) {
-      setShowLanguageMenu(false)
       return
     }
 
-    setShowLanguageMenu(false)
     setReportLanguage(newLanguage)
     setTranslationError(null)
 
-    // If German (base language), use the original report
-    if (newLanguage === 'de' && originalReport) {
+    // German is the base language — use original
+    if (newLanguage === 'de') {
+      setTranslatedReport(originalReport)
+      return
+    }
+
+    // Check if report is already in the target language
+    const currentLang = originalReport?._meta?.language?.code
+    if (currentLang === newLanguage) {
       setTranslatedReport(originalReport)
       return
     }
@@ -247,10 +254,10 @@ export default function UploadDetailPage() {
       return
     }
 
+    setTranslationError(null)
     setIsTranslating(true)
 
     try {
-      // The translate-report API checks DB cache first, then translates + saves if not cached
       const response = await fetch('/api/ai/translate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,18 +267,11 @@ export default function UploadDetailPage() {
           uploadId: uploadId,
         }),
       })
-
       const data = await response.json()
-
-      if (!data.success) {
-        throw new Error(data.error || 'Translation failed')
-      }
-
-      setTranslatedReport(data.translatedReport)
+      if (data.translatedReport) setTranslatedReport(data.translatedReport)
     } catch (err) {
       console.error('Translation error:', err)
       setTranslationError(err instanceof Error ? err.message : 'Translation failed')
-      // Keep current report on error
     } finally {
       setIsTranslating(false)
     }
@@ -289,11 +289,8 @@ export default function UploadDetailPage() {
         setOriginalReport(analysisData)
         setTranslatedReport(analysisData)
 
-        // Detect current language from report meta (default to German)
-        const currentLang = analysisData._meta?.language?.code
-        if (currentLang && currentLang in REPORT_LANGUAGES) {
-          setReportLanguage(currentLang as Language)
-        }
+        // Language is now driven by the global useLanguage() context
+
       }
     }
   }, [upload?.analysis])
@@ -735,7 +732,7 @@ export default function UploadDetailPage() {
 
             {/* Parent Report */}
             {(upload.analysis || upload.extractedText) && (
-              <div className="mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
+              <div className="mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
                 {(() => {
                   // Use translated report if available, otherwise original
                   const analysisData = translatedReport || (upload.analysis ?
@@ -767,7 +764,7 @@ export default function UploadDetailPage() {
                           data={analysisData}
                           extractedText={upload.extractedText}
                           childName={upload.child?.name}
-                          language={reportLanguage as any}
+                          language={language as any}
                         />
                       </ErrorBoundary>
                     );
@@ -840,7 +837,7 @@ export default function UploadDetailPage() {
 
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
-              <div className="space-y-6 mb-6" dir={['ar', 'fa'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
+              <div className="space-y-6 mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
                 {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}
@@ -851,7 +848,9 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
+                  language={language as any}
+                  uploadId={upload.id}
+                  cachedData={upload.flashcards}
                 />
 
                 {/* Fairness Check Section - Independent AI Analysis */}
@@ -864,21 +863,13 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
+                  language={language as any}
+                  uploadId={upload.id}
+                  cachedData={upload.fairnessCheck}
                 />
 
-                {/* Learning Material Section - Independent AI Analysis */}
-                <LearningMaterialPremiumSection
-                  isPremium={isPremiumUser}
-                  childName={upload.child.name}
-                  analysisData={translatedReport || (typeof upload.analysis === 'string' ? JSON.parse(upload.analysis) : upload.analysis)}
-                  onUpgrade={() => handleUpgrade('learning')}
-                  extractedText={upload.extractedText}
-                  grade={upload.child.grade}
-                  subject={upload.subject || undefined}
-                  schoolType={upload.child.schoolType}
-                  language={reportLanguage as any}
-                />
+                {/* Learning Material Section - coming soon */}
+                {/* <LearningMaterialPremiumSection ... /> */}
               </div>
             )}
 

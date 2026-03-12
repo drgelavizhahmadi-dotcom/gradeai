@@ -4,7 +4,8 @@ import { useState } from 'react';
 import {
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   Target, BookOpen, MessageCircle, Calendar, Lightbulb,
-  Heart, Users, ExternalLink, Clock, TrendingUp, AlertCircle
+  Heart, Users, ExternalLink, Clock, TrendingUp, AlertCircle,
+  Printer, Download
 } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { translations, Language } from '@/lib/translations';
@@ -242,7 +243,7 @@ function SeverityBadge({ severity }: { severity: string | undefined }) {
 
 export function ParentReport({ data, extractedText, childName, language: propLanguage }: ParentReportProps) {
   const [showRaw, setShowRaw] = useState(false);
-  const { language: contextLanguage } = useLanguage();
+  const { language: contextLanguage, t: uiT } = useLanguage();
   // Use prop language if provided, otherwise fall back to context
   const language = propLanguage || contextLanguage;
   const t = getReportTranslations(language);
@@ -250,6 +251,10 @@ export function ParentReport({ data, extractedText, childName, language: propLan
 
   // Check if report has RTL language metadata
   const isRTL = data?._meta?.language?.rtl || ['ar', 'fa', 'ku'].includes(language);
+
+  const handleDownloadPDF = () => {
+    window.print()
+  }
 
   const studentName = reportData.student?.name || childName || 'Student';
   const grade = reportData.grade?.value || '—';
@@ -296,13 +301,31 @@ export function ParentReport({ data, extractedText, childName, language: propLan
         </div>
       </div>
 
+      {/* Print / Download buttons */}
+      <div className="flex items-center justify-end gap-2 print:hidden">
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white border border-[var(--gray-200)] rounded-xl text-[var(--gray-700)] hover:bg-[var(--gray-100)] transition-colors shadow-sm"
+        >
+          <Printer className="h-4 w-4" />
+          {({ de: 'Drucken', ar: 'طباعة', tr: 'Yazdır', ro: 'Tipărire', ru: 'Печать', fa: 'چاپ', ku: 'چاپ', kmr: 'Çap' } as Record<string,string>)[contextLanguage] || 'Print'}
+        </button>
+        <button
+          onClick={handleDownloadPDF}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-dark)] transition-colors shadow-sm"
+        >
+          <Download className="h-4 w-4" />
+          {uiT.analysis?.downloadPDF || 'PDF herunterladen'}
+        </button>
+      </div>
+
       {/* Key Message to Parents */}
       {reportData.messages?.toParents && (
         <div className="bg-gradient-to-r from-[var(--lavender)]/20 to-pink-50 border-2 border-[var(--lavender)]/30 rounded-2xl p-5">
           <div className="flex items-start gap-3">
             <Heart className="w-6 h-6 text-[var(--lavender)] flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>Liebe Eltern,</h3>
+              <h3 className="font-semibold text-[var(--gray-800)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>{t.dearParents}</h3>
               <p className="text-[var(--gray-700)] leading-relaxed">{reportData.messages.toParents}</p>
             </div>
           </div>
@@ -314,7 +337,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
         <div className="bg-[var(--primary-soft)] border-2 border-[var(--primary)]/30 rounded-2xl p-5">
           <h3 className="font-semibold text-[var(--primary-dark)] mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <Target className="w-5 h-5" />
-            Das Wichtigste auf einen Blick
+            {t.keyInsights}
           </h3>
           {summaryText && <p className="text-[var(--gray-700)] mb-3 font-medium">{summaryText}</p>}
           {typeof reportData.summary === 'object' && reportData.summary?.keyTakeaways && (
@@ -330,7 +353,7 @@ export function ParentReport({ data, extractedText, childName, language: propLan
           {typeof reportData.summary === 'object' && reportData.summary?.nextStep && (
             <div className="mt-4 p-3 bg-[var(--primary)]/20 rounded-xl">
               <p className="text-[var(--primary-dark)] font-medium">
-                👉 Nächster Schritt: {reportData.summary.nextStep}
+                👉 {t.nextStep} {reportData.summary.nextStep}
               </p>
             </div>
           )}
