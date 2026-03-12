@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { extractTextFromImage } from '@/lib/ocr/vision'
+import { convertPdfToImages } from '@/lib/utils/pdf-to-images'
 
 export const maxDuration = 300
 
@@ -79,14 +80,28 @@ export async function POST(request: NextRequest) {
     console.log(`[ExtractSchoolDoc] Starting extraction for document ${documentId}`)
     const startTime = Date.now()
 
-    // Step 1: OCR the image with Google Vision
+    // Step 1: OCR the image (or PDF pages) with Google Vision
     const imageBuffer = Buffer.from(imageBase64, 'base64')
+    const isPdf = mimeType === 'application/pdf' || imageBuffer.toString('ascii', 0, 4) === '%PDF'
     let ocrText = ''
 
     try {
-      const ocrResult = await extractTextFromImage(imageBuffer)
-      ocrText = ocrResult.text
-      console.log(`[ExtractSchoolDoc] OCR done: ${ocrText.length} chars, confidence: ${(ocrResult.confidence * 100).toFixed(1)}%`)
+      if (isPdf) {
+        console.log(`[ExtractSchoolDoc] PDF detected, converting pages to images...`)
+        const pages = await convertPdfToImages(imageBuffer)
+        const pageTexts: string[] = []
+        for (const page of pages) {
+          const pageBuffer = Buffer.from(page.base64, 'base64')
+          const result = await extractTextFromImage(pageBuffer)
+          if (result.text.trim()) pageTexts.push(result.text)
+        }
+        ocrText = pageTexts.join('\n\n')
+        console.log(`[ExtractSchoolDoc] PDF OCR done: ${pages.length} pages, ${ocrText.length} chars`)
+      } else {
+        const ocrResult = await extractTextFromImage(imageBuffer)
+        ocrText = ocrResult.text
+        console.log(`[ExtractSchoolDoc] OCR done: ${ocrText.length} chars, confidence: ${(ocrResult.confidence * 100).toFixed(1)}%`)
+      }
     } catch (ocrError) {
       console.error('[ExtractSchoolDoc] OCR failed:', ocrError)
       // If OCR fails, still save the document but with minimal data
