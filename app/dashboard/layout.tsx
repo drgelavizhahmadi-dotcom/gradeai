@@ -63,14 +63,11 @@ export default function DashboardLayout({
 
   const navigation = [
     { name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
+    { name: t.nav?.children || 'Kinder', href: '/dashboard/children', icon: Users },
     { name: t.nav?.communication || 'Schulpost', href: '/dashboard/communication', icon: Mail },
-    { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
-    { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
-    { key: 'dashboard', name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { key: 'children', name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
-    { key: 'uploadTest', name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
-    { key: 'subscription', name: 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
+    { name: t.dashboard?.uploadTest || 'Test hochladen', href: '/dashboard/upload', icon: Upload },
+    { name: t.nav?.settings || 'Einstellungen', href: '/dashboard/settings', icon: Settings },
+    { name: 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
   ]
 
   const isActive = (href: string) => {

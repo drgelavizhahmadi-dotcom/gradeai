@@ -43,6 +43,7 @@ interface SchoolDocument {
   summary: string | null
   actionNeeded: string | null
   deadline: string | null
+  extractedData: Record<string, any> | null
   status: string
   createdAt: string
   child: {
@@ -399,7 +400,19 @@ export default function CommunicationPage() {
                           )}
                         </h3>
                         {doc.summary && !isExtracting && (
-                          <p className="text-sm text-[var(--gray-600)] mt-1 line-clamp-2">{doc.summary}</p>
+                          <p className="text-sm text-[var(--gray-600)] mt-1">{doc.summary}</p>
+                        )}
+                        {doc.extractedData?.details && !isExtracting && Object.keys(doc.extractedData.details).length > 0 && (
+                          <dl className="mt-2 text-xs text-[var(--gray-600)] space-y-0.5">
+                            {Object.entries(doc.extractedData.details as Record<string, string>).map(([key, value]) =>
+                              value ? (
+                                <div key={key} className="flex gap-1">
+                                  <dt className="font-semibold capitalize shrink-0">{key}:</dt>
+                                  <dd>{String(value)}</dd>
+                                </div>
+                              ) : null
+                            )}
+                          </dl>
                         )}
                       </div>
 
