@@ -228,11 +228,9 @@ export default function UploadDetailPage() {
   // Handle language change for instant translation
   const handleLanguageChange = async (newLanguage: Language) => {
     if (newLanguage === reportLanguage) {
-      setShowLanguageMenu(false)
       return
     }
 
-    setShowLanguageMenu(false)
     setReportLanguage(newLanguage)
     setTranslationError(null)
 
