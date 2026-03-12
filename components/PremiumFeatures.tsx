@@ -14,7 +14,6 @@ import {
   generateFairnessPDF,
   generateLearningMaterialPDF
 } from '@/lib/pdf/generate-pdf'
-import { useLanguage } from '@/components/providers/LanguageProvider'
 import { getPremiumTranslation } from './premiumTranslations'
 
 // Languages that don't render correctly in jsPDF (non-Latin scripts)
