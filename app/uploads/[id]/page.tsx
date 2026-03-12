@@ -732,7 +732,7 @@ export default function UploadDetailPage() {
 
             {/* Parent Report */}
             {(upload.analysis || upload.extractedText) && (
-              <div className="mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
+              <div className="mb-6" dir={['ar', 'fa', 'ku'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {(() => {
                   // Use translated report if available, otherwise original
                   const analysisData = translatedReport || (upload.analysis ?
@@ -764,7 +764,7 @@ export default function UploadDetailPage() {
                           data={analysisData}
                           extractedText={upload.extractedText}
                           childName={upload.child?.name}
-                          language={language as any}
+                          language={reportLanguage as any}
                         />
                       </ErrorBoundary>
                     );
@@ -837,7 +837,7 @@ export default function UploadDetailPage() {
 
             {/* Premium Features: Flashcards & Fairness Check */}
             {upload.analysis && (
-              <div className="space-y-6 mb-6" dir={['ar', 'fa', 'ku'].includes(language) ? 'rtl' : 'ltr'}>
+              <div className="space-y-6 mb-6" dir={['ar', 'fa', 'ku'].includes(reportLanguage) ? 'rtl' : 'ltr'}>
                 {/* Flashcards Section - Independent AI Analysis */}
                 <FlashcardsPremiumSection
                   isPremium={isPremiumUser}
@@ -848,7 +848,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={language as any}
+                  language={reportLanguage as any}
                   uploadId={upload.id}
                   cachedData={upload.flashcards}
                 />
@@ -863,7 +863,7 @@ export default function UploadDetailPage() {
                   grade={upload.child.grade}
                   subject={upload.subject || undefined}
                   schoolType={upload.child.schoolType}
-                  language={language as any}
+                  language={reportLanguage as any}
                   uploadId={upload.id}
                   cachedData={upload.fairnessCheck}
                 />
