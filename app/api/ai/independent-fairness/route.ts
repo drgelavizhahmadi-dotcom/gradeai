@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
+import { z } from 'zod'
+import { RateLimiter, getClientIP } from '@/lib/rate-limit'
 
 export const maxDuration = 300
+
+// ===== REQUEST VALIDATION WITH ZOD =====
+const independentFairnessSchema = z.object({
+  extractedText: z.string()
+    .min(10, 'Extracted text must be at least 10 characters')
+    .max(50000, 'Extracted text exceeds 50,000 character limit'),
+  childName: z.string().optional(),
+  grade: z.number().min(1).max(13).optional(),
+  subject: z.string().max(100).optional(),
+  schoolType: z.enum(['Grundschule', 'Hauptschule', 'Realschule', 'Gymnasium']).optional(),
+  language: z.enum(['de', 'en', 'ar', 'tr', 'ro', 'ru', 'fa', 'ku', 'kmr']).default('de'),
+});
+
+type IndependentFairnessRequest = z.infer<typeof independentFairnessSchema>;
+
+// ===== RATE LIMITING =====
+const fairnessRateLimiter = new RateLimiter(10, 60 * 1000); // 10 requests per minute
 
 const deepseek = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -98,16 +117,57 @@ async function fixJsonWithAI(brokenJson: string): Promise<Record<string, unknown
 
 export async function POST(request: NextRequest) {
   try {
+    // ===== RATE LIMITING CHECK =====
+    const clientIp = getClientIP(request)
+    const rateLimitResult = fairnessRateLimiter.check(clientIp)
+    
+    if (!rateLimitResult.success) {
+      console.warn(`[Independent Fairness API] Rate limit exceeded for IP: ${clientIp}`)
+      return new Response(
+        JSON.stringify({
+          error: 'Too many requests. Please try again later.',
+          retryAfter: rateLimitResult.retryAfter,
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimitResult.retryAfter),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      )
+    }
+
+    // ===== AUTHENTICATION =====
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { extractedText, childName, grade, subject, schoolType, language = 'de' } = await request.json()
-
-    if (!extractedText) {
-      return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
+    // ===== REQUEST VALIDATION =====
+    const rawBody = await request.json()
+    let validatedData: IndependentFairnessRequest
+    
+    try {
+      validatedData = independentFairnessSchema.parse(rawBody)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            issues: error.issues.map(issue => ({
+              path: issue.path.join('.'),
+              message: issue.message,
+            })),
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
+
+    const { extractedText, childName, grade, subject, schoolType, language } = validatedData
 
     const languageInstruction = getLanguageInstruction(language)
     console.log('[Independent Fairness API] Starting for:', childName, 'language:', language)

@@ -3,26 +3,75 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { generateReportWithClaude } from "@/lib/ai/report/claude-report";
 import { convertGermanGrade } from "@/lib/ocr/gradeConverter";
+import { z } from "zod";
+import { RateLimiter, getClientIP } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+
+// ===== REQUEST VALIDATION WITH ZOD =====
+const reportRequestSchema = z.object({
+  uploadId: z.string().min(1, "uploadId required"),
+});
+
+// ===== RATE LIMITING =====
+const reportRateLimiter = new RateLimiter(15, 60 * 1000); // 15 requests per minute per IP
 
 export async function POST(request: NextRequest) {
   let uploadId: string | undefined;
 
   try {
+    // ===== RATE LIMITING CHECK =====
+    const clientIp = getClientIP(request);
+    const rateLimitResult = reportRateLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      console.warn(`[Report API] Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Too many requests. Please try again later.",
+          retryAfter: rateLimitResult.retryAfter,
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rateLimitResult.retryAfter),
+            "X-RateLimit-Remaining": "0",
+          },
+        }
+      );
+    }
+
+    // ===== AUTHENTICATION =====
     const session = await requireAuth();
     const userId = session.user.id;
 
+    // ===== REQUEST VALIDATION =====
     const body = await request.json();
-    uploadId = body.uploadId;
-
-    if (!uploadId) {
-      return NextResponse.json(
-        { success: false, error: "uploadId required" },
-        { status: 400 }
-      );
+    
+    let validated;
+    try {
+      validated = reportRequestSchema.parse(body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid request parameters",
+            issues: error.issues.map((issue) => ({
+              path: issue.path.join("."),
+              message: issue.message,
+            })),
+          },
+          { status: 400 }
+        );
+      }
+      throw error;
     }
+
+    uploadId = validated.uploadId;
 
     // Get upload with extraction
     const upload = await db.upload.findUnique({ where: { id: uploadId } });
@@ -43,7 +92,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[Report API] Starting report for upload ${uploadId}, extraction: ${rawExtraction.length} chars`);
+    console.log(
+      `[Report API] Starting report for upload ${uploadId}, extraction: ${rawExtraction.length} chars`
+    );
 
     await db.upload.update({
       where: { id: uploadId },
@@ -70,9 +121,10 @@ export async function POST(request: NextRequest) {
 
     // Extract teacher comment
     const mainComment = report.teacherFeedback?.mainComment;
-    const teacherCommentText = typeof mainComment === "string"
-      ? mainComment
-      : mainComment?.text || "";
+    const teacherCommentText =
+      typeof mainComment === "string"
+        ? mainComment
+        : mainComment?.text || "";
 
     // Save report to database (don't overwrite extractedText with report data)
     await db.upload.update({
@@ -84,6 +136,7 @@ export async function POST(request: NextRequest) {
         analysis: report as any,
         analysisStatus: "completed",
         processedAt: new Date(),
+        errorMessage: null, // Clear error message on success
       },
     });
 
@@ -96,15 +149,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Report API] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Report generation failed";
+    const errorMessage =
+      error instanceof Error ? error.message : "Report generation failed";
 
     if (uploadId) {
       try {
         await db.upload.update({
           where: { id: uploadId },
-          data: { 
+          data: {
             analysisStatus: "failed",
-            errorMessage: errorMessage 
+            errorMessage: errorMessage,
           },
         });
       } catch (dbError) {
