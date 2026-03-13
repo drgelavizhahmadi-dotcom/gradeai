@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -98,7 +99,11 @@ export default function ChildProfilePage() {
           pendingTests: uploadList.filter((u: UploadItem) => u.analysisStatus === 'pending' || u.analysisStatus === 'processing').length,
         })
 
-        setUploads(uploadList)
+        const actionableUploads = uploadList.filter((u: UploadItem) => 
+          u.analysisStatus === 'completed' || u.analysisStatus === 'failed'
+        )
+
+        setUploads(actionableUploads)
       } else {
         throw new Error(childData.error || 'Failed to load child profile')
       }
@@ -525,7 +530,22 @@ export default function ChildProfilePage() {
                         <span className="text-xs text-[var(--gray-400)] hidden sm:block">
                           {new Date(upload.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        {getStatusBadge(upload.analysisStatus)}
+                        <div className="flex items-center gap-2">
+                          {upload.analysisStatus === 'failed' && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                router.push(`/dashboard/upload?retry=${upload.id}`)
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+                              title={t.upload?.retryBtn || 'Retry'}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                          )}
+                          {getStatusBadge(upload.analysisStatus)}
+                        </div>
                       </div>
                     </Link>
                   </div>

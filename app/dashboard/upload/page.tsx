@@ -152,7 +152,10 @@ export default function UploadPage() {
 
         {/* Upload Zone */}
         {!loading && !error && selectedChildId && (
-          <UploadZone childId={selectedChildId} />
+          <UploadZone 
+            childId={selectedChildId} 
+            retryUploadId={searchParams.get("retry") || undefined}
+          />
         )}
 
         {/* No Children State */}

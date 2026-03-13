@@ -8,12 +8,14 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  let uploadId: string | undefined;
+
   try {
     const session = await requireAuth();
     const userId = session.user.id;
 
     const body = await request.json();
-    const { uploadId } = body;
+    uploadId = body.uploadId;
 
     if (!uploadId) {
       return NextResponse.json(
@@ -94,11 +96,26 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Report API] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Report generation failed";
+
+    if (uploadId) {
+      try {
+        await db.upload.update({
+          where: { id: uploadId },
+          data: { 
+            analysisStatus: "failed",
+            errorMessage: errorMessage 
+          },
+        });
+      } catch (dbError) {
+        console.error("[Report API] Failed to update error status:", dbError);
+      }
+    }
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Report generation failed",
+        error: errorMessage,
       },
       { status: 500 }
     );

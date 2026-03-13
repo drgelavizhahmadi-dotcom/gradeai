@@ -19,7 +19,8 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import { OwlMascot } from '@/components/mascots'
@@ -109,7 +110,13 @@ export default function DashboardPage() {
         const sortedUploads = allUploads.sort((a: any, b: any) =>
           new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
         )
-        setRecentUploads(sortedUploads.slice(0, 5))
+        
+        // Filter to only show actionable states: completed or failed
+        const actionableUploads = sortedUploads.filter((u: any) => 
+          u.analysisStatus === 'completed' || u.analysisStatus === 'failed'
+        )
+        
+        setRecentUploads(actionableUploads.slice(0, 5))
 
         const totalTests = allUploads.length
         const pendingTests = allUploads.filter((u: any) =>
@@ -583,7 +590,22 @@ export default function DashboardPage() {
                         <div className="text-right hidden sm:block">
                           <p className="text-xs text-[var(--gray-400)]">{formatDate(upload.uploadedAt)}</p>
                         </div>
-                        {getStatusBadge(upload.analysisStatus)}
+                        <div className="flex items-center gap-2">
+                          {upload.analysisStatus === 'failed' && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                router.push(`/dashboard/upload?retry=${upload.id}`)
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+                              title={t.upload?.retryBtn || 'Retry'}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                          )}
+                          {getStatusBadge(upload.analysisStatus)}
+                        </div>
                       </div>
                     </Link>
                   </div>
