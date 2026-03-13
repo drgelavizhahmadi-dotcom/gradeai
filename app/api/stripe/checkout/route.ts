@@ -26,7 +26,7 @@ export async function POST(_req: Request) {
             return new NextResponse('Email required for payment', { status: 400 });
         }
 
-        let stripeCustomerId = user.stripeCustomerId;
+        let stripeCustomerId = (user as any).stripeCustomerId;
 
         if (!stripeCustomerId) {
             const customer = await stripe.customers.create({
@@ -45,7 +45,7 @@ export async function POST(_req: Request) {
                 },
                 data: {
                     stripeCustomerId: customer.id,
-                },
+                } as any,
             });
         }
 

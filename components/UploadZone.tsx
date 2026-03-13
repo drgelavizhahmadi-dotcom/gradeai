@@ -9,7 +9,7 @@ import * as pdfjsLib from "pdfjs-dist";
 
 interface UploadZoneProps {
   childId: string;
-  retryUploadId?: string;
+  retryUploadId: string | undefined | null;
 }
 
 const uploadTexts: Record<string, {
@@ -393,10 +393,7 @@ const getFileSchema = (t: typeof uploadTexts['de']) => z.object({
   }),
 });
 
-interface UploadZoneProps {
-  childId: string;
-  retryUploadId?: string;
-}
+
 
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
 

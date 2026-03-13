@@ -154,7 +154,7 @@ export default function UploadPage() {
         {!loading && !error && selectedChildId && (
           <UploadZone 
             childId={selectedChildId} 
-            retryUploadId={searchParams.get("retry") || undefined}
+            retryUploadId={searchParams.get("retry")}
           />
         )}
 
