@@ -74,51 +74,69 @@ export async function generateReportWithClaude(extraction: string) {
     };
   }
 
-  try {
-    const anthropic = new Anthropic({ apiKey });
-    const prompt = REPORT_PROMPT.replace('{extraction}', extraction);
+  const anthropic = new Anthropic({ apiKey });
+  const prompt = REPORT_PROMPT.replace('{extraction}', extraction);
 
-    console.log('[Claude Report] Sending request...');
+  // Exponential backoff parameters
+  const maxAttempts = 3;
+  const baseDelayMs = 1000; // 1s
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: REPORT_SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
-    });
+  let lastError: any = null;
 
-    const textContent = response.content.find(c => c.type === 'text');
-    const reportText = textContent?.type === 'text' ? textContent.text : '';
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[Claude Report] Sending request (attempt ${attempt})...`);
 
-    // Extract JSON from response
-    const jsonMatch = reportText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: REPORT_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const textContent = response.content.find((c: any) => c.type === 'text');
+      const reportText = textContent?.type === 'text' ? textContent.text : '';
+
+      // Extract JSON from response
+      const jsonMatch = reportText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+
+      const report = JSON.parse(jsonMatch[0]);
+
+      const duration = Date.now() - startTime;
+      console.log('[Claude Report] Complete');
+      console.log('[Claude Report] Student:', report.student?.name);
+      console.log('[Claude Report] Grade:', report.grade?.value);
+      console.log('[Claude Report] Time:', duration, 'ms');
+
+      return {
+        success: true as const,
+        report,
+        duration,
+        provider: 'claude' as const,
+      };
+    } catch (error: any) {
+      lastError = error;
+      console.error(`[Claude Report] Attempt ${attempt} failed:`, error?.message || error);
+
+      // If last attempt, break and return failure
+      if (attempt === maxAttempts) break;
+
+      // Backoff before retrying
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
+      console.log(`[Claude Report] Waiting ${delay}ms before retrying...`);
+      await new Promise((r) => setTimeout(r, delay));
     }
-
-    const report = JSON.parse(jsonMatch[0]);
-
-    const duration = Date.now() - startTime;
-    console.log('[Claude Report] Complete');
-    console.log('[Claude Report] Student:', report.student?.name);
-    console.log('[Claude Report] Grade:', report.grade?.value);
-    console.log('[Claude Report] Time:', duration, 'ms');
-
-    return {
-      success: true as const,
-      report,
-      duration,
-      provider: 'claude' as const,
-    };
-
-  } catch (error: any) {
-    console.error('[Claude Report] Error:', error.message);
-    return {
-      success: false as const,
-      error: error.message,
-      report: null,
-      duration: Date.now() - startTime,
-      provider: 'claude' as const,
-    };
   }
+
+  const duration = Date.now() - startTime;
+  return {
+    success: false as const,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+    report: null,
+    duration,
+    provider: 'claude' as const,
+  };
 }

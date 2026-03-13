@@ -21,7 +21,7 @@ const prisma = new PrismaClient()
  * })
  */
 export async function withTransaction<T>(
-  operation: (tx: PrismaClient) => Promise<T>
+  operation: (tx: any) => Promise<T>
 ): Promise<T> {
   try {
     return await prisma.$transaction(async (tx) => {

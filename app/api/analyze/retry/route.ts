@@ -77,8 +77,11 @@ export async function POST(request: NextRequest) {
         data: { analysisStatus: "analyzing" },
       });
 
+      // Ensure extractedText is treated as non-null string for TS
+      const extractedText = upload.extractedText as string;
+
       // Generate report
-      const result = await generateReportWithClaude(upload.extractedText);
+      const result = await generateReportWithClaude(extractedText);
 
       if (!result.success || !result.report) {
         console.error(`[Retry API] Report generation failed:`, result.error);

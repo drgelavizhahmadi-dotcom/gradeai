@@ -14,9 +14,16 @@ interface IdempotencyRecord {
   key: string
   result: any
   status: 'pending' | 'success' | 'failed'
-  error?: string
+  error?: string | undefined
   createdAt: Date
   expiresAt: Date
+}
+
+interface IdempotencyResult {
+  exists: boolean
+  result?: any | undefined
+  status?: string | undefined
+  error?: string | undefined
 }
 
 const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000 // 24 hours
@@ -35,7 +42,7 @@ export function getIdempotencyKey(request: NextRequest): string | null {
  */
 export async function getIdempotencyResult(
   key: string
-): Promise<{ exists: boolean; result?: any; status?: string; error?: string }> {
+): Promise<IdempotencyResult> {
   try {
     // In a production system, this would query a dedicated idempotency table
     // For now, we'll use a simple in-memory store with TTL
@@ -53,12 +60,18 @@ export async function getIdempotencyResult(
       return { exists: false }
     }
     
-    return {
+    const result: IdempotencyResult = {
       exists: true,
       result: stored.result,
       status: stored.status,
-      error: stored.error,
     }
+
+    // Only add error if it exists
+    if (stored.error !== undefined) {
+      result.error = stored.error
+    }
+
+    return result
   } catch (error) {
     console.error('[Idempotency] Error checking result:', error)
     return { exists: false }
@@ -72,7 +85,7 @@ export async function storeIdempotencyResult(
   key: string,
   result: any,
   status: 'success' | 'failed' = 'success',
-  error?: string
+  error: string | undefined = undefined
 ): Promise<void> {
   try {
     const record: IdempotencyRecord = {
@@ -166,4 +179,4 @@ export function startIdempotencyCleanup(intervalMs = 6 * 60 * 60 * 1000) {
  * }
  */
 
-export type { IdempotencyRecord }
+export type { IdempotencyRecord, IdempotencyResult }
