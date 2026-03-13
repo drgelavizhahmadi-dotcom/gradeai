@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify upload belongs to user
-    const upload = await prisma.upload.findFirst({
+    const upload = await db.upload.findFirst({
       where: {
         id: uploadId,
         userId: session.user.id,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Reset status to allow retry
-    await prisma.upload.update({
+    await db.upload.update({
       where: { id: uploadId },
       data: {
         analysisStatus: "pending",
