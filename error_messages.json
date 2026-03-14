@@ -1,0 +1,112 @@
+{
+    "ERR_01": {
+        "en": "Oops! This doesn’t look like an exam paper. Our system works best with your child’s actual test sheets.\nPlease upload clear photos or a PDF of the real exam.",
+        "de": "Das sieht nicht nach einer Klassenarbeit aus. Bitte lade Fotos oder ein PDF der echten Prüfung hoch.",
+        "ar": "يبدو أن هذا ليس ورقة امتحان. يعمل النظام بشكل أفضل مع أوراق الاختبار الحقيقية لطفلك.\nيرجى رفع صور واضحة أو ملف PDF للامتحان الحقيقي.",
+        "fa": "به نظر نمی‌رسد این برگه امتحانی باشد. سیستم ما با برگه‌های واقعی آزمون فرزندتان بهترین عملکرد را دارد.\nلطفاً عکس‌های واضح یا PDF برگه امتحان واقعی را آپلود کنید.",
+        "ckb": "ئەمە وەک پەڕەی تاقیکردنەوەیەک نابینرێت. سیستەمەکەمان باشتر کار دەکات لەگەڵ پەڕەی تاقیکردنەوەی ڕاستەقینەی منداڵەکەت.\nتکایە وێنەی ڕوون یان PDFـی تاقیکردنەوەی ڕاستەقینە بار بکە.",
+        "kmr": "Ev mîna pelgeyeke îmtîhanê nayê xuyakirin. Pergala me bi pelgeyên îmtîhanê yên rastîn ên zarokê we baştir dixebite.\nJi kerema xwe wêneyên zelal an PDF-a îmtîhana rast bar bike.",
+        "tr": "Bu bir sınav kâğıdı gibi görünmüyor. Sistemimiz çocuğunuzun gerçek sınav kâğıtlarıyla en iyi şekilde çalışır.\nLütfen net fotoğraflar veya gerçek sınavın PDF'sini yükleyin.",
+        "ro": "Se pare că aceasta nu este o foaie de examen. Sistemul nostru funcționează cel mai bine cu foile reale de examen ale copilului tău.\nVă rugăm să încărcați fotografii clare sau PDF-ul examenului real.",
+        "ru": "Это не похоже на экзаменационный лист. Наша система лучше всего работает с реальными экзаменационными работами вашего ребёнка.\nПожалуйста, загрузите чёткие фото или PDF настоящего экзамена."
+    },
+    "ERR_02": {
+        "en": "We noticed the exam seems to have 3 pages, but we only received 2. To give you a complete teacher’s view report, please add the missing page(s).",
+        "de": "Die Arbeit hat anscheinend 3 Seiten, wir haben nur 2 erhalten. Bitte lade die fehlende Seite hoch.",
+        "ar": "لاحظنا أن الامتحان يبدو أنه يحتوي على 3 صفحات، لكننا تلقينا صفحتين فقط. لتقديم تقرير كامل عن وجهة نظر المعلم، يرجى إضافة الصفحة/الصفحات الناقصة.",
+        "fa": "متوجه شدیم که امتحان ظاهراً ۳ صفحه دارد، اما فقط ۲ صفحه دریافت کردیم. برای ارائه گزارش کامل دیدگاه معلم، لطفاً صفحه(های) گم‌شده را اضافه کنید.",
+        "ckb": "ئێمە بینیمان کە تاقیکردنەوەکە ٣ لاپەڕەیە، بەڵام تەنها ٢ لاپەڕەمان پێگەیشتووە. بۆ پێدانی ڕاپۆرتێکی تەواو لەسەر بۆچوونی مامۆستا، تکایە لاپەڕە(کان)ی کەمبوو بار بکە.",
+        "kmr": "Me dît ku îmtîhan xuya dike 3 rûpel hene, lê tenê 2 rûpel hatine wergirtin. Ji bo rapora temam a nêrîna mamoste, ji kerema xwe rûpel(ên) winda bar bike.",
+        "tr": "Sınavın 3 sayfası olduğunu fark ettik ama sadece 2 sayfa aldık. Öğretmenin görüşünü tam olarak almak için lütfen eksik sayfa(ları) ekleyin.",
+        "ro": "Am observat că examenul pare să aibă 3 pagini, dar am primit doar 2. Pentru a-ți oferi un raport complet cu perspectiva profesorului, te rugăm să adaugi pagina/paginile lipsă.",
+        "ru": "Мы заметили, что экзамен, похоже, состоит из 3 страниц, но получили только 2. Чтобы предоставить полный отчёт о мнении учителя, пожалуйста, добавьте недостающую страницу(ы)."
+    },
+    "ERR_03": {
+        "en": "The photos are a little unclear. For the best analysis of the teacher’s comments, please retake them in bright, even light and make sure every word is sharp.",
+        "de": "Die Bilder sind etwas unscharf. Bitte mach neue Fotos bei gutem Licht – dann können wir die Lehrerbewertung perfekt analysieren.",
+        "ar": "الصور غير واضحة قليلاً. للحصول على أفضل تحليل لتعليقات المعلم، يرجى إعادة التقاطها في إضاءة ساطعة ومتساوية وتأكد من وضوح كل كلمة.",
+        "fa": "عکس‌ها کمی نامشخص هستند. برای بهترین تحلیل نظرات معلم، لطفاً دوباره در نور روشن و یکنواخت عکس بگیرید و مطمئن شوید هر کلمه واضح است.",
+        "ckb": "وێنەکان کەمێک نەبینراون. بۆ باشترین شیکردنەوەی لێدوانەکانی مامۆستا، تکایە لە ژینگەیەکی ڕووناک و یەکسان دووبارە وێنە بگرە و دڵنیابە هەموو وشەیەک ڕوونە.",
+        "kmr": "Wêne hinekî nezelal in. Ji bo analîza herî baş a şîroveyên mamoste, ji kerema xwe di ronahiyeke geş û yeksan de dîsa wêne bigire û piştrast bike ku her peyv zelal e.",
+        "tr": "Fotoğraflar biraz bulanık. Öğretmen yorumlarının en iyi analizi için lütfen parlak ve eşit ışıkta yeniden çekin ve her kelimenin net olduğundan emin olun.",
+        "ro": "Fotografiile sunt puțin neclare. Pentru cea mai bună analiză a comentariilor profesorului, te rugăm să le refaci în lumină puternică și uniformă și să te asiguri că fiecare cuvânt este clar.",
+        "ru": "Фотографии немного нечёткие. Для наилучшего анализа комментариев учителя, пожалуйста, сделайте новые снимки при ярком равномерном освещении и убедитесь, что каждое слово чётко видно."
+    },
+    "ERR_04": {
+        "en": "We only accept PDF, JPG or PNG files. Quick tip: open the photo in your phone’s gallery → “Share” → “Save as PDF”.",
+        "de": "Wir können nur PDF, JPG oder PNG verarbeiten. Tipp: Foto öffnen → Teilen → Als PDF speichern.",
+        "ar": "نقبل فقط ملفات PDF أو JPG أو PNG. نصيحة سريعة: افتح الصورة في معرض هاتفك → \"مشاركة\" → \"حفظ كـ PDF\".",
+        "fa": "ما فقط فایل‌های PDF، JPG یا PNG را قبول می‌کنیم. نکته سریع: عکس را در گالری گوشی باز کنید → «اشتراک‌گذاری» → «ذخیره به صورت PDF».",
+        "ckb": "تەنها PDF، JPG یان PNG قبووڵ دەکەین. سەرنجێکی خێرا: وێنە لە گەلەری مۆبایلەکەت بکەرەوە → \"هاوبەشیکردن\" → \"پاشەکەوت وەک PDF\".",
+        "kmr": "Em tenê pelên PDF, JPG an PNG qebûl dikin. Pêşniyara zû: wêne di galeriya telefonê de veke → \"Parve bike\" → \"Tomar bike wekî PDF\".",
+        "tr": "Sadece PDF, JPG veya PNG dosyalarını kabul ediyoruz. Hızlı ipucu: telefonunuzun galerisindeki fotoğrafı açın → \"Paylaş\" → \"PDF olarak kaydet\".",
+        "ro": "Acceptăm doar fișiere PDF, JPG sau PNG. Sfat rapid: deschide fotografia în galeria telefonului → „Partajează” → „Salvează ca PDF”.",
+        "ru": "Мы принимаем только файлы PDF, JPG или PNG. Быстрый совет: откройте фото в галерее телефона → «Поделиться» → «Сохранить как PDF»."
+    },
+    "ERR_05": {
+        "en": "It looks like pages from different subjects or dates are mixed. Please upload only one complete graded exam at a time.",
+        "de": "Es scheint, als wären Seiten aus verschiedenen Fächern gemischt. Bitte lade nur eine Prüfung komplett hoch.",
+        "ar": "يبدو أن الصفحات من مواد دراسية أو تواريخ مختلفة مختلطة. يرجى رفع امتحان واحد مكتمل ومُصحح في كل مرة.",
+        "fa": "به نظر می‌رسد صفحات از دروس یا تاریخ‌های مختلف مخلوط شده‌اند. لطفاً فقط یک امتحان کامل و تصحیح‌شده را در هر بار آپلود کنید.",
+        "ckb": "وەک ئەوەی لاپەڕەکان لە بابەت یان بەروارە جیاوازەکان تێکەڵ بووبن دەردەکەوێت. تکایە تەنها یەک تاقیکردنەوەی تەواو و نەخشەکراو بار بکە لە یەک کاتدا.",
+        "kmr": "Wekî ku rûpel ji mijar an tarîxên cuda hatine tevlihevkirin xuya dike. Ji kerema xwe tenê yek îmtîhana temam û hatî nirxandin bar bike.",
+        "tr": "Farklı derslerden veya tarihlerden sayfalar karışmış gibi görünüyor. Lütfen her seferinde yalnızca bir tam notlandırılmış sınav yükleyin.",
+        "ro": "Se pare că paginile din subiecte sau date diferite sunt amestecate. Te rugăm să încarci doar un examen complet și corectat odată.",
+        "ru": "Похоже, страницы из разных предметов или дат перемешаны. Пожалуйста, загружайте только один полностью оценённый экзамен за раз."
+    },
+    "ERR_06": {
+        "en": "This looks like the official answer key. We need your child’s actual graded paper to show the teacher’s real point of view.",
+        "de": "Das sieht nach der Musterlösung aus. Bitte lade die benotete Arbeit deines Kindes hoch.",
+        "ar": "يبدو هذا كمفتاح الإجابات الرسمي. نحتاج إلى ورقة الطفل المصححة فعليًا لإظهار وجهة نظر المعلم الحقيقية.",
+        "fa": "این شبیه کلید پاسخ رسمی به نظر می‌رسد. برای نشان دادن دیدگاه واقعی معلم، به برگه تصحیح‌شده واقعی فرزندتان نیاز داریم.",
+        "ckb": "ئەمە وەک کلیلەوەڵامی فەرمی دەردەکەوێت. پێویستمان بە پەڕەی منداڵەکەتە کە بە ڕاستی نەخشە کراوە بۆ پیشاندانی بۆچوونی ڕاستەقینەی مامۆستا.",
+        "kmr": "Ev mîna kilîta bersivên fermî xuya dike. Ji bo nîşandana nêrîna rast a mamoste, em hewceyî pelgeya zarokê te ya bi rastî hatî nirxandin in.",
+        "tr": "Bu resmi cevap anahtarı gibi görünüyor. Öğretmenin gerçek görüşünü göstermek için çocuğunuzun gerçekten notlandırılmış kâğıdına ihtiyacımız var.",
+        "ro": "Aceasta pare a fi cheia oficială de răspunsuri. Avem nevoie de foaia reală corectată a copilului tău pentru a arăta perspectiva reală a profesorului.",
+        "ru": "Это похоже на официальный ключ ответов. Нам нужна реальная оценённая работа вашего ребёнка, чтобы показать настоящую точку зрения учителя."
+    },
+    "ERR_07": {
+        "en": "We couldn’t find any teacher grade or comments on this paper. To help you understand the teacher’s point of view, please upload a graded exam sheet.",
+        "de": "Wir konnten keine Note oder Lehrer-Kommentare finden. Bitte lade eine benotete Arbeit hoch.",
+        "ar": "لم نتمكن من العثور على أي درجة أو تعليقات من المعلم على هذه الورقة. لمساعدتك على فهم وجهة نظر المعلم، يرجى رفع ورقة امتحان مصححة.",
+        "fa": "هیچ نمره یا نظری از معلم روی این برگه پیدا نکردیم. برای درک دیدگاه معلم، لطفاً برگه امتحانی تصحیح‌شده آپلود کنید.",
+        "ckb": "هیچ نەخشە یان لێدوانێکی مامۆستا لەسەر ئەم پەڕەیە نەدۆزرایەوە. بۆ یارمەتیدانی تۆ بۆ تێگەیشتن لە بۆچوونی مامۆستا، تکایە پەڕەیەکی تاقیکردنەوەی نەخشەکراو بار بکە.",
+        "kmr": "Me tu not an şîrove ya mamoste li ser vê pelgeyê nedît. Ji bo alîkariya te di têgihiştina nêrîna mamoste de, ji kerema xwe pelgeyeke îmtîhanê ya hatî nirxandin bar bike.",
+        "tr": "Bu kâğıtta herhangi bir öğretmen notu veya yorumu bulamadık. Öğretmenin bakış açısını anlamana yardımcı olmak için lütfen notlandırılmış bir sınav kâğıdı yükle.",
+        "ro": "Nu am găsit nicio notă sau comentariu al profesorului pe această foaie. Pentru a te ajuta să înțelegi perspectiva profesorului, te rugăm să încarci o foaie de examen corectată.",
+        "ru": "Мы не нашли никакой оценки или комментария учителя на этой работе. Чтобы помочь тебе понять точку зрения учителя, пожалуйста, загрузи оценённый экзаменационный лист."
+    },
+    "ERR_08": {
+        "en": "Some parts of the exam are cut off or folded. Please take new photos where the entire page (including grade and comments) is fully visible.",
+        "de": "Teile der Arbeit sind abgeschnitten. Bitte neue Fotos machen, damit Note und Kommentare komplett zu sehen sind.",
+        "ar": "بعض أجزاء الامتحان مقطوعة أو مطوية. يرجى التقاط صور جديدة بحيث تكون الصفحة بأكملها (بما في ذلك الدرجة والتعليقات) مرئية بالكامل.",
+        "fa": "بعضی قسمت‌های امتحان بریده یا تا شده‌اند. لطفاً عکس‌های جدیدی بگیرید که کل صفحه (شامل نمره و نظرات) کاملاً قابل مشاهده باشد.",
+        "ckb": "هەندێک بەشی تاقیکردنەوە براوە یان پێچراوە. تکایە وێنەی نوێ بگرە کە تەواوی لاپەڕە (لەگەڵ نەخشە و لێدوانەکان) بە تەواوی دیار بێت.",
+        "kmr": "Hin beşên îmtîhanê hatine birîn an pêçandin. Ji kerema xwe wêneyên nû bigire ku tevahiya rûpelê (tevî not û şîroveyan) bi temamî xuya bibe.",
+        "tr": "Sınavın bazı kısımları kesilmiş veya katlanmış. Lütfen not ve yorumlar dahil tüm sayfanın tamamen göründüğü yeni fotoğraflar çekin.",
+        "ro": "Unele părți ale examenului sunt tăiate sau îndoite. Te rugăm să faci fotografii noi în care întreaga pagină (inclusiv nota și comentariile) să fie complet vizibilă.",
+        "ru": "Некоторые части экзамена обрезаны или сложены. Пожалуйста, сделайте новые фотографии, на которых вся страница (включая оценку и комментарии) полностью видна."
+    },
+    "ERR_09": {
+        "en": "This exam doesn’t match your child’s current grade/subject in your profile. You can change the class in settings or upload the correct paper.",
+        "de": "Die Arbeit passt nicht zum aktuellen Fach/Klasse deines Kindes. Du kannst das in den Einstellungen ändern.",
+        "ar": "هذا الامتحان لا يتطابق مع الصف/المادة الحالية لطفلك في ملفك الشخصي. يمكنك تغيير الصف في الإعدادات أو رفع الورقة الصحيحة.",
+        "fa": "این امتحان با پایه/درس فعلی فرزندتان در پروفایل شما مطابقت ندارد. می‌توانید کلاس را در تنظیمات تغییر دهید یا برگه درست را آپلود کنید.",
+        "ckb": "ئەم تاقیکردنەوەیە لەگەڵ پۆل/بابەتی ئێستای منداڵەکەت لە پرۆفایلەکەت ناگونجێت. دەتوانیت پۆلەکە لە ناوەندەکان بگۆڕیت یان پەڕەی دروست بار بکەیت.",
+        "kmr": "Ev îmtîhan li gorî pola/mijara niha ya zarokê te li profîla te nagunce. Tu dikarî polê di mîhengiyan de biguherînî an pelgeya rast bar bikî.",
+        "tr": "Bu sınav çocuğunuzun profilindeki mevcut sınıf/ders ile eşleşmiyor. Ayarlardan sınıfı değiştirebilir veya doğru kâğıdı yükleyebilirsiniz.",
+        "ro": "Acest examen nu corespunde clasei/materiei actuale a copilului tău din profil. Poți schimba clasa din setări sau încărca foaia corectă.",
+        "ru": "Этот экзамен не соответствует текущему классу/предмету вашего ребёнка в профиле. Вы можете изменить класс в настройках или загрузить правильную работу."
+    },
+    "ERR_10": {
+        "en": "The file is very large or couldn’t be uploaded completely. Try compressing the images or split into smaller PDFs.",
+        "de": "Die Datei ist zu groß oder der Upload wurde unterbrochen. Komprimiere die Bilder oder teile sie in kleinere PDFs auf.",
+        "ar": "الملف كبير جدًا أو لم يتم رفعه بالكامل. جرب ضغط الصور أو تقسيمه إلى ملفات PDF أصغر.",
+        "fa": "فایل خیلی بزرگ است یا کامل آپلود نشده. تصاویر را فشرده کنید یا به PDFهای کوچک‌تر تقسیم کنید.",
+        "ckb": "فایلەکە زۆر گەورەیە یان بە تەواوی بار نەکراوە. هەوڵ بدە وێنەکان بچووک بکەیتەوە یان بەش بکەیت بە PDFـی بچووکتر.",
+        "kmr": "Pel pir mezin e an jî bi temamî nehatiye barkirin. Biceribîne wêneyan biçûk bike an jî parçe bike di PDF-yên piçûktir de.",
+        "tr": "Dosya çok büyük veya tamamen yüklenemedi. Resimleri sıkıştırmayı deneyin veya daha küçük PDF’lere bölün.",
+        "ro": "Fișierul este foarte mare sau nu a fost încărcat complet. Încearcă să comprimi imaginile sau să le împarți în PDF-uri mai mici.",
+        "ru": "Файл слишком большой или не был загружен полностью. Попробуйте сжать изображения или разделить на PDF поменьше."
+    }
+}

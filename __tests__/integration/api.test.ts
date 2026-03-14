@@ -8,6 +8,9 @@ import { analyzeUploadBuffer } from '@/lib/analysis'
 
 // Mock the dependencies
 jest.mock('@/lib/analysis')
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({ data: null, update: jest.fn() })),
+}))
 
 const mockAnalyzeUploadBuffer = analyzeUploadBuffer as jest.MockedFunction<typeof analyzeUploadBuffer>
 const mockRequireAuth = jest.fn()

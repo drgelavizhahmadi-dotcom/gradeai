@@ -142,6 +142,43 @@ export async function POST(request: NextRequest) {
 
     console.log("[Report API] Report saved to database");
 
+    // 1. Get user's preferred language from DB (ensures we have the latest)
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { language: true }
+    });
+
+    const targetLanguage = user?.language || "de";
+
+    // 2. Proactively translate if not German (includes English as requested)
+    if (targetLanguage !== "de") {
+      console.log(`[Report API] Proactively translating to: ${targetLanguage}`);
+      try {
+        const { translateReport } = await import("@/lib/ai/analyze-complete");
+        const translationResult = await translateReport(report, targetLanguage as any);
+
+        if (translationResult.success) {
+          await db.reportTranslation.upsert({
+            where: {
+              uploadId_language: { uploadId, language: targetLanguage },
+            },
+            create: {
+              uploadId,
+              language: targetLanguage,
+              report: translationResult.translatedReport as any,
+            },
+            update: {
+              report: translationResult.translatedReport as any,
+            },
+          });
+          console.log(`[Report API] Proactive translation saved for ${targetLanguage}`);
+        }
+      } catch (transError) {
+        console.error("[Report API] Proactive translation failed:", transError);
+        // We don't fail the whole request since German report is already successfully saved
+      }
+    }
+
     return NextResponse.json({
       success: true,
       durationMs: result.duration,

@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // Always ensure we have the most up-to-date user ID from the database
+      // Always ensure we have the most up-to-date user ID and language from the database
       if (token.email) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email }
@@ -76,9 +76,11 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.id = dbUser.id
           token.name = dbUser.name
+          token.language = dbUser.language
         }
       } else if (user) {
         token.id = user.id
+        token.language = (user as any).language
       }
       return token
     },
@@ -87,6 +89,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         if (token.name) {
           session.user.name = token.name as string
+        }
+        if (token.language) {
+          (session.user as any).language = token.language as string
         }
       }
       return session

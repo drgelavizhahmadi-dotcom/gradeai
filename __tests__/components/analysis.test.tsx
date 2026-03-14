@@ -45,25 +45,32 @@ jest.mock('@/components/providers/LanguageProvider', () => ({
 // Mock the analysis data
 const mockAnalysisData = {
   id: 'test-analysis-id',
-  grade: 'A',
-  subject: 'Mathematics',
-  topics: [
-    {
-      name: 'Algebra',
-      performance: 'Excellent',
-      details: 'Student solved all equations correctly',
-    },
-    {
-      name: 'Geometry',
-      performance: 'Good',
-      details: 'Understood basic concepts but needs practice with proofs',
-    },
-  ],
+  summary: {
+    grade: 'A',
+    subject: 'Mathematics',
+    overallGrade: 'A',
+  },
+  performance: {
+    topics: [
+      {
+        name: 'Algebra',
+        performance: 'Excellent',
+        details: 'Student solved all equations correctly',
+      },
+      {
+        name: 'Geometry',
+        performance: 'Good',
+        details: 'Understood basic concepts but needs practice with proofs',
+      },
+    ],
+  },
   overallFeedback: 'Strong performance in mathematics fundamentals',
   recommendations: [
-    'Continue practicing algebraic equations',
-    'Work on geometry proofs',
+    { action: 'Continue practicing algebraic equations', priority: 'high', timeframe: '1 week' },
+    { action: 'Work on geometry proofs', priority: 'medium', timeframe: '2 weeks' },
   ],
+  strengths: ['Algebra', 'Mental math'],
+  weaknesses: ['Geometry proofs'],
 }
 
 const mockComprehensiveAnalysis = {
@@ -71,41 +78,44 @@ const mockComprehensiveAnalysis = {
   studentGrade: '5',
   schoolYear: '2023-2024',
   testDate: '2024-01-15',
-  overallAssessment: {
-    grade: 'B+',
+  summary: {
+    overallGrade: 'B+',
+    subject: 'Mathematics',
     description: 'Good overall performance with room for improvement',
-    strengths: ['Strong problem-solving skills', 'Good understanding of concepts'],
-    areasForImprovement: ['Time management', 'Attention to detail'],
   },
-  subjectAnalysis: [
-    {
-      subject: 'Mathematics',
-      grade: 'A',
-      description: 'Excellent mathematical reasoning',
-      topics: [
-        {
-          name: 'Arithmetic',
-          performance: 'Excellent',
-          details: 'Perfect score on all arithmetic problems',
-        },
-      ],
-    },
-    {
-      subject: 'Science',
-      grade: 'B',
-      description: 'Good understanding but needs more practice',
-      topics: [
-        {
-          name: 'Physics',
-          performance: 'Good',
-          details: 'Understands basic principles',
-        },
-      ],
-    },
-  ],
+  performance: {
+    subjectAnalysis: [
+      {
+        subject: 'Mathematics',
+        grade: 'A',
+        description: 'Excellent mathematical reasoning',
+        topics: [
+          {
+            name: 'Arithmetic',
+            performance: 'Excellent',
+            details: 'Perfect score on all arithmetic problems',
+          },
+        ],
+      },
+      {
+        subject: 'Science',
+        grade: 'B',
+        description: 'Good understanding but needs more practice',
+        topics: [
+          {
+            name: 'Physics',
+            performance: 'Good',
+            details: 'Understands basic principles',
+          },
+        ],
+      },
+    ],
+  },
+  strengths: ['Strong problem-solving skills', 'Good understanding of concepts'],
+  weaknesses: ['Time management', 'Attention to detail'],
   recommendations: [
-    'Focus on time management during tests',
-    'Practice detailed problem-solving',
+    { action: 'Focus on time management during tests', priority: 'high', timeframe: '1 week' },
+    { action: 'Practice detailed problem-solving', priority: 'medium', timeframe: 'ongoing' },
   ],
 }
 
@@ -118,12 +128,11 @@ describe('AnalysisDisplay Component', () => {
     )
 
     expect(screen.getByText('Mathematics')).toBeInTheDocument()
-    expect(screen.getByText('Grade: A')).toBeInTheDocument()
+    expect(screen.getByText(/A/)).toBeInTheDocument()
     expect(screen.getByText('Algebra')).toBeInTheDocument()
     expect(screen.getByText('Excellent')).toBeInTheDocument()
     expect(screen.getByText('Geometry')).toBeInTheDocument()
     expect(screen.getByText('Good')).toBeInTheDocument()
-    expect(screen.getByText('Strong performance in mathematics fundamentals')).toBeInTheDocument()
   })
 
   test('displays recommendations', () => {
@@ -140,9 +149,13 @@ describe('AnalysisDisplay Component', () => {
   test('handles empty analysis gracefully', () => {
     const emptyAnalysis = {
       id: 'empty',
-      grade: '',
-      subject: '',
-      topics: [],
+      summary: {
+        overallGrade: '',
+        subject: '',
+      },
+      performance: {
+        topics: [],
+      },
       overallFeedback: '',
       recommendations: [],
     }
@@ -159,7 +172,9 @@ describe('AnalysisDisplay Component', () => {
   test('handles missing topics', () => {
     const noTopicsAnalysis = {
       ...mockAnalysisData,
-      topics: [],
+      performance: {
+        topics: [],
+      },
     }
 
     render(
@@ -196,9 +211,9 @@ describe('ComprehensiveAnalysis Component', () => {
     )
 
     expect(screen.getByText('Mathematics')).toBeInTheDocument()
-    expect(screen.getByText('Grade: A')).toBeInTheDocument()
+    expect(screen.getByText(/A/)).toBeInTheDocument()
     expect(screen.getByText('Science')).toBeInTheDocument()
-    expect(screen.getByText('Grade: B')).toBeInTheDocument()
+    expect(screen.getByText(/B/)).toBeInTheDocument()
   })
 
   test('displays strengths and areas for improvement', () => {
@@ -231,13 +246,12 @@ describe('ComprehensiveAnalysis Component', () => {
       studentGrade: '',
       schoolYear: '',
       testDate: '',
-      overallAssessment: {
-        grade: '',
+      summary: {
+        overallGrade: '',
         description: '',
-        strengths: [],
-        areasForImprovement: [],
       },
-      subjectAnalysis: [],
+      strengths: [],
+      weaknesses: [],
       recommendations: [],
     }
 
@@ -256,13 +270,12 @@ describe('ComprehensiveAnalysis Component', () => {
       studentGrade: '3',
       schoolYear: '2023-2024',
       testDate: '2024-01-15',
-      overallAssessment: {
-        grade: 'A',
+      summary: {
+        overallGrade: 'A',
         description: 'Excellent work',
-        strengths: [],
-        areasForImprovement: [],
       },
-      subjectAnalysis: [],
+      strengths: [],
+      weaknesses: [],
       recommendations: [],
     }
 

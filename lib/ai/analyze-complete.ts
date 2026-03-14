@@ -126,7 +126,7 @@ function preserveStructure(original: any, translated: any): any {
   return result;
 }
 
-async function translateReport(report: any, targetLanguage: LanguageCode) {
+export async function translateReport(report: any, targetLanguage: LanguageCode) {
   // German is the base language - no translation needed
   if (targetLanguage === 'de') {
     return { success: true as const, translatedReport: report, duration: 0 };

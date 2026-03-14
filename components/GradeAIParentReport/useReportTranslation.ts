@@ -57,21 +57,14 @@ export const useReportTranslation = (rawAnalysisData: any, uploadId?: string) =>
     setIsTranslating(true)
     setError(null)
 
-    // German is the source of truth — create German labels directly
+    // German is the source of truth — create German labels directly (Instant)
     if (language === 'de') {
       setTranslatedData(createGermanReport(rawAnalysisData))
       setIsTranslating(false)
       return
     }
 
-    // English — create English labels directly (no AI needed)
-    if (language === 'en') {
-      setTranslatedData(createEnglishReport(rawAnalysisData))
-      setIsTranslating(false)
-      return
-    }
-
-    // For all other languages, call the translate-report API
+    // For all other languages (English, Persian, etc.), call the translate-report API
     // which checks DB cache first, then AI translates + saves if not cached
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000)
@@ -107,8 +100,10 @@ export const useReportTranslation = (rawAnalysisData: any, uploadId?: string) =>
       console.error('Translation error:', err)
       const errorMsg = err.name === 'AbortError' ? 'Translation timeout (30s)' : err.message
       setError(errorMsg)
-      // Fallback to English on error
-      setTranslatedData(createEnglishReport(rawAnalysisData))
+      
+      // Fallback: If AI fails, we still show the German version as backup
+      // instead of a broken English manual one
+      setTranslatedData(createGermanReport(rawAnalysisData))
     } finally {
       setIsTranslating(false)
     }
