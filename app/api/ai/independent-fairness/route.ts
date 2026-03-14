@@ -17,6 +17,7 @@ const independentFairnessSchema = z.object({
   subject: z.string().max(100).optional(),
   schoolType: z.enum(['Grundschule', 'Hauptschule', 'Realschule', 'Gymnasium']).optional(),
   language: z.enum(['de', 'en', 'ar', 'tr', 'ro', 'ru', 'fa', 'ku', 'kmr']).default('de'),
+  uploadId: z.string().cuid().optional(),
 });
 
 type IndependentFairnessRequest = z.infer<typeof independentFairnessSchema>;
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    const { extractedText, childName, grade, subject, schoolType, language } = validatedData
+    const { extractedText, childName, grade, subject, schoolType, language, uploadId } = validatedData
 
     const languageInstruction = getLanguageInstruction(language)
     console.log('[Independent Fairness API] Starting for:', childName, 'language:', language)
