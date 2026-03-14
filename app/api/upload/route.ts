@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { uploadFileToStorage } from "@/lib/storage";
+import { uploadFileToStorage, deleteFileFromStorage } from "@/lib/storage";
 
 // Route segment config for increased body size limit
 export const runtime = 'nodejs'; // Use Node.js runtime for better file handling
@@ -159,9 +159,23 @@ export async function POST(request: NextRequest) {
         const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const storageFileName = `uploads/${upload.id}/page_${i + 1}_${timestamp}-${sanitizedName}`;
         
-        const fileUrl = await uploadFileToStorage(storageFileName, buffer, file.type);
-        uploadedFileUrls.push(fileUrl);
-        console.log(`[Upload API] File ${i + 1}/${files.length} uploaded: ${fileUrl}`);
+        try {
+          const fileUrl = await uploadFileToStorage(storageFileName, buffer, file.type);
+          uploadedFileUrls.push(fileUrl);
+          console.log(`[Upload API] File ${i + 1}/${files.length} uploaded: ${fileUrl}`);
+        } catch (storageErr) {
+          // CLEANUP: Delete previously uploaded files to prevent orphans
+          console.error(`[Upload API] Storage upload failed on page ${i + 1}, cleaning up orphaned files...`);
+          for (const uploadedUrl of uploadedFileUrls) {
+            try {
+              await deleteFileFromStorage(uploadedUrl);
+              console.log(`[Upload API] Cleaned up orphaned file: ${uploadedUrl}`);
+            } catch (deleteErr) {
+              console.error('[Upload API] Failed to cleanup orphaned file:', uploadedUrl, deleteErr);
+            }
+          }
+          throw new Error(`Failed to upload page ${i + 1}: ${storageErr instanceof Error ? storageErr.message : 'Unknown error'}`);
+        }
       }
 
       // Update upload record with first file URL (for reference)

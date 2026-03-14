@@ -166,6 +166,11 @@ export interface Translations {
     classLabel: string
     mascotReady: string
     mascotNoChild: string
+    retryBtn?: string
+    startOverBtn?: string
+    retryTipUpload?: string
+    retryTipExtract?: string
+    retryTipReport?: string
   }
 
   // Analysis
@@ -756,6 +761,11 @@ export const translations: Record<Language, Translations> = {
       classLabel: 'Klasse {grade}',
       mascotReady: 'Ich bin bereit!',
       mascotNoChild: 'Noch kein Kind angelegt?',
+      retryBtn: 'Erneut versuchen',
+      startOverBtn: 'Neu starten',
+      retryTipUpload: 'Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
+      retryTipExtract: 'Ihre Dateien wurden erfolgreich hochgeladen. Klicken Sie auf Erneut versuchen, um die Analyse neu zu starten - kein erneuter Upload erforderlich.',
+      retryTipReport: 'Text wurde erfolgreich extrahiert. Klicken Sie auf Erneut versuchen, um den Bericht zu erstellen.',
     },
     analysis: {
       title: 'Analyse',
@@ -1284,7 +1294,12 @@ export const translations: Record<Language, Translations> = {
       addFirstChild: 'Add First Child',
       classLabel: 'Grade {grade}',
       mascotReady: 'I\'m ready!',
-      mascotNoChild: 'No child registered yet?',
+      mascotNoChild: 'No children yet?',
+      retryBtn: 'Retry',
+      startOverBtn: 'Start Over',
+      retryTipUpload: 'Please check your connection and try again.',
+      retryTipExtract: 'Your files were uploaded successfully. Click Retry to re-run the analysis — no re-upload needed.',
+      retryTipReport: 'Text was extracted successfully. Click Retry to regenerate the report.',
     },
     analysis: {
       title: 'Analysis',
@@ -1810,6 +1825,11 @@ export const translations: Record<Language, Translations> = {
       classLabel: 'الصف {grade}',
       mascotReady: 'أنا جاهز!',
       mascotNoChild: 'لم يُسجَّل طفل بعد؟',
+      retryBtn: 'حاول مرة أخرى',
+      startOverBtn: 'البدء من جديد',
+      retryTipUpload: 'يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+      retryTipExtract: 'تم رفع ملفاتك بنجاح. انقر فوق حاول مرة أخرى لإعادة تشغيل التحليل - لا داعي لإعادة الرفع.',
+      retryTipReport: 'تم استخراج النص بنجاح. انقر فوق حاول مرة أخرى لإنشاء التقرير.',
     },
     analysis: {
       title: 'التحليل',
@@ -2335,6 +2355,11 @@ export const translations: Record<Language, Translations> = {
       classLabel: 'Sınıf {grade}',
       mascotReady: 'Hazırım!',
       mascotNoChild: 'Henüz çocuk eklenmemiş mi?',
+      retryBtn: 'Tekrar dene',
+      startOverBtn: 'Baştan başla',
+      retryTipUpload: 'Lütfen bağlantınızı kontrol edin ve tekrar deneyin.',
+      retryTipExtract: 'Dosyalarınız başarıyla yüklendi. Analizi yeniden başlatmak için Tekrar dene\'ye tıklayın - tekrar yüklemenize gerek yok.',
+      retryTipReport: 'Metin başarıyla çıkarıldı. Raporu oluşturmak için Tekrar dene\'ye tıklayın.',
     },
     analysis: {
       title: 'Analiz',
@@ -2860,6 +2885,11 @@ export const translations: Record<Language, Translations> = {
       classLabel: 'Clasa {grade}',
       mascotReady: 'Sunt gata!',
       mascotNoChild: 'Niciun copil înregistrat?',
+      retryBtn: 'Încearcă din nou',
+      startOverBtn: 'O iau de la capăt',
+      retryTipUpload: 'Vă rugăm să vă verificați conexiunea și să încercați din nou.',
+      retryTipExtract: 'Fișierele dvs. au fost încărcate cu succes. Faceți clic pe Încearcă din nou pentru a relua analiza - nu este necesară o reîncărcare.',
+      retryTipReport: 'Textul a fost extras cu succes. Faceți clic pe Încearcă din nou pentru a regenera raportul.',
     },
     analysis: {
       title: 'Analiză',
@@ -3385,6 +3415,11 @@ export const translations: Record<Language, Translations> = {
       classLabel: 'Класс {grade}',
       mascotReady: 'Я готов!',
       mascotNoChild: 'Ещё нет детей?',
+      retryBtn: 'Попробовать снова',
+      startOverBtn: 'Начать заново',
+      retryTipUpload: 'Пожалуйста, проверьте подключение و попробуйте еще раз.',
+      retryTipExtract: 'Ваши файлы успешно загружены. Нажмите «Попробовать снова», чтобы перезапустить анализ - повторная загрузка не требуется.',
+      retryTipReport: 'Текст успешно извлечен. Нажмите «Попробовать снова», чтобы заново создать отчет.',
     },
     analysis: {
       title: 'Анализ',

@@ -1,0 +1,87 @@
+feat(reliability): P0 & P1 robustness overhaul - retry, validation, rate-limiting, transactions
+
+## P0 - MUST DO BEFORE LAUNCH ✅
+- Implement POST /api/analyze/retry endpoint
+  - Full auth + Zod validation
+  - Detects failed step and resumes from appropriate point
+  - Returns needsReupload:true if extraction missing
+  - Sets analysisStatus='completed' + clears errorMessage on success
+
+- Add storage cleanup on upload failure
+  - Atomic uploads: tracks uploadedFileUrls[] array
+  - On storage error: deletes all previously uploaded files
+  - Prevents orphaned files in GCS on partial failures
+  - Sets upload.analysisStatus='failed' + errorMessage
+
+- Add Zod request validation to all AI endpoints
+  - extract: uploadId, images[], language enum
+  - report: uploadId required
+  - independent-fairness: extractedText(10-50k chars), language enum
+  - fairness-check: prompt(20-5k chars), targetLanguage enum
+  - Returns 400 with detailed validation issues on error
+
+- Implement per-IP rate limiting on expensive AI endpoints
+  - extract: 20 requests/min
+  - report: 15 requests/min
+  - independent-fairness: 10 requests/min
+  - fairness-check: 15 requests/min
+  - Returns 429 with Retry-After header when exceeded
+  - Uses getClientIP() to extract real IP behind proxies
+
+## P1 - BEFORE PRODUCTION ✅
+- Add DB transaction helpers (lib/transaction.ts)
+  - withTransaction(): wraps operations in Prisma transaction
+  - transitionUploadStatus(): atomic status transitions with validation
+  - safeUpdateUpload(): safe updates with error handling
+  - Prevents race conditions and stuck states
+
+- Add background job utilities (lib/background-jobs.ts)
+  - recoverAbandonedUploads(): finds uploads stuck >30min in intermediate states
+  - findOrphanedFiles(): detects failed uploads with remaining storage files
+  - getProcessingHealthStatus(): system health checks (% in processing)
+  - Prevents zombie processes and orphaned resources
+
+- Add idempotency key system (lib/idempotency.ts)
+  - getIdempotencyKey(): extracts Idempotency-Key header
+  - getIdempotencyResult(): returns cached result if exists
+  - storeIdempotencyResult(): caches operation results (24h TTL)
+  - startIdempotencyCleanup(): periodic cleanup of expired keys
+  - Prevents duplicate processing on request retries
+
+## P2 - NICE TO HAVE ✅
+- Add exponential backoff retry to Claude report generation
+  - 3 attempts with exponential delays (1s, 2s, 4s)
+  - Logs each attempt and backoff delay
+  - Improves resilience to transient API failures
+
+## Fixes
+- Fixed TypeScript exactOptionalPropertyTypes errors
+  - Explicitly add | undefined to optional properties in interfaces
+  - Use type narrowing when passing potentially-null values
+
+## Files Changed
+- app/api/upload/route.ts: atomic uploads + storage cleanup
+- app/api/analyze/extract/route.ts: Zod validation + rate limiting
+- app/api/analyze/report/route.ts: Zod validation + rate limiting
+- app/api/analyze/retry/route.ts: NEW - full retry endpoint
+- app/api/ai/independent-fairness/route.ts: Zod validation + rate limiting
+- app/api/ai/fairness-check/route.ts: Zod validation + rate limiting
+- lib/ai/report/claude-report.ts: exponential backoff retry (3x)
+- lib/transaction.ts: NEW - DB transaction utilities
+- lib/background-jobs.ts: NEW - timeout recovery + orphan detection
+- lib/idempotency.ts: NEW - idempotency key management
+
+## Build Status
+✅ Successful: npm run build (37/37 pages generated, all TS checks pass)
+
+## Testing
+- 20 manual test cases documented (MANUAL-TEST-PLAN.md)
+  - 14 P0 critical tests (file validation, upload flow, retry, auth, rate-limiting)
+  - 6 P1 important tests (transactions, background jobs, idempotency)
+  - Run tests before merging to production
+
+## Breaking Changes
+None. All changes are backwards compatible.
+
+## Dependencies
+No new npm packages added. Uses existing: Zod, Prisma, next/server

@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
-import { Upload, X, FileImage, FileText, Loader2, AlertCircle, Plus, CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { Upload, X, FileImage, FileText, Loader2, AlertCircle, Plus, CheckCircle2, Circle, Sparkles, RefreshCw, XCircle } from "lucide-react";
 import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
 
 interface UploadZoneProps {
   childId: string;
+  retryUploadId: string | undefined | null;
 }
 
 const uploadTexts: Record<string, {
@@ -41,6 +42,11 @@ const uploadTexts: Record<string, {
   noImages: string;
   extractFailed: string;
   reportFailed: string;
+  retryBtn: string;
+  startOverBtn: string;
+  retryTipUpload: string;
+  retryTipExtract: string;
+  retryTipReport: string;
 }> = {
   de: {
     uploadTitle: 'Testseiten hochladen',
@@ -72,6 +78,11 @@ const uploadTexts: Record<string, {
     noImages: 'Keine Bilder vom Upload erhalten',
     extractFailed: 'Textextraktion fehlgeschlagen',
     reportFailed: 'Berichterstellung fehlgeschlagen',
+    retryBtn: 'Wiederholen',
+    startOverBtn: 'Neu starten',
+    retryTipUpload: 'Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
+    retryTipExtract: 'Ihre Dateien wurden erfolgreich hochgeladen. Klicken Sie auf Wiederholen, um die Analyse neu zu starten — kein erneuter Upload nötig.',
+    retryTipReport: 'Text wurde erfolgreich extrahiert. Klicken Sie auf Wiederholen, um den Bericht neu zu erstellen.',
   },
   en: {
     uploadTitle: 'Upload test pages',
@@ -103,6 +114,11 @@ const uploadTexts: Record<string, {
     noImages: 'No images received from upload',
     extractFailed: 'Text extraction failed',
     reportFailed: 'Report generation failed',
+    retryBtn: 'Retry',
+    startOverBtn: 'Start Over',
+    retryTipUpload: 'Please check your connection and try again.',
+    retryTipExtract: 'Your files were uploaded successfully. Click Retry to re-run the analysis — no re-upload needed.',
+    retryTipReport: 'Text was extracted successfully. Click Retry to regenerate the report.',
   },
   ar: {
     uploadTitle: '\u062a\u062d\u0645\u064a\u0644 \u0635\u0641\u062d\u0627\u062a \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631',
@@ -127,13 +143,18 @@ const uploadTexts: Record<string, {
     fileTooLarge: '\u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0627\u0644\u0645\u0644\u0641 \u0623\u0635\u063a\u0631 \u0645\u0646 4.5 \u0645\u064a\u063a\u0627\u0628\u0627\u064a\u062a',
     onlyFormats: '\u064a\u064f\u0633\u0645\u062d \u0641\u0642\u0637 \u0628\u0645\u0644\u0641\u0627\u062a JPG \u0648PNG \u0648PDF',
     totalSizeExceeded: '\u064a\u062a\u062c\u0627\u0648\u0632 \u062d\u062f 50 \u0645\u064a\u063a\u0627\u0628\u0627\u064a\u062a. \u064a\u0631\u062c\u0649 \u062a\u0642\u0644\u064a\u0644 \u062c\u0648\u062f\u0629 \u0627\u0644\u0635\u0648\u0631\u0629 \u0623\u0648 \u0639\u062f\u062f \u0627\u0644\u0635\u0641\u062d\u0627\u062a.',
-    pdfFailed: '\u0641\u0634\u0644 \u062a\u062d\u0648\u064a\u0644 PDF',
+    pdfFailed: 'PDF-\u0643\u0648\u0646\u0641\u0631\u062a\u064a\u0631\u0648\u0646 \u0641\u0634\u0644\u062a',
     uploadFailed: '\u0641\u0634\u0644 \u0627\u0644\u062a\u062d\u0645\u064a\u0644',
     serverError: '\u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u062e\u0627\u062f\u0645. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649 \u0644\u0627\u062d\u0642\u064b\u0627.',
     vercelLimit: '\u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0643\u0628\u064a\u0631\u0629 \u062c\u062f\u064b\u0627. Vercel Free Tier \u064a\u0633\u0645\u062d \u0628\u062d\u062f \u0623\u0642\u0635\u0649 4 \u0645\u064a\u063a\u0627\u0628\u0627\u064a\u062a.',
     noImages: '\u0644\u0645 \u064a\u062a\u0645 \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u0648\u0631 \u0645\u0646 \u0627\u0644\u062a\u062d\u0645\u064a\u0644',
     extractFailed: '\u0641\u0634\u0644 \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0627\u0644\u0646\u0635',
     reportFailed: '\u0641\u0634\u0644 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u062a\u0642\u0631\u064a\u0631',
+    retryBtn: '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629',
+    startOverBtn: '\u0627\u0644\u0628\u062f\u0621 \u0645\u0646 \u062c\u062f\u064a\u062f',
+    retryTipUpload: '\u064a\u0631\u062c\u0649 \u0627\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u062a\u0635\u0627\u0644\u0643 \u0648\u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
+    retryTipExtract: '\u062a\u0645 \u062a\u062d\u0645\u064a\u0644 \u0645\u0644\u0641\u0627\u062a\u0643 \u0628\u0646\u062c\u0627\u062d. \u0627\u0646\u0642\u0631 \u0641\u0648\u0642 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0644\u0625\u0639\u0627\u062f\u0629 \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u2014 \u0644\u0627 \u062d\u0627\u062c\u0629 \u0644\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u062d\u0645\u064a\u0644.',
+    retryTipReport: '\u062a\u0645 \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0627\u0644\u0646\u0635 \u0628\u0646\u062c\u0627\u062d. \u0627\u0646\u0642\u0631 \u0641\u0648\u0642 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0644\u0625\u0639\u0627\u062f\u0629 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u062a\u0642\u0631\u064a\u0631.',
   },
   tr: {
     uploadTitle: 'Test sayfalar\u0131n\u0131 y\u00fckle',
@@ -165,6 +186,11 @@ const uploadTexts: Record<string, {
     noImages: 'Y\u00fcklemeden g\u00f6r\u00fcnt\u00fc al\u0131namad\u0131',
     extractFailed: 'Metin \u00e7\u0131karma ba\u015far\u0131s\u0131z',
     reportFailed: 'Rapor olu\u015fturma ba\u015far\u0131s\u0131z',
+    retryBtn: 'Tekrar Dene',
+    startOverBtn: 'Ba\u015ftan Ba\u015fla',
+    retryTipUpload: 'L\u00fctfen ba\u011flant\u0131n\u0131z\u0131 kontrol edin ve tekrar deneyin.',
+    retryTipExtract: "Dosyalar\u0131n\u0131z ba\u015far\u0131yla y\u00fcklendi. Analizi yeniden \u00e7al\u0131\u015ft\u0131rmak i\u00e7in Tekrar Dene'ye t\u0131klay\u0131n \u2014 yeniden y\u00fcklemeye gerek yok.",
+    retryTipReport: "Metin ba\u015far\u0131yla \u00e7\u0131kar\u0131ld\u0131. Raporu yeniden olu\u015fturmak i\u00e7in Tekrar Dene'ye t\u0131klay\u0131n.",
   },
   ro: {
     uploadTitle: '\u00cenc\u0103rca\u021bi paginile testului',
@@ -194,8 +220,13 @@ const uploadTexts: Record<string, {
     serverError: 'Eroare de server. V\u0103 rug\u0103m \u00eencerca\u021bi din nou mai t\u00e2rziu.',
     vercelLimit: 'Fi\u015fierele sunt prea mari. Vercel Free Tier permite max. 4 MB.',
     noImages: 'Nu s-au primit imagini de la \u00eenc\u0103rcare',
-    extractFailed: 'Extragerea textului a e\u015fuat',
-    reportFailed: 'Generarea raportului a e\u015fuat',
+    extractFailed: 'Extragerea textului a e\u0219uat',
+    reportFailed: 'Generarea raportului a e\u0219uat',
+    retryBtn: '\u00cencearc\u0103 din nou',
+    startOverBtn: 'Re\u00eencepe',
+    retryTipUpload: 'V\u0103 rug\u0103m s\u0103 v\u0103 verifica\u021bi conexiunea \u0219i s\u0103 \u00eencerca\u021bi din nou.',
+    retryTipExtract: 'Fi\u0219ierele dvs. au fost \u00eenc\u0103rcate cu succes. Face\u021bi clic pe \u00cencearc\u0103 din nou pentru a rula analiza din nou \u2014 nu este nevoie de o nou\u0103 \u00eenc\u0103rcare.',
+    retryTipReport: 'Textul a fost extras cu succes. Face\u021bi clic pe \u00cencearc\u0103 din nou pentru a regenera raportul.',
   },
   ru: {
     uploadTitle: '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u0442\u0435\u0441\u0442\u0430',
@@ -227,6 +258,11 @@ const uploadTexts: Record<string, {
     noImages: '\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u044f \u043d\u0435 \u043f\u043e\u043b\u0443\u0447\u0435\u043d\u044b',
     extractFailed: '\u041e\u0448\u0438\u0431\u043a\u0430 \u0438\u0437\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u044f \u0442\u0435\u043a\u0441\u0442\u0430',
     reportFailed: '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u0447\u0451\u0442\u0430',
+    retryBtn: '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c',
+    startOverBtn: '\u041d\u0430\u0447\u0430\u0442\u044c \u0441\u043d\u0430\u0447\u0430\u043b\u0430',
+    retryTipUpload: '\u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430, \u043f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u043e\u043f\u044b\u0442\u043a\u0443.',
+    retryTipExtract: '\u0412\u0430\u0448\u0438 \u0444\u0430\u0439\u043b\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u044b. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c, \u0447\u0442\u043e\u0431\u044b \u043f\u0435\u0440\u0435\u0437\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c \u0430\u043d\u0430\u043b\u0438\u0437 \u2014 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f.',
+    retryTipReport: '\u0422\u0435\u043a\u0441\u0442 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0438\u0437\u0432\u043b\u0435\u0447\u0435\u043d. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c, \u0447\u0442\u043e\u0431\u044b \u043f\u0435\u0440\u0435\u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043e\u0442\u0447\u0435\u0442.',
   },
   fa: {
     uploadTitle: '\u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0635\u0641\u062d\u0627\u062a \u0622\u0632\u0645\u0648\u0646',
@@ -258,6 +294,11 @@ const uploadTexts: Record<string, {
     noImages: '\u062a\u0635\u0648\u06cc\u0631\u06cc \u0627\u0632 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u062f\u0631\u06cc\u0627\u0641\u062a \u0646\u0634\u062f',
     extractFailed: '\u062e\u0637\u0627 \u062f\u0631 \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0645\u062a\u0646',
     reportFailed: '\u062e\u0637\u0627 \u062f\u0631 \u0627\u06cc\u062c\u0627\u062f \u06af\u0632\u0627\u0631\u0634',
+    retryBtn: '\u062a\u0644\u0627\u0634 \u0645\u062c\u062f\u062f',
+    startOverBtn: '\u0634\u0631\u0648\u0639 \u0645\u062c\u062f\u062f',
+    retryTipUpload: '\u0644\u0637\u0641\u0627\u064b \u0627\u062a\u0635\u0627\u0644 \u062e\u0648\u062f \u0631\u0627 \u0628\u0631\u0631\u0633\u06cc \u06a9\u0631\u062f\u0647 \u0648 \u062f\u0648\u0628\u0627\u0631\u0647 \u062a\u0644\u0627\u0634 \u06a9\u0646\u06cc\u062f.',
+    retryTipExtract: '\u0641\u0627\u06cc\u0644\u200c\u0647\u0627\u06cc \u0634\u0645\u0627 \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0622\u067e\u0644\u0648\u062f \u0634\u062f\u0646\u062f. \u0628\u0631\u0627\u06cc \u0627\u062c\u0631\u0627\u06cc \u0645\u062c\u062f\u062f \u062a\u062c\u0632\u06cc\u0647 \u0648 \u062a\u062d\u0644\u06cc\u0644 \u0631\u0648\u06cc \u062a\u0644\u0627\u0634 \u0645\u062c\u062f\u062f \u06a9\u0644\u06cc\u06a9 \u06a9\u0646\u06cc\u062f - \u0646\u06cc\u0627\u0632\u06cc \u0628\u0647 \u0622\u067e\u0644\u0648\u062f \u0645\u062c\u062f\u062f \u0646\u06cc\u0633\u062a.',
+    retryTipReport: '\u0645\u062a\u0646 \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0634\u062f. \u0628\u0631\u0627\u06cc \u0628\u0627\u0632\u0633\u0627\u0632\u06cc \u06af\u0632\u0627\u0631\u0634 \u0631\u0648\u06cc \u062a\u0644\u0627\u0634 \u0645\u062c\u062f\u062f \u06a9\u0644\u06cc\u06a9 \u06a9\u0646\u06cc\u062f.',
   },
   ku: {
     uploadTitle: '\u0628\u0627\u0631\u06a9\u0631\u062f\u0646\u06cc \u067e\u06d5\u0695\u06d5\u06a9\u0627\u0646\u06cc \u062a\u0627\u0642\u06cc\u06a9\u0631\u062f\u0646\u06d5\u0648\u06d5',
@@ -271,7 +312,7 @@ const uploadTexts: Record<string, {
     stepReport: '\u062f\u0631\u0648\u0633\u062a\u06a9\u0631\u062f\u0646\u06cc \u0695\u0627\u067e\u06c6\u0631\u062a (\u0634\u06cc\u06a9\u0627\u0631\u06cc)',
     stepDone: '\u062a\u06d5\u0648\u0627\u0648 \u0628\u0648\u0648!',
     btnUploading: '\u0628\u0627\u0631\u062f\u06d5\u06a9\u0631\u06ce\u062a...',
-    btnExtracting: '\u062f\u06d5\u0642 \u062f\u06d5\u0631\u062f\u06d5\u0647\u06ce\u0646\u0631\u06ce\u062a...',
+    btnExtracting: '\u062f\u06d5\u0642 \u062d\u06d5\u0644\u062f\u06d5\u0643\u0631\u062f\u0646...',
     btnAnalyzing: '\u0695\u0627\u067e\u06c6\u0631\u062a \u062f\u0631\u0648\u0633\u062a\u062f\u06d5\u06a9\u0631\u06ce\u062a...',
     btnDone: '\u062a\u06d5\u0648\u0627\u0648 \u0628\u0648\u0648!',
     analyzePage: '\u0634\u06cc\u06a9\u0627\u0631\u06cc 1 \u067e\u06d5\u0695\u06d5',
@@ -287,8 +328,13 @@ const uploadTexts: Record<string, {
     serverError: '\u0647\u06d5\u06b5\u06d5\u06cc \u0633\u06ce\u0631\u06a4\u06d5\u0631. \u062a\u06a9\u0627\u06cc\u06d5 \u062f\u0648\u0627\u062a\u0631 \u0647\u06d5\u0648\u06b5\u0628\u062f\u06d5\u0631\u06d5\u0648\u06d5.',
     vercelLimit: '\u0641\u0627\u06cc\u0644\u06d5\u06a9\u0627\u0646 \u0632\u06c6\u0631 \u06af\u06d5\u0648\u0631\u06d5\u0646. Vercel Free Tier \u0632\u06c6\u0631\u062a\u0631\u06cc\u0646 4 \u0645\u06ce\u06af\u0627\u0628\u0627\u06cc\u062a.',
     noImages: '\u0647\u06cc\u0686 \u0648\u06ce\u0646\u06d5\u06cc\u06d5\u06a9 \u0648\u06d5\u0631\u0646\u06d5\u06af\u06cc\u0631\u0627',
-    extractFailed: '\u062f\u06d5\u0631\u0647\u06ce\u0646\u0627\u0646\u06cc \u062f\u06d5\u0642 \u0634\u06a9\u0633\u062a\u06cc \u0647\u06ce\u0646\u0627',
-    reportFailed: '\u062f\u0631\u0648\u0633\u062a\u06a9\u0631\u062f\u0646\u06cc \u0695\u0627\u067e\u06c6\u0631\u062a \u0634\u06a9\u0633\u062a\u06cc \u0647\u06ce\u0646\u0627',
+    extractFailed: 'دەرھێنانی دەق شکستی ھێنا',
+    reportFailed: 'دروستکردنی ڕاپۆرت شکستی ھێنا',
+    retryBtn: 'دووبارە هەوڵدانەوە',
+    startOverBtn: 'دەستپێکردنەوە',
+    retryTipUpload: 'تکایە هێڵەکەت پشکنین بکە و دووبارە هەوڵ بدە.',
+    retryTipExtract: 'فایلەکانت بە سەرکەوتوویی بارکران. کلیک لەسەر دووبارە هەوڵدانەوە بکە بۆ دووبارە شیکردنەوە — پێویست بە بارکردنەوە ناکات.',
+    retryTipReport: 'دەقەکە بە سەرکەوتوویی دەرکرا. کلیک لەسەر دووبارە هەوڵدانەوە بکە بۆ دروستکردنەوەی ڕاپۆرتەکە.',
   },
   kmr: {
     uploadTitle: 'R\u00fbpel\u00ean cerib\u00eendin\u00ea barkirin',
@@ -320,6 +366,11 @@ const uploadTexts: Record<string, {
     noImages: 'Ji barkirinê wêne nehat wergirtin',
     extractFailed: 'Derxistina nivîsê bi ser neket',
     reportFailed: 'Çêkirina raporê bi ser neket',
+    retryBtn: 'Dîsa biceribîne',
+    startOverBtn: 'Ji nû ve dest pê bike',
+    retryTipUpload: 'Ji kerema xwe girêdana xwe kontrol bikin û dîsa biceribînin.',
+    retryTipExtract: 'Dosyeyên we bi serkeftî hatin barkirin. Ji bo ku analîzê ji nû ve bimeşînin li Dîsa biceribîne bikirtînin - ne hewce ye bu hûn ji nû ve bar bikin.',
+    retryTipReport: 'Nivîs bi serkeftî hate derxistin. Ji bo çêkirina raporê li Dîsa biceribîne bikirtînin.',
   },
 }
 
@@ -342,6 +393,8 @@ const getFileSchema = (t: typeof uploadTexts['de']) => z.object({
   }),
 });
 
+
+
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
 
 const formatFileSize = (bytes: number): string => {
@@ -350,13 +403,15 @@ const formatFileSize = (bytes: number): string => {
   return (bytes / 1048576).toFixed(1) + " MB";
 };
 
-export default function UploadZone({ childId }: UploadZoneProps) {
+export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [processingStep, setProcessingStep] = useState<ProcessingStep>("idle");
+  const [failedStep, setFailedStep] = useState<"uploading" | "extracting" | "analyzing" | null>(null);
+  const [retryContext, setRetryContext] = useState<{ uploadId: string; images: { base64: string; mimeType: string; pageNumber: number }[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -376,6 +431,16 @@ export default function UploadZone({ childId }: UploadZoneProps) {
       });
     };
   }, []); // Empty deps - only run once on mount/unmount
+
+  // Handle initialization from retry
+  useEffect(() => {
+    if (retryUploadId && processingStep === "idle") {
+      setRetryContext({ uploadId: retryUploadId, images: [] });
+      setFailedStep("analyzing");
+      setProcessingStep("error");
+      setError(txt.reportFailed); // Default assume report failed 
+    }
+  }, [retryUploadId, processingStep, txt.reportFailed]);
 
   const validateFile = (selectedFile: File): boolean => {
     setError(null);
@@ -550,101 +615,140 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
 
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
+  const handleUpload = async (isRetry = false) => {
+    if (!isRetry && files.length === 0) return;
 
-    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-    if (totalSize > MAX_TOTAL_SIZE) {
-      setError(`${(totalSize / 1024 / 1024).toFixed(1)} MB ${txt.totalSizeExceeded}`);
-      return;
+    if (!isRetry) {
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      if (totalSize > MAX_TOTAL_SIZE) {
+        setError(`${(totalSize / 1024 / 1024).toFixed(1)} MB ${txt.totalSizeExceeded}`);
+        return;
+      }
     }
 
     setIsUploading(true);
-    setProcessingStep("uploading");
     setError(null);
+    
+    // Determine starting context
+    let currentUploadId = retryContext?.uploadId;
+    let currentImages = retryContext?.images;
 
-    try {
-      // === STEP 1: Upload files ===
-      console.log(`[UploadZone] Step 1: Uploading ${files.length} file(s)`);
+    // === STEP 1: Upload ===
+    if (!isRetry || failedStep === "uploading" || !currentUploadId) {
+      setProcessingStep("uploading");
+      setFailedStep(null);
+      
+      try {
+        console.log(`[UploadZone] Step 1: Uploading ${files.length} file(s)`);
+        const formData = new FormData();
+        files.forEach((file) => formData.append("files", file));
+        formData.append("childId", childId);
 
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-      formData.append("childId", childId);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        const contentType = uploadRes.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await uploadRes.text();
+          throw new Error(
+            text.includes("Request Entity Too Large") || text.includes("413")
+              ? txt.vercelLimit
+              : txt.serverError
+          );
+        }
 
-      const contentType = uploadRes.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await uploadRes.text();
-        throw new Error(
-          text.includes("Request Entity Too Large") || text.includes("413")
-            ? txt.vercelLimit
-            : txt.serverError
-        );
+        const uploadData: UploadResponse = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.error || txt.uploadFailed);
+        }
+
+        const { uploadId, images } = uploadData;
+        if (!images || images.length === 0) {
+          throw new Error(txt.noImages);
+        }
+
+        console.log(`[UploadZone] Step 1 complete: uploadId=${uploadId}, ${images.length} images`);
+        currentUploadId = uploadId;
+        currentImages = images;
+        
+        // Save for future retries
+        setRetryContext({ uploadId: currentUploadId, images: currentImages });
+      } catch (err) {
+        console.error("[UploadZone] Upload Error:", err);
+        setError(err instanceof Error ? err.message : txt.uploadFailed);
+        setProcessingStep("error");
+        setFailedStep("uploading");
+        setIsUploading(false);
+        return;
       }
-
-      const uploadData: UploadResponse = await uploadRes.json();
-      if (!uploadRes.ok || !uploadData.success) {
-        throw new Error(uploadData.error || txt.uploadFailed);
-      }
-
-      const { uploadId, images } = uploadData;
-      if (!images || images.length === 0) {
-        throw new Error(txt.noImages);
-      }
-
-      console.log(`[UploadZone] Step 1 complete: uploadId=${uploadId}, ${images.length} images`);
-
-      // === STEP 2: Extract (Layer 1 - Vision) ===
-      setProcessingStep("extracting");
-      console.log("[UploadZone] Step 2: Extracting text from images...");
-
-      const extractRes = await fetch("/api/analyze/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uploadId, images, language }),
-      });
-
-      const extractData = await extractRes.json();
-      if (!extractRes.ok || !extractData.success) {
-        throw new Error(extractData.error || txt.extractFailed);
-      }
-
-      console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
-
-      // === STEP 3: Generate Report (Layer 2 - AI Analysis) ===
-      setProcessingStep("analyzing");
-      console.log("[UploadZone] Step 3: Generating report...");
-
-      const reportRes = await fetch("/api/analyze/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uploadId }),
-      });
-
-      const reportData = await reportRes.json();
-      if (!reportRes.ok || !reportData.success) {
-        throw new Error(reportData.error || txt.reportFailed);
-      }
-
-      console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
-
-      // === Done ===
-      setProcessingStep("complete");
-      previews.forEach((preview) => {
-        if (preview) URL.revokeObjectURL(preview);
-      });
-
-      router.push(`/uploads/${uploadId}`);
-    } catch (err) {
-      console.error("[UploadZone] Error:", err);
-      setError(err instanceof Error ? err.message : txt.uploadFailed);
-      setProcessingStep("error");
-      setIsUploading(false);
     }
+
+    // === STEP 2: Extract ===
+    if (!isRetry || ["uploading", "extracting"].includes(failedStep || "")) {
+      setProcessingStep("extracting");
+      setFailedStep(null);
+      
+      try {
+        console.log("[UploadZone] Step 2: Extracting text from images...");
+        const extractRes = await fetch("/api/analyze/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uploadId: currentUploadId, images: currentImages, language }),
+        });
+
+        const extractData = await extractRes.json();
+        if (!extractRes.ok || !extractData.success) {
+          throw new Error(extractData.error || txt.extractFailed);
+        }
+        console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
+      } catch (err) {
+        console.error("[UploadZone] Extract Error:", err);
+        setError(err instanceof Error ? err.message : txt.extractFailed);
+        setProcessingStep("error");
+        setFailedStep("extracting");
+        setIsUploading(false);
+        return;
+      }
+    }
+
+    // === STEP 3: Report ===
+    if (!isRetry || ["uploading", "extracting", "analyzing"].includes(failedStep || "")) {
+      setProcessingStep("analyzing");
+      setFailedStep(null);
+      
+      try {
+        console.log("[UploadZone] Step 3: Generating report...");
+        // Wait, for step 3, we don't need `images` unless there's an issue with the endpoint missing it! Actually the endpoint only needs uploadId.
+        const reportRes = await fetch("/api/analyze/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uploadId: currentUploadId }),
+        });
+
+        const reportData = await reportRes.json();
+        if (!reportRes.ok || !reportData.success) {
+          throw new Error(reportData.error || txt.reportFailed);
+        }
+        console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
+      } catch (err) {
+        console.error("[UploadZone] Report Error:", err);
+        setError(err instanceof Error ? err.message : txt.reportFailed);
+        setProcessingStep("error");
+        setFailedStep("analyzing");
+        setIsUploading(false);
+        return;
+      }
+    }
+
+    // === DONE ===
+    setProcessingStep("complete");
+    previews.forEach((preview) => {
+      if (preview) URL.revokeObjectURL(preview);
+    });
+
+    router.push(`/uploads/${currentUploadId}`);
   };
 
   const processingSteps = [
@@ -656,8 +760,61 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
   return (
     <div className="w-full">
-      {/* Error Message */}
-      {error && (
+      {/* Error Message & Retry UI */}
+      {error && failedStep && (
+        <div className="mb-6 card-story overflow-hidden border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--coral)]/10">
+                <XCircle className="h-5 w-5 text-[var(--coral)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[var(--gray-900)] mb-1">
+                  {failedStep === "uploading" ? txt.uploadFailed : 
+                   failedStep === "extracting" ? txt.extractFailed : txt.reportFailed}
+                </h3>
+                <p className="text-sm text-[var(--gray-700)] mb-3">
+                  {error}
+                </p>
+                <div className="rounded-lg bg-white/60 p-3 text-sm text-[var(--gray-600)] mb-4">
+                  <div className="flex gap-2">
+                    <AlertCircle className="h-4 w-4 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+                    <p>
+                      {failedStep === "uploading" ? txt.retryTipUpload : 
+                       failedStep === "extracting" ? txt.retryTipExtract : txt.retryTipReport}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => handleUpload(true)}
+                    disabled={isUploading}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--coral)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--coral-dark)] disabled:opacity-50"
+                  >
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {txt.retryBtn}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFailedStep(null);
+                      setProcessingStep("idle");
+                      setError(null);
+                      if (retryUploadId) router.push('/dashboard');
+                    }}
+                    disabled={isUploading}
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-sm ring-1 ring-inset ring-[var(--gray-300)] transition-colors hover:bg-[var(--gray-50)] disabled:opacity-50"
+                  >
+                    {txt.startOverBtn}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {error && !failedStep && (
         <div className="mb-6 card-story p-4 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
@@ -815,7 +972,7 @@ export default function UploadZone({ childId }: UploadZoneProps) {
 
           {/* Upload Button */}
           <button
-            onClick={handleUpload}
+            onClick={() => handleUpload(false)}
             disabled={isUploading || isConverting}
             className="btn-primary w-full inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-lg font-semibold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
