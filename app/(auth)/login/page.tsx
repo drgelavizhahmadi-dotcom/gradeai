@@ -132,7 +132,7 @@ export default function LoginPage() {
               placeholder={t.login.passwordPlaceholder}
               required
               disabled={isLoading}
-              showComplexity={true}
+              showComplexity={false}
               translations={t.passwordInput}
             />
 

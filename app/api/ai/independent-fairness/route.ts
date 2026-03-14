@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
 import { z } from 'zod'
 import { RateLimiter, getClientIP } from '@/lib/rate-limit'
+import { db } from '@/lib/db'
 
 export const maxDuration = 300
 
@@ -210,7 +211,7 @@ Reconstruct the test and analyze grading fairness. Be thorough but concise.`
     const totalTime = Date.now() - startTime
     console.log(`[Independent Fairness API] Complete in ${totalTime}ms. Score: ${fairnessAnalysis.overallScore}`)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       testReconstruction,
       fairnessAnalysis,
@@ -224,7 +225,22 @@ Reconstruct the test and analyze grading fairness. Be thorough but concise.`
         concernsFound: fairnessAnalysis.concerns?.length || 0,
         language,
       }
-    })
+    }
+
+    // Save to DB if uploadId provided
+    if (uploadId) {
+      try {
+        await db.upload.update({
+          where: { id: uploadId, userId: session.user.id },
+          data: { fairnessCheck: responseData as any },
+        })
+        console.log('[Independent Fairness API] Saved to DB for uploadId:', uploadId)
+      } catch (dbErr) {
+        console.error('[Independent Fairness API] DB save failed (non-fatal):', dbErr)
+      }
+    }
+
+    return NextResponse.json(responseData)
 
   } catch (error) {
     console.error('[Independent Fairness API] Error:', error)

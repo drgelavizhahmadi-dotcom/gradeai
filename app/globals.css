@@ -388,3 +388,64 @@ h1, h2, h3, h4, h5, h6 {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* === Print Styles === */
+@media print {
+  /* Hide everything except report content */
+  aside,
+  nav,
+  header,
+  footer,
+  .print\:hidden,
+  [class*="sidebar"],
+  [class*="mobile-header"] {
+    display: none !important;
+  }
+
+  /* Remove sidebar offset so content fills page */
+  .lg\:pl-64 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Clean white background for printing */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure content breaks well across pages */
+  .space-y-5 > * {
+    break-inside: avoid;
+  }
+
+  /* ── Section-specific printing (flashcards / fairness) ──────────────
+     When body[data-printing] is set, hide everything then reveal only
+     the target [data-print] section via visibility (not display:none,
+     so the element still occupies layout and can be seen by the browser
+     renderer, but siblings are invisible).
+  ------------------------------------------------------------------- */
+  body[data-printing] * {
+    visibility: hidden !important;
+  }
+
+  body[data-printing="flashcards"] [data-print="flashcards"],
+  body[data-printing="flashcards"] [data-print="flashcards"] * {
+    visibility: visible !important;
+  }
+
+  body[data-printing="fairness"] [data-print="fairness"],
+  body[data-printing="fairness"] [data-print="fairness"] * {
+    visibility: visible !important;
+  }
+
+  /* Position the visible section at the top of the print page */
+  body[data-printing] [data-print] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
+}

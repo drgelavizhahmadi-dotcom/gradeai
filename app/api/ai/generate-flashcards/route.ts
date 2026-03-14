@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export const maxDuration = 300
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { extractedText, childName, grade, subject, schoolType, language = 'de' } = await request.json()
+    const { extractedText, childName, grade, subject, schoolType, language = 'de', uploadId } = await request.json()
 
     if (!extractedText) {
       return NextResponse.json({ error: 'Missing extracted text' }, { status: 400 })
@@ -118,7 +119,7 @@ Create 8-10 flashcards targeting this student's specific weaknesses from the tes
     const totalTime = Date.now() - startTime
     console.log(`[Flashcards API] Complete in ${totalTime}ms. Generated ${(result as any).flashcards?.length || 0} flashcards`)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       ...result,
       generatedAt: new Date().toISOString(),
@@ -130,7 +131,22 @@ Create 8-10 flashcards targeting this student's specific weaknesses from the tes
         isIndependent: true,
         language,
       }
-    })
+    }
+
+    // Save to DB if uploadId provided
+    if (uploadId) {
+      try {
+        await db.upload.update({
+          where: { id: uploadId, userId: session.user.id },
+          data: { flashcards: responseData as any },
+        })
+        console.log('[Flashcards API] Saved to DB for uploadId:', uploadId)
+      } catch (dbErr) {
+        console.error('[Flashcards API] DB save failed (non-fatal):', dbErr)
+      }
+    }
+
+    return NextResponse.json(responseData)
 
   } catch (error) {
     console.error('[Flashcards API] Error:', error)

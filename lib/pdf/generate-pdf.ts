@@ -4,15 +4,7 @@
  */
 
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
-
-// Extend jsPDF type to include autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF
-    lastAutoTable: { finalY: number }
-  }
-}
+import autoTable from 'jspdf-autotable'
 
 // Color palette
 const COLORS = {
@@ -111,7 +103,7 @@ function checkNewPage(doc: jsPDF, y: number, requiredSpace: number = 40): number
   const pageHeight = doc.internal.pageSize.getHeight()
   if (y + requiredSpace > pageHeight - 20) {
     doc.addPage()
-    addFooter(doc, doc.internal.pages.length - 1)
+    addFooter(doc, doc.getNumberOfPages())
     return 20
   }
   return y
@@ -123,7 +115,10 @@ function checkNewPage(doc: jsPDF, y: number, requiredSpace: number = 40): number
 
 export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = {}): void {
   const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const cardWidth = pageWidth - 30
   let y = addHeader(doc, 'Lernkarten', options)
+  let pageNum = 1
 
   const flashcards = flashcardData.flashcards || []
   const studyPlan = flashcardData.studyPlan || {}
@@ -133,14 +128,11 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
     y = addSectionTitle(doc, 'Lernplan', y, COLORS.secondary)
 
     doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-
-    const planItems = [
+    const planItems: [string, string][] = [
       ['Tägliches Ziel:', studyPlan.dailyGoal],
       ['Gesamtzeit:', studyPlan.totalTime],
       ['Wiederholung:', studyPlan.reviewSchedule],
     ]
-
     planItems.forEach(([label, value]) => {
       if (value) {
         doc.setFont('helvetica', 'bold')
@@ -150,63 +142,117 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
         y += 6
       }
     })
-
-    y += 10
+    y += 8
   }
 
-  // Flashcards
-  y = addSectionTitle(doc, `Lernkarten (${flashcards.length})`, y, COLORS.primary)
+  // Flashcards — each card shows BOTH sides clearly
+  y = addSectionTitle(doc, `Lernkarten (${flashcards.length}) – Vorder- und Rückseite`, y, COLORS.primary)
+  y += 2
 
   flashcards.forEach((card: any, index: number) => {
-    y = checkNewPage(doc, y, 50)
+    // ── measure content heights before drawing ──────────────────
+    doc.setFontSize(10)
+    const frontLines = doc.splitTextToSize(card.front || '', cardWidth - 20)
+    const backLines  = doc.splitTextToSize(card.back  || '', cardWidth - 20)
+    const tipLines   = card.tip ? doc.splitTextToSize(`Tipp: ${card.tip}`, cardWidth - 20) : []
 
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const cardWidth = pageWidth - 30
+    const lineH  = 5.5   // line height in mm
+    const pad    = 4     // inner padding
+    const headerH = 8    // card-number + difficulty row
+    const labelH  = 5    // "Frage:" / "Antwort:" label row
+    const dividerH = 6   // divider row between front and back
 
-    // Card container
-    doc.setDrawColor(...COLORS.gray)
-    doc.setFillColor(...COLORS.light)
-    doc.roundedRect(15, y, cardWidth, 45, 3, 3, 'FD')
+    const frontBlockH = labelH + frontLines.length * lineH + pad
+    const backBlockH  = labelH + backLines.length  * lineH + pad
+    const tipBlockH   = tipLines.length > 0 ? tipLines.length * lineH + pad : 0
+    const totalCardH  = headerH + frontBlockH + dividerH + backBlockH + tipBlockH + pad * 2
 
-    // Card number and difficulty
+    y = checkNewPage(doc, y, totalCardH + 6)
+
+    // ── card outer box ───────────────────────────────────────────
+    doc.setDrawColor(200, 200, 200)
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(15, y, cardWidth, totalCardH, 3, 3, 'FD')
+
+    // ── header strip ────────────────────────────────────────────
+    const diffColor = card.difficulty === 'easy' ? COLORS.success :
+                      card.difficulty === 'hard'  ? COLORS.danger  : COLORS.warning
+    const diffText  = card.difficulty === 'easy' ? 'Leicht' :
+                      card.difficulty === 'hard'  ? 'Schwer' : 'Mittel'
+
+    doc.setFillColor(...COLORS.primary)
+    doc.roundedRect(15, y, cardWidth, headerH + 1, 3, 3, 'F')
+    // cover bottom rounded corners of header
+    doc.setFillColor(...COLORS.primary)
+    doc.rect(15, y + headerH - 2, cardWidth, 3, 'F')
+
     doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...COLORS.primary)
-    doc.text(`Karte ${index + 1}`, 20, y + 7)
+    doc.setTextColor(255, 255, 255)
+    doc.text(`Karte ${index + 1}`, 20, y + 6)
 
-    // Difficulty badge
-    const diffColor = card.difficulty === 'easy' ? COLORS.success :
-                      card.difficulty === 'hard' ? COLORS.danger : COLORS.warning
     doc.setTextColor(...diffColor)
-    const diffText = card.difficulty === 'easy' ? 'Leicht' :
-                     card.difficulty === 'hard' ? 'Schwer' : 'Mittel'
-    doc.text(diffText, pageWidth - 35, y + 7)
+    doc.setFillColor(...diffColor)
+    doc.roundedRect(pageWidth - 40, y + 2, 22, 5, 1, 1, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(8)
+    doc.text(diffText, pageWidth - 29, y + 6, { align: 'center' })
 
-    // Front (Question)
-    doc.setTextColor(...COLORS.dark)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Frage:', 20, y + 15)
-    doc.setFont('helvetica', 'normal')
-    const frontLines = doc.splitTextToSize(card.front || '', cardWidth - 35)
-    doc.text(frontLines, 45, y + 15)
-
-    // Back (Answer)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Antwort:', 20, y + 27)
-    doc.setFont('helvetica', 'normal')
-    const backLines = doc.splitTextToSize(card.back || '', cardWidth - 35)
-    doc.text(backLines, 45, y + 27)
-
-    // Tip
-    if (card.tip) {
-      doc.setFontSize(8)
-      doc.setTextColor(...COLORS.warning)
-      doc.text(`Tipp: ${card.tip}`, 20, y + 40)
+    if (card.forWeakness) {
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'normal')
+      const weakLines = doc.splitTextToSize(`Für: ${card.forWeakness}`, cardWidth - 50)
+      doc.text(weakLines[0], 50, y + 6)
     }
 
     doc.setTextColor(...COLORS.dark)
-    y += 52
+    let cy = y + headerH + pad
+
+    // ── FRONT section ────────────────────────────────────────────
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...COLORS.secondary)
+    doc.text('FRAGE / VORDERSEITE', 20, cy)
+    cy += labelH
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.dark)
+    doc.text(frontLines, 20, cy)
+    cy += frontLines.length * lineH + pad
+
+    // ── divider with "ANTWORT" label ─────────────────────────────
+    // amber background strip
+    doc.setFillColor(254, 243, 199) // amber-100
+    doc.rect(15, cy, cardWidth, dividerH, 'F')
+    doc.setDrawColor(251, 191, 36)  // amber-400
+    doc.line(15, cy, 15 + cardWidth, cy)
+    doc.line(15, cy + dividerH, 15 + cardWidth, cy + dividerH)
+
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(146, 64, 14)   // amber-800
+    doc.text('ANTWORT / RÜCKSEITE', 20, cy + 4.5)
+    cy += dividerH + pad
+
+    // ── BACK section ─────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.dark)
+    doc.text(backLines, 20, cy)
+    cy += backLines.length * lineH + pad
+
+    // ── Tip ──────────────────────────────────────────────────────
+    if (tipLines.length > 0) {
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'italic')
+      doc.setTextColor(...COLORS.warning)
+      doc.text(tipLines, 20, cy)
+    }
+
+    doc.setTextColor(...COLORS.dark)
+    y += totalCardH + 6
   })
 
   // Print instructions
@@ -214,11 +260,18 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
     y = checkNewPage(doc, y, 30)
     y = addSectionTitle(doc, 'Druckanleitung', y, COLORS.gray)
     doc.setFontSize(9)
-    doc.text(flashcardData.printInstructions, 20, y)
-    y += 15
+    doc.setFont('helvetica', 'normal')
+    const instrLines = doc.splitTextToSize(flashcardData.printInstructions, pageWidth - 40)
+    doc.text(instrLines, 20, y)
   }
 
-  addFooter(doc, 1)
+  // Footers
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addFooter(doc, i)
+  }
+
   doc.save(`GradeAI_Lernkarten_${options.childName || 'Export'}.pdf`)
 }
 
@@ -228,83 +281,174 @@ export function generateFlashcardsPDF(flashcardData: any, options: PDFOptions = 
 
 export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {}): void {
   const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
   let y = addHeader(doc, 'Fairness-Check', options)
 
-  // Score Section
-  y = addSectionTitle(doc, 'Fairness-Bewertung', y, COLORS.secondary)
+  // Extract nested data from independent-fairness API response structure
+  const fa = fairnessData.fairnessAnalysis || fairnessData  // fairnessAnalysis sub-object
+  const tr = fairnessData.testReconstruction || {}           // testReconstruction sub-object
 
-  const pageWidth = doc.internal.pageSize.getWidth()
+  const score = fa.overallScore ?? fa.fairnessScore ?? 0
+  const verdict = fa.verdict || ''
+  const verdictSummary = fa.verdictSummary || fa.verdictExplanation || ''
+  const dimensions = fa.dimensions || fa.analysis || {}
+  const concerns = fa.concerns || []
+  const positiveFindings = fa.positiveFindings || []
+  const gradeBoundary = fa.gradeBoundaryAnalysis || {}
+  const recoveryOpps = fa.pointRecoveryOpportunities || []
+  const recommendation = fa.recommendation || {}
 
-  // Big score display
-  const score = fairnessData.fairnessScore || 0
+  // ── Score Banner ───────────────────────────────────────────────
   const scoreColor = score >= 80 ? COLORS.success : score >= 60 ? COLORS.warning : COLORS.danger
 
   doc.setFontSize(48)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...scoreColor)
-  doc.text(`${score}%`, pageWidth / 2, y + 20, { align: 'center' })
+  doc.text(`${score}`, pageWidth / 2, y + 18, { align: 'center' })
 
-  doc.setFontSize(12)
-  doc.setTextColor(...COLORS.dark)
-  doc.text('Fairness-Score', pageWidth / 2, y + 30, { align: 'center' })
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...COLORS.gray)
+  doc.text('Fairness-Score (0–100)', pageWidth / 2, y + 25, { align: 'center' })
 
-  // Verdict
-  const verdictText = fairnessData.verdict === 'fair' ? 'Bewertung ist fair' :
-                      fairnessData.verdict === 'mostly_fair' ? 'Überwiegend fair' :
-                      fairnessData.verdict === 'questionable' ? 'Einige Fragen offen' :
-                      'Überprüfung empfohlen'
+  const verdictLabel =
+    verdict === 'fair'           ? 'Bewertung ist fair' :
+    verdict === 'mostly_fair'    ? 'Überwiegend fair' :
+    verdict === 'some_concerns'  ? 'Einige Bedenken' :
+    verdict === 'questionable'   ? 'Fraglich' :
+    verdict === 'needs_review'   ? 'Überprüfung empfohlen' :
+    'Analyse abgeschlossen'
 
-  doc.setFontSize(14)
+  const verdictColor = score >= 80 ? COLORS.success : score >= 60 ? COLORS.warning : COLORS.danger
+
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(verdictText, pageWidth / 2, y + 42, { align: 'center' })
+  doc.setTextColor(...verdictColor)
+  doc.text(verdictLabel, pageWidth / 2, y + 34, { align: 'center' })
 
-  if (fairnessData.verdictExplanation) {
+  if (verdictSummary) {
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    const explLines = doc.splitTextToSize(fairnessData.verdictExplanation, pageWidth - 60)
-    doc.text(explLines, pageWidth / 2, y + 50, { align: 'center' })
+    doc.setTextColor(...COLORS.dark)
+    const summLines = doc.splitTextToSize(verdictSummary, pageWidth - 50)
+    doc.text(summLines, pageWidth / 2, y + 42, { align: 'center' })
+    y += summLines.length * 4
   }
 
-  y += 65
+  y += 58
 
-  // Analysis breakdown
-  if (fairnessData.analysis) {
+  // ── Test Reconstruction ────────────────────────────────────────
+  if (tr.subject || tr.topic || tr.maxPoints) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Test-Zusammenfassung', y, COLORS.secondary)
+
+    const infoRows: [string, string][] = [
+      ['Fach:', tr.subject || '-'],
+      ['Thema:', tr.topic || '-'],
+      ['Art:', tr.testType || '-'],
+      ['Erzielte Punkte:', `${tr.achievedPoints ?? '-'} / ${tr.maxPoints ?? '-'} (${tr.calculatedPercentage ?? '-'}%)`],
+      ['Note:', tr.gradeGiven || '-'],
+    ]
+
+    doc.setFontSize(9)
+    infoRows.forEach(([label, value]) => {
+      if (value && value !== '-') {
+        y = checkNewPage(doc, y, 7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...COLORS.dark)
+        doc.text(label, 20, y)
+        doc.setFont('helvetica', 'normal')
+        doc.text(value, 65, y)
+        y += 5.5
+      }
+    })
+
+    // Teacher comment
+    if (tr.teacherComments?.finalComment) {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Lehrer-Kommentar:', 20, y)
+      y += 5
+      doc.setFont('helvetica', 'italic')
+      const cmtLines = doc.splitTextToSize(`"${tr.teacherComments.finalComment}"`, pageWidth - 45)
+      doc.text(cmtLines, 25, y)
+      y += cmtLines.length * 4.5
+    }
+
+    y += 6
+  }
+
+  // ── Dimension breakdown table ──────────────────────────────────
+  if (Object.keys(dimensions).length > 0) {
     y = checkNewPage(doc, y, 50)
     y = addSectionTitle(doc, 'Detailanalyse', y, COLORS.primary)
 
-    const analysisData = Object.entries(fairnessData.analysis).map(([key, value]: [string, any]) => {
-      const label = key === 'consistency' ? 'Konsistenz' :
-                    key === 'clarity' ? 'Klarheit' :
-                    key === 'proportionality' ? 'Verhältnismäßigkeit' :
-                    key === 'feedbackQuality' ? 'Feedback-Qualität' :
-                    key === 'partialCredit' ? 'Teilpunkte' : key
-      return [label, `${value.score}%`]
+    const dimLabels: Record<string, string> = {
+      gradingConsistency:    'Benotungskonsistenz',
+      pointProportionality:  'Punktverhältnismäßigkeit',
+      partialCredit:         'Teilpunkte',
+      feedbackQuality:       'Feedback-Qualität',
+      mathematicalAccuracy:  'Rechnerische Richtigkeit',
+      consistency:           'Konsistenz',
+      proportionality:       'Verhältnismäßigkeit',
+      clarity:               'Klarheit',
+    }
+
+    const tableBody = Object.entries(dimensions).map(([key, val]: [string, any]) => {
+      const label = dimLabels[key] || key
+      const scoreVal = val?.score ?? '-'
+      const finding = val?.finding || val?.detail || ''
+      const concern = val?.concern || ''
+      return [label, `${scoreVal}`, finding + (concern ? `\n⚠ ${concern}` : '')]
     })
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
-      head: [['Kriterium', 'Score']],
-      body: analysisData,
+      head: [['Kriterium', 'Score', 'Befund']],
+      body: tableBody,
       theme: 'striped',
       headStyles: { fillColor: COLORS.primary },
-      margin: { left: 20, right: 20 },
+      columnStyles: { 0: { cellWidth: 52 }, 1: { cellWidth: 18, halign: 'center' }, 2: { cellWidth: 110 } },
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      margin: { left: 15, right: 15 },
     })
 
-    y = doc.lastAutoTable.finalY + 10
+    y = (doc as any).lastAutoTable.finalY + 10
   }
 
-  // Concerns
-  if (fairnessData.concerns && fairnessData.concerns.length > 0) {
-    y = checkNewPage(doc, y, 40)
-    y = addSectionTitle(doc, 'Mögliche Bedenken', y, COLORS.warning)
+  // ── Positive Findings ──────────────────────────────────────────
+  if (positiveFindings.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Positive Aspekte', y, COLORS.success)
 
-    fairnessData.concerns.forEach((concern: any, index: number) => {
-      y = checkNewPage(doc, y, 15)
+    positiveFindings.forEach((pf: any) => {
+      y = checkNewPage(doc, y, 12)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.success)
+      doc.text('✓', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      doc.setFont('helvetica', 'normal')
+      const pfLines = doc.splitTextToSize(`${pf.title || ''}: ${pf.detail || ''}`, pageWidth - 45)
+      doc.text(pfLines, 28, y)
+      y += pfLines.length * 4.5 + 2
+    })
+
+    y += 4
+  }
+
+  // ── Concerns ──────────────────────────────────────────────────
+  if (concerns.length > 0) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Bedenken & Auffälligkeiten', y, COLORS.warning)
+
+    concerns.forEach((concern: any) => {
+      y = checkNewPage(doc, y, 20)
 
       const severity = concern.severity === 'significant' ? 'Wichtig' :
-                       concern.severity === 'moderate' ? 'Moderat' : 'Gering'
+                       concern.severity === 'moderate'    ? 'Moderat' : 'Gering'
       const sevColor = concern.severity === 'significant' ? COLORS.danger :
-                       concern.severity === 'moderate' ? COLORS.warning : COLORS.gray
+                       concern.severity === 'moderate'    ? COLORS.warning : COLORS.gray
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
@@ -312,67 +456,212 @@ export function generateFairnessPDF(fairnessData: any, options: PDFOptions = {})
       doc.text(`[${severity}]`, 20, y)
 
       doc.setTextColor(...COLORS.dark)
-      doc.setFont('helvetica', 'normal')
-      const issueLines = doc.splitTextToSize(concern.issue || '', pageWidth - 60)
-      doc.text(issueLines, 45, y)
+      const titleTxt = concern.title || concern.issue || ''
+      const titleLines = doc.splitTextToSize(titleTxt, pageWidth - 55)
+      doc.text(titleLines, 48, y)
+      y += Math.max(titleLines.length * 4.5, 5)
 
-      y += 8 + (issueLines.length - 1) * 4
+      if (concern.detail) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8.5)
+        const detailLines = doc.splitTextToSize(concern.detail, pageWidth - 45)
+        doc.text(detailLines, 25, y)
+        y += detailLines.length * 4 + 2
+      }
+
+      if (concern.recommendation) {
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(...COLORS.secondary)
+        const recLines = doc.splitTextToSize(`→ ${concern.recommendation}`, pageWidth - 45)
+        doc.text(recLines, 25, y)
+        doc.setTextColor(...COLORS.dark)
+        y += recLines.length * 4 + 2
+      }
+
+      y += 3
     })
+
+    y += 3
+  }
+
+  // ── Grade Boundary Analysis ────────────────────────────────────
+  if (gradeBoundary.currentGrade || gradeBoundary.analysis) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Notengrenz-Analyse', y, COLORS.secondary)
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...COLORS.dark)
+
+    const gbRows: [string, string][] = [
+      ['Aktuelle Note:', gradeBoundary.currentGrade || '-'],
+      ['Aktuelle Punkte:', `${gradeBoundary.currentPoints ?? '-'} / ${gradeBoundary.maxPoints ?? '-'} (${gradeBoundary.percentage ?? '-'}%)`],
+      ['Nächstbessere Note:', gradeBoundary.nextBetterGrade || '-'],
+      ['Fehlende Punkte:', gradeBoundary.pointsNeededForBetter != null ? `${gradeBoundary.pointsNeededForBetter} Punkte` : '-'],
+      ['Rückholbare Punkte:', gradeBoundary.potentialRecoverablePoints != null ? `${gradeBoundary.potentialRecoverablePoints} Punkte` : '-'],
+      ['Notenänderung möglich:', gradeBoundary.couldChangeGrade ? 'Ja – Überprüfung lohnt sich!' : 'Nein'],
+    ]
+
+    gbRows.forEach(([label, value]) => {
+      if (value && value !== '-') {
+        y = checkNewPage(doc, y, 7)
+        doc.setFont('helvetica', 'bold')
+        doc.text(label, 20, y)
+        doc.setFont('helvetica', 'normal')
+        const isHighlight = label.includes('Notenänderung') && gradeBoundary.couldChangeGrade
+        if (isHighlight) doc.setTextColor(...COLORS.success)
+        doc.text(value, 80, y)
+        if (isHighlight) doc.setTextColor(...COLORS.dark)
+        y += 5.5
+      }
+    })
+
+    if (gradeBoundary.analysis) {
+      y = checkNewPage(doc, y, 15)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      const gbAnalLines = doc.splitTextToSize(gradeBoundary.analysis, pageWidth - 40)
+      doc.text(gbAnalLines, 20, y)
+      y += gbAnalLines.length * 4 + 5
+    }
 
     y += 5
   }
 
-  // Recommendation
-  if (fairnessData.recommendation) {
+  // ── Point Recovery Opportunities ──────────────────────────────
+  if (recoveryOpps.length > 0) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Punktrückholungs-Möglichkeiten', y, COLORS.warning)
+
+    recoveryOpps.forEach((opp: any) => {
+      y = checkNewPage(doc, y, 20)
+
+      const strength = opp.strength === 'strong'   ? 'Stark'   :
+                       opp.strength === 'moderate'  ? 'Moderat' : 'Schwach'
+      const strColor = opp.strength === 'strong'   ? COLORS.success :
+                       opp.strength === 'moderate'  ? COLORS.warning : COLORS.gray
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...strColor)
+      doc.text(`[${strength}]`, 20, y)
+
+      doc.setTextColor(...COLORS.dark)
+      const qLabel = opp.question ? `Frage: ${opp.question}` : ''
+      const pts = (opp.currentPoints != null && opp.possiblePoints != null)
+        ? ` (${opp.currentPoints} → ${opp.possiblePoints} Pkt.)` : ''
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${qLabel}${pts}`, 48, y)
+      y += 5
+
+      if (opp.argument) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8.5)
+        const argLines = doc.splitTextToSize(opp.argument, pageWidth - 45)
+        doc.text(argLines, 25, y)
+        y += argLines.length * 4 + 2
+      }
+
+      y += 2
+    })
+
+    if (fa.totalPotentialRecovery) {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(...COLORS.warning)
+      doc.text(`Gesamt-Potenzial: ${fa.totalPotentialRecovery}`, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      y += 8
+    }
+
+    y += 3
+  }
+
+  // ── Recommendation ────────────────────────────────────────────
+  if (recommendation.approach || recommendation.shouldContactTeacher != null) {
     y = checkNewPage(doc, y, 50)
     y = addSectionTitle(doc, 'Empfehlung', y, COLORS.success)
 
     doc.setFontSize(10)
 
-    if (fairnessData.recommendation.shouldDiscussWithTeacher) {
+    if (recommendation.shouldContactTeacher) {
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...COLORS.secondary)
       doc.text('Gespräch mit Lehrer empfohlen', 20, y)
+      if (recommendation.urgency) {
+        const urgLabel = recommendation.urgency === 'high' ? 'Dringend' :
+                         recommendation.urgency === 'medium' ? 'Bald' : 'Optional'
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.text(`Dringlichkeit: ${urgLabel}`, pageWidth - 20, y, { align: 'right' })
+      }
     } else {
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...COLORS.success)
-      doc.text('Kein Gespräch nötig', 20, y)
+      doc.text('Kein Gespräch notwendig', 20, y)
     }
-    y += 8
+    y += 7
 
-    if (fairnessData.recommendation.suggestedApproach) {
+    if (recommendation.approach) {
       doc.setTextColor(...COLORS.dark)
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      const approachLines = doc.splitTextToSize(fairnessData.recommendation.suggestedApproach, pageWidth - 40)
+      const approachLines = doc.splitTextToSize(recommendation.approach, pageWidth - 40)
       doc.text(approachLines, 20, y)
-      y += approachLines.length * 5 + 5
+      y += approachLines.length * 4.5 + 4
     }
 
-    if (fairnessData.recommendation.questionsToAsk) {
+    if (recommendation.specificPoints && recommendation.specificPoints.length > 0) {
+      y = checkNewPage(doc, y, 20)
       doc.setFont('helvetica', 'bold')
-      doc.text('Fragen für das Gespräch:', 20, y)
-      y += 6
-
+      doc.setFontSize(9)
+      doc.setTextColor(...COLORS.dark)
+      doc.text('Konkrete Punkte ansprechen:', 20, y)
+      y += 5
       doc.setFont('helvetica', 'normal')
-      fairnessData.recommendation.questionsToAsk.forEach((q: string) => {
-        y = checkNewPage(doc, y, 10)
-        doc.text(`• ${q}`, 25, y)
-        y += 5
+      recommendation.specificPoints.forEach((pt: string) => {
+        y = checkNewPage(doc, y, 8)
+        const ptLines = doc.splitTextToSize(`• ${pt}`, pageWidth - 45)
+        doc.text(ptLines, 25, y)
+        y += ptLines.length * 4.5
       })
+      y += 3
+    }
+
+    if (recommendation.sampleOpener) {
+      y = checkNewPage(doc, y, 20)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(...COLORS.primary)
+      doc.text('Gesprächseinstieg:', 20, y)
+      y += 5
+      doc.setFont('helvetica', 'italic')
+      doc.setTextColor(...COLORS.dark)
+      const openerLines = doc.splitTextToSize(`"${recommendation.sampleOpener}"`, pageWidth - 45)
+      doc.text(openerLines, 25, y)
+      y += openerLines.length * 4.5 + 4
     }
   }
 
-  // Disclaimer
+  // ── Disclaimer ────────────────────────────────────────────────
   y = checkNewPage(doc, y, 20)
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.gray)
   doc.text(
-    fairnessData.disclaimer || 'Diese Analyse dient nur zur Orientierung. Im Zweifel sprechen Sie direkt mit dem Lehrer.',
+    'Diese Analyse dient nur zur Orientierung. Im Zweifel sprechen Sie direkt mit dem Lehrer.',
     pageWidth / 2,
     y + 10,
     { align: 'center' }
   )
 
-  addFooter(doc, 1)
+  // Footers on all pages
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addFooter(doc, i)
+  }
+
   doc.save(`GradeAI_Fairness-Check_${options.childName || 'Export'}.pdf`)
 }
 
@@ -692,7 +981,7 @@ export function generateLearningMaterialPDF(materialData: any, options: PDFOptio
   }
 
   // Add footers to all pages
-  const totalPages = doc.internal.pages.length - 1
+  const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
     addFooter(doc, i)
@@ -759,4 +1048,190 @@ export function generateCombinedReportPDF(
 
   addFooter(doc, 1)
   doc.save(`GradeAI_Bericht_${options.childName || 'Export'}.pdf`)
+}
+
+// ============================================
+// PARENT REPORT PDF
+// ============================================
+
+export function generateReportPDF(reportData: any, options: PDFOptions = {}): void {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  let y = addHeader(doc, 'Elternbericht', options)
+
+  const grade = reportData?.grade?.value || '—'
+  const subject = reportData?.test?.subject || options.subject || ''
+  const studentName = reportData?.student?.name || options.childName || ''
+  const date = reportData?.test?.date || options.date || new Date().toLocaleDateString('de-DE')
+
+  // ── Student / Grade summary box ───────────────────────────────
+  doc.setFillColor(...COLORS.light)
+  doc.roundedRect(15, y, pageWidth - 30, 28, 3, 3, 'F')
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...COLORS.dark)
+  doc.text(studentName || 'Schüler/in', 20, y + 8)
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...COLORS.gray)
+  const meta = [subject, reportData?.student?.class, date].filter(Boolean).join(' · ')
+  doc.text(meta, 20, y + 14)
+
+  // Grade badge
+  const gradeStr = String(grade)
+  doc.setFontSize(22)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...COLORS.primary)
+  doc.text(gradeStr, pageWidth - 20, y + 16, { align: 'right' })
+
+  if (reportData?.grade?.description) {
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...COLORS.gray)
+    doc.text(reportData.grade.description, pageWidth - 20, y + 22, { align: 'right' })
+  }
+
+  doc.setTextColor(...COLORS.dark)
+  y += 35
+
+  // ── Message to parents ─────────────────────────────────────────
+  if (reportData?.messages?.toParents) {
+    y = checkNewPage(doc, y, 25)
+    y = addSectionTitle(doc, 'Nachricht an die Eltern', y, COLORS.primary)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    const lines = doc.splitTextToSize(reportData.messages.toParents, pageWidth - 40)
+    doc.text(lines, 20, y)
+    y += lines.length * 4.5 + 6
+  }
+
+  // ── Summary ───────────────────────────────────────────────────
+  const summaryText = typeof reportData?.summary === 'string'
+    ? reportData.summary
+    : reportData?.summary?.oneSentence
+  const keyTakeaways: string[] = reportData?.summary?.keyTakeaways || []
+  const nextStep: string = reportData?.summary?.nextStep || ''
+
+  if (summaryText || keyTakeaways.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Das Wichtigste auf einen Blick', y, COLORS.secondary)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    if (summaryText) {
+      const sl = doc.splitTextToSize(summaryText, pageWidth - 40)
+      doc.text(sl, 20, y)
+      y += sl.length * 4.5 + 4
+    }
+    keyTakeaways.forEach((point) => {
+      y = checkNewPage(doc, y, 8)
+      const pl = doc.splitTextToSize(`• ${point}`, pageWidth - 45)
+      doc.text(pl, 22, y)
+      y += pl.length * 4.5
+    })
+    if (nextStep) {
+      y = checkNewPage(doc, y, 10)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.primary)
+      const nl = doc.splitTextToSize(`→ Nächster Schritt: ${nextStep}`, pageWidth - 40)
+      doc.text(nl, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      y += nl.length * 4.5 + 4
+    }
+    doc.setFont('helvetica', 'normal')
+    y += 3
+  }
+
+  // ── Strengths ─────────────────────────────────────────────────
+  const strengths: any[] = reportData?.strengths || []
+  if (strengths.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Stärken', y, COLORS.success)
+    doc.setFontSize(9)
+    strengths.slice(0, 5).forEach((s: any) => {
+      y = checkNewPage(doc, y, 12)
+      const title = typeof s === 'string' ? s : (s.title || s.point || '')
+      const desc = typeof s === 'string' ? '' : (s.description || s.evidence || '')
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.success)
+      doc.text('✓', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      const tl = doc.splitTextToSize(title, pageWidth - 45)
+      doc.text(tl, 28, y)
+      y += tl.length * 4.5
+      if (desc) {
+        doc.setFont('helvetica', 'normal')
+        const dl = doc.splitTextToSize(desc, pageWidth - 45)
+        doc.text(dl, 28, y)
+        y += dl.length * 4 + 2
+      }
+    })
+    y += 3
+  }
+
+  // ── Weaknesses ────────────────────────────────────────────────
+  const weaknesses: any[] = reportData?.weaknesses || []
+  if (weaknesses.length > 0) {
+    y = checkNewPage(doc, y, 30)
+    y = addSectionTitle(doc, 'Verbesserungsbereiche', y, COLORS.warning)
+    doc.setFontSize(9)
+    weaknesses.slice(0, 5).forEach((w: any) => {
+      y = checkNewPage(doc, y, 12)
+      const title = typeof w === 'string' ? w : (w.title || w.point || '')
+      const desc = typeof w === 'string' ? '' : (w.description || w.rootCause || w.example || '')
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.warning)
+      doc.text('!', 20, y)
+      doc.setTextColor(...COLORS.dark)
+      const tl = doc.splitTextToSize(title, pageWidth - 45)
+      doc.text(tl, 28, y)
+      y += tl.length * 4.5
+      if (desc) {
+        doc.setFont('helvetica', 'normal')
+        const dl = doc.splitTextToSize(desc, pageWidth - 45)
+        doc.text(dl, 28, y)
+        y += dl.length * 4 + 2
+      }
+    })
+    y += 3
+  }
+
+  // ── Immediate Action Plan ─────────────────────────────────────
+  const immediate = reportData?.actionPlan?.immediate
+  if (immediate) {
+    y = checkNewPage(doc, y, 40)
+    y = addSectionTitle(doc, 'Sofortmaßnahmen', y, COLORS.primary)
+    doc.setFontSize(9)
+    if (immediate.goal) {
+      doc.setFont('helvetica', 'bold')
+      const gl = doc.splitTextToSize(`Ziel: ${immediate.goal}`, pageWidth - 40)
+      doc.text(gl, 20, y)
+      y += gl.length * 4.5 + 3
+    }
+    const activities: any[] = immediate.activities || []
+    activities.slice(0, 5).forEach((act: any) => {
+      y = checkNewPage(doc, y, 12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...COLORS.secondary)
+      doc.text(`${act.day || ''}`, 20, y)
+      doc.setTextColor(...COLORS.dark)
+      doc.setFont('helvetica', 'normal')
+      const taskStr = `${act.task || ''}${act.duration ? ` (${act.duration})` : ''}`
+      const tl = doc.splitTextToSize(taskStr, pageWidth - 55)
+      doc.text(tl, 45, y)
+      y += tl.length * 4.5
+    })
+    y += 3
+  }
+
+  // ── Footer on all pages ────────────────────────────────────────
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    addHeader(doc, 'Elternbericht', options)
+    addFooter(doc, i)
+  }
+
+  doc.save(`GradeAI_Elternbericht_${options.childName || 'Export'}.pdf`)
 }

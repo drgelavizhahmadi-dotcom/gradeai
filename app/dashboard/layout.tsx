@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Mail,
 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -61,10 +62,12 @@ export default function DashboardLayout({
   }
 
   const navigation = [
-    { key: 'dashboard', name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { key: 'children', name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
-    { key: 'uploadTest', name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
-    { key: 'subscription', name: 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
+    { name: t.nav?.dashboard || 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: t.nav?.children || 'Children', href: '/dashboard', icon: Users },
+    { name: t.nav?.communication || 'Schulpost', href: '/dashboard/communication', icon: Mail },
+    { name: t.dashboard?.uploadTest || 'Upload Test', href: '/dashboard/upload', icon: Upload },
+    { name: t.nav?.settings || 'Settings', href: '/dashboard/settings', icon: Settings },
+    { name: t.nav?.subscription || 'Subscription', href: '/dashboard/subscription', icon: Sparkles },
   ]
 
   const isActive = (href: string) => {
