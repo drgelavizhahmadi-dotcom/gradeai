@@ -12,6 +12,7 @@ import {
 import {
   SUPPORTED_LANGUAGES,
 } from './prompts/translation-prompt';
+import { runVerificationAgent } from './verification-agent';
 
 export type LanguageCode = keyof typeof SUPPORTED_LANGUAGES;
 
@@ -73,18 +74,11 @@ async function generateReport(extraction: string) {
     const duration = Date.now() - startTime;
 
     console.log('[Report] Done in', duration, 'ms');
-    console.log('[Report] Student:', report.student?.name, '| Grade:', report.grade?.value);
-    console.log('[Report] Has weaknesses:', Array.isArray(report.weaknesses), '| Count:', report.weaknesses?.length || 0);
-    console.log('[Report] Has fairnessCheck:', !!report.fairnessCheck, '| Verdict:', report.fairnessCheck?.verdict);
-    console.log('[Report] Has exercises:', Array.isArray(report.exercises), '| Count:', report.exercises?.length || 0);
-    console.log('[Report] Has flashcards:', Array.isArray(report.flashcards), '| Count:', report.flashcards?.length || 0);
-    console.log('[Report] Has weeklyPlan:', !!report.weeklyPlan);
-    console.log('[Report] Has parentTips:', !!report.parentTips);
 
     return { success: true as const, report, duration };
   } catch (error: any) {
     console.error('[Report] Error:', error.message);
-    return { success: false as const, error: error.message, duration: Date.now() - startTime };
+    return { success: false as const, error: error.message, errorCode: 'ERR_17', duration: Date.now() - startTime };
   }
 }
 
@@ -176,18 +170,6 @@ Respond with ONLY the translated JSON. No explanations.`;
     // Validate and preserve structure - copy any missing fields from original
     translatedReport = preserveStructure(report, translatedReport);
 
-    // Log what was preserved
-    const checkFields = ['weaknesses', 'flashcards', 'exercises', 'weeklyPlan', 'parentTips', 'fairnessCheck'];
-    for (const field of checkFields) {
-      const origCount = Array.isArray(report[field]) ? report[field].length : (report[field] ? 1 : 0);
-      const transCount = Array.isArray(translatedReport[field]) ? translatedReport[field].length : (translatedReport[field] ? 1 : 0);
-      if (transCount < origCount) {
-        console.log(`[Translate] WARNING: ${field} reduced from ${origCount} to ${transCount}`);
-      } else {
-        console.log(`[Translate] ✓ ${field}: ${transCount} items preserved`);
-      }
-    }
-
     // Add language metadata
     translatedReport._meta = {
       language: {
@@ -234,6 +216,17 @@ export async function analyzeTestComplete(
   console.log('[Analyze] Extraction:', extraction.length, 'chars');
   console.log('================================================================');
 
+  // STEP 0: Sanity Check / VerificationAgent
+  const verification = await runVerificationAgent(extraction);
+  if (!verification.valid) {
+    return {
+      success: false as const,
+      error: verification.reason || 'Validation failed',
+      errorCode: verification.errorCode || 'ERR_01',
+      timing: { report: 0, translation: 0, total: Date.now() - totalStart }
+    };
+  }
+
   // STEP 1: Generate comprehensive report (German base - native language of all tests)
   const reportResult = await generateReport(extraction);
 
@@ -241,6 +234,7 @@ export async function analyzeTestComplete(
     return {
       success: false as const,
       error: `Report generation failed: ${reportResult.error}`,
+      errorCode: (reportResult as any).errorCode || 'ERR_17',
       timing: { report: reportResult.duration, translation: 0, total: Date.now() - totalStart },
     };
   }

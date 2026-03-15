@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
         JSON.stringify({
           success: false,
           error: "Too many requests. Please try again later.",
+          errorCode: "ERR_15",
           retryAfter: rateLimitResult.retryAfter,
         }),
         {
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error: "Invalid request parameters",
+            errorCode: "ERR_13",
             issues: error.issues.map((issue) => ({
               path: issue.path.join("."),
               message: issue.message,
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
     const upload = await db.upload.findUnique({ where: { id: uploadId } });
     if (!upload || upload.userId !== userId) {
       return NextResponse.json(
-        { success: false, error: "Upload not found" },
+        { success: false, error: "Upload not found", errorCode: "ERR_14" },
         { status: 404 }
       );
     }
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     if (!rawExtraction) {
       return NextResponse.json(
-        { success: false, error: "No extraction found. Run extract first." },
+        { success: false, error: "No extraction found", errorCode: "ERR_17" },
         { status: 400 }
       );
     }
@@ -207,6 +209,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: errorMessage,
+        errorCode: (error as any).errorCode || "ERR_17",
       },
       { status: 500 }
     );

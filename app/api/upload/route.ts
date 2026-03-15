@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!files || files.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No files provided" },
+        { success: false, error: "No files provided", errorCode: "ERR_13" },
         { status: 400 }
       );
     }
 
     if (!childId) {
       return NextResponse.json(
-        { success: false, error: "Child ID is required" },
+        { success: false, error: "Child ID is required", errorCode: "ERR_13" },
         { status: 400 }
       );
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { success: false, error: error.issues[0].message },
+          { success: false, error: error.issues[0].message, errorCode: "ERR_13" },
           { status: 400 }
         );
       }
@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Total file size (${(totalSize / 1024 / 1024).toFixed(1)}MB) exceeds 4MB limit (Vercel free tier). Please compress or upgrade to Pro.`,
+          error: "Total file size exceeds limit",
+          errorCode: "ERR_10"
         },
         { status: 400 }
       );
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `Invalid file type for ${file.name}. Only JPG and PNG images are supported. Please convert PDFs to images first.`,
+            error: "Invalid file type",
+            errorCode: "ERR_04"
           },
           { status: 400 }
         );
@@ -95,7 +97,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `File ${file.name} exceeds 4MB limit (Vercel constraint). Please compress the file or upgrade to Pro.`,
+            error: "File exceeds size limit",
+            errorCode: "ERR_10"
           },
           { status: 400 }
         );
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     if (!child) {
       return NextResponse.json(
-        { success: false, error: "Child not found" },
+        { success: false, error: "Child not found", errorCode: "ERR_14" },
         { status: 404 }
       );
     }
@@ -117,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Ensure the child belongs to the authenticated user
     if (child.userId !== authenticatedUserId) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized: You can only upload tests for your own children" },
+        { success: false, error: "Unauthorized access", errorCode: "ERR_12" },
         { status: 403 }
       );
     }

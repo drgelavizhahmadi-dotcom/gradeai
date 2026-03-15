@@ -6,6 +6,8 @@ import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Upload, X, FileImage, FileText, Loader2, AlertCircle, Plus, CheckCircle2, Circle, Sparkles, RefreshCw, XCircle } from "lucide-react";
 import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
+import { resolveErrorMessage, isRetryHint } from "@/lib/utils/error-router";
+import ErrorMessage from "@/components/ErrorMessage";
 
 interface UploadZoneProps {
   childId: string;
@@ -423,6 +425,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
   const [failedStep, setFailedStep] = useState<"uploading" | "extracting" | "analyzing" | null>(null);
   const [retryContext, setRetryContext] = useState<{ uploadId: string; images: { base64: string; mimeType: string; pageNumber: number }[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { language } = useLanguage();
@@ -638,6 +641,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
     setIsUploading(true);
     setError(null);
+    setErrorCode(null);
     
     // Determine starting context
     let currentUploadId = retryContext?.uploadId;
@@ -669,8 +673,9 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
           );
         }
 
-        const uploadData: UploadResponse = await uploadRes.json();
+        const uploadData: UploadResponse & { errorCode?: string } = await uploadRes.json();
         if (!uploadRes.ok || !uploadData.success) {
+          setErrorCode(uploadData.errorCode || 'ERR_10'); // Default to file/upload error
           throw new Error(uploadData.error || txt.uploadFailed);
         }
 
@@ -710,6 +715,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
         const extractData = await extractRes.json();
         if (!extractRes.ok || !extractData.success) {
+          setErrorCode(extractData.errorCode || 'ERR_17');
           throw new Error(extractData.error || txt.extractFailed);
         }
         console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
@@ -739,6 +745,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
         const reportData = await reportRes.json();
         if (!reportRes.ok || !reportData.success) {
+          setErrorCode(reportData.errorCode || 'ERR_17');
           throw new Error(reportData.error || txt.reportFailed);
         }
         console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
@@ -790,69 +797,49 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
     <div className="w-full">
       {/* Error Message & Retry UI */}
       {error && failedStep && (
-        <div className="mb-6 card-story overflow-hidden border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--coral)]/10">
-                <XCircle className="h-5 w-5 text-[var(--coral)]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-[var(--gray-900)] mb-1">
-                  {failedStep === "uploading" ? txt.uploadFailed : 
-                   failedStep === "extracting" ? txt.extractFailed : txt.reportFailed}
-                </h3>
-                <p className="text-sm text-[var(--gray-700)] mb-3">
-                  {error}
+        <div className="mb-8">
+          <ErrorMessage 
+            title={failedStep === "uploading" ? txt.uploadFailed : 
+                  failedStep === "extracting" ? txt.extractFailed : txt.reportFailed}
+            message={resolveErrorMessage(errorCode, language) || error}
+            errorCode={errorCode || undefined}
+            onRetry={() => handleUpload(true)}
+            variant="inline"
+          />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="rounded-lg bg-white/60 p-3 text-sm text-[var(--gray-600)] flex-1">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+                <p>
+                  {failedStep === "uploading" ? resolveErrorMessage('ERR_16', language) : 
+                   failedStep === "extracting" ? resolveErrorMessage('HINT_EXTRACT_RETRY', language) : 
+                   resolveErrorMessage('HINT_REPORT_RETRY', language)}
                 </p>
-                <div className="rounded-lg bg-white/60 p-3 text-sm text-[var(--gray-600)] mb-4">
-                  <div className="flex gap-2">
-                    <AlertCircle className="h-4 w-4 text-[var(--coral)] flex-shrink-0 mt-0.5" />
-                    <p>
-                      {failedStep === "uploading" ? txt.retryTipUpload : 
-                       failedStep === "extracting" ? txt.retryTipExtract : txt.retryTipReport}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => handleUpload(true)}
-                    disabled={isUploading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--coral)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--coral-dark)] disabled:opacity-50"
-                  >
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    {txt.retryBtn}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFailedStep(null);
-                      setProcessingStep("idle");
-                      setError(null);
-                      if (retryUploadId) router.push('/dashboard');
-                    }}
-                    disabled={isUploading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-sm ring-1 ring-inset ring-[var(--gray-300)] transition-colors hover:bg-[var(--gray-50)] disabled:opacity-50"
-                  >
-                    {txt.startOverBtn}
-                  </button>
-                </div>
               </div>
             </div>
+            <button
+              onClick={() => {
+                setFailedStep(null);
+                setProcessingStep("idle");
+                setError(null);
+                setErrorCode(null);
+                if (retryUploadId) router.push('/dashboard');
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-sm ring-1 ring-inset ring-[var(--gray-300)] transition-colors hover:bg-[var(--gray-50)]"
+            >
+              {txt.startOverBtn}
+            </button>
           </div>
         </div>
       )}
       
       {error && !failedStep && (
-        <div className="mb-6 card-story p-4 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-[var(--coral)] mb-1">
-                {txt.error}
-              </p>
-              <p className="text-sm text-[var(--gray-700)]">{error}</p>
-            </div>
-          </div>
+        <div className="mb-6">
+          <ErrorMessage 
+            message={resolveErrorMessage(errorCode, language) || error}
+            errorCode={errorCode || undefined}
+            variant="inline"
+          />
         </div>
       )}
 
