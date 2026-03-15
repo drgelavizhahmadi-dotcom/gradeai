@@ -6,6 +6,8 @@ import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Upload, X, FileImage, FileText, Loader2, AlertCircle, Plus, CheckCircle2, Circle, Sparkles, RefreshCw, XCircle } from "lucide-react";
 import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
+import { resolveErrorMessage, isRetryHint } from "@/lib/utils/error-router";
+import ErrorMessage from "@/components/ErrorMessage";
 
 interface UploadZoneProps {
   childId: string;
@@ -22,6 +24,7 @@ const uploadTexts: Record<string, {
   stepUpload: string;
   stepExtract: string;
   stepReport: string;
+  stepTranslate: string;
   stepDone: string;
   btnUploading: string;
   btnExtracting: string;
@@ -58,6 +61,7 @@ const uploadTexts: Record<string, {
     stepUpload: 'Dateien hochladen',
     stepExtract: 'Text extrahieren (KI-Vision)',
     stepReport: 'Bericht erstellen (KI-Analyse)',
+    stepTranslate: 'Bericht übersetzen',
     stepDone: 'Fertig!',
     btnUploading: 'Hochladen...',
     btnExtracting: 'Text wird extrahiert...',
@@ -94,6 +98,7 @@ const uploadTexts: Record<string, {
     stepUpload: 'Uploading files',
     stepExtract: 'Extracting text (AI Vision)',
     stepReport: 'Generating report (AI Analysis)',
+    stepTranslate: 'Translating report',
     stepDone: 'Done!',
     btnUploading: 'Uploading...',
     btnExtracting: 'Extracting text...',
@@ -129,7 +134,8 @@ const uploadTexts: Record<string, {
     aiRunning: '\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0642\u064a\u062f \u0627\u0644\u062a\u0634\u063a\u064a\u0644',
     stepUpload: '\u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0645\u0644\u0641\u0627\u062a',
     stepExtract: '\u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0627\u0644\u0646\u0635 (\u0631\u0624\u064a\u0629 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a)',
-    stepReport: '\u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 (\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a)',
+    stepReport: '\u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 (\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u062a\u0642\u0646\u064a)',
+    stepTranslate: '\u062a\u0631\u062c\u0645\u0629 \u0627\u0644\u062a\u0642\u0641\u064a\u0631',
     stepDone: '\u062a\u0645!',
     btnUploading: '\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...',
     btnExtracting: '\u062c\u0627\u0631\u064a \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0627\u0644\u0646\u0635...',
@@ -166,6 +172,7 @@ const uploadTexts: Record<string, {
     stepUpload: 'Dosyalar y\u00fckleniyor',
     stepExtract: 'Metin \u00e7\u0131kar\u0131l\u0131yor (Yapay Zeka)',
     stepReport: 'Rapor olu\u015fturuluyor (Yapay Zeka)',
+    stepTranslate: 'Rapor \u00e7evriliyor',
     stepDone: 'Tamamland\u0131!',
     btnUploading: 'Y\u00fckleniyor...',
     btnExtracting: 'Metin \u00e7\u0131kar\u0131l\u0131yor...',
@@ -202,6 +209,7 @@ const uploadTexts: Record<string, {
     stepUpload: '\u00cenc\u0103rcarea fi\u015fierelor',
     stepExtract: 'Extragerea textului (AI Vision)',
     stepReport: 'Generarea raportului (Analiz\u0103 AI)',
+    stepTranslate: 'Traducerea raportului',
     stepDone: 'Gata!',
     btnUploading: 'Se \u00eenc\u0103rc\u0103...',
     btnExtracting: 'Se extrage textul...',
@@ -238,6 +246,7 @@ const uploadTexts: Record<string, {
     stepUpload: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0444\u0430\u0439\u043b\u043e\u0432',
     stepExtract: '\u0418\u0437\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u0435 \u0442\u0435\u043a\u0441\u0442\u0430 (\u0418\u0418)',
     stepReport: '\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u043e\u0442\u0447\u0451\u0442\u0430 (\u0418\u0418)',
+    stepTranslate: '\u041f\u0435\u0440\u0435\u0432\u043e\u0434 \u043e\u0442\u0447\u0435\u0442\u0430',
     stepDone: '\u0413\u043e\u0442\u043e\u0432\u043e!',
     btnUploading: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...',
     btnExtracting: '\u0418\u0437\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u0435 \u0442\u0435\u043a\u0441\u0442\u0430...',
@@ -274,6 +283,7 @@ const uploadTexts: Record<string, {
     stepUpload: '\u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc \u0641\u0627\u06cc\u0644\u200c\u0647\u0627',
     stepExtract: '\u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0645\u062a\u0646 (\u0647\u0648\u0634 \u0645\u0635\u0646\u0648\u0639\u06cc)',
     stepReport: '\u0627\u06cc\u062c\u0627\u062f \u06af\u0632\u0627\u0631\u0634 (\u062a\u062d\u0644\u06cc\u0644 \u0647\u0648\u0634 \u0645\u0635\u0646\u0648\u0639\u06cc)',
+    stepTranslate: '\u062a\u0631\u062c\u0645\u0647 \u06af\u0632\u0627\u0631\u0634',
     stepDone: '\u0627\u0646\u062c\u0627\u0645 \u0634\u062f!',
     btnUploading: '\u062f\u0631 \u062d\u0627\u0644 \u0628\u0627\u0631\u06af\u0630\u0627\u0631\u06cc...',
     btnExtracting: '\u062f\u0631 \u062d\u0627\u0644 \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0645\u062a\u0646...',
@@ -310,6 +320,7 @@ const uploadTexts: Record<string, {
     stepUpload: '\u0628\u0627\u0631\u06a9\u0631\u062f\u0646\u06cc \u0641\u0627\u06cc\u0644\u06d5\u06a9\u0627\u0646',
     stepExtract: '\u062f\u06d5\u0631\u0647\u06ce\u0646\u0627\u0646\u06cc \u062f\u06d5\u0642 (\u0632\u06cc\u0631\u06d5\u06a9\u06cc \u062f\u06d5\u0633\u062a\u06a9\u0631\u062f)',
     stepReport: '\u062f\u0631\u0648\u0633\u062a\u06a9\u0631\u062f\u0646\u06cc \u0695\u0627\u067e\u06c6\u0631\u062a (\u0634\u06cc\u06a9\u0627\u0631\u06cc)',
+    stepTranslate: '\u0648\u06d5\u0631\u06af\u06ce\u0695\u0627\u0646\u06cc \u0695\u0627\u067e\u06c6\u0631\u062a',
     stepDone: '\u062a\u06d5\u0648\u0627\u0648 \u0628\u0648\u0648!',
     btnUploading: '\u0628\u0627\u0631\u062f\u06d5\u06a9\u0631\u06ce\u062a...',
     btnExtracting: '\u062f\u06d5\u0642 \u062d\u06d5\u0644\u062f\u06d5\u0643\u0631\u062f\u0646...',
@@ -346,6 +357,7 @@ const uploadTexts: Record<string, {
     stepUpload: 'Dosye tên barkirin',
     stepExtract: 'Nivîs tê derxistin (AI)',
     stepReport: 'Rapor tê çêkirin (AI)',
+    stepTranslate: 'Rapor tê wergerandin',
     stepDone: 'Qediya!',
     btnUploading: 'Tê barkirin...',
     btnExtracting: 'Nivîs tê derxistin...',
@@ -383,7 +395,7 @@ interface UploadResponse {
   error?: string;
 }
 
-type ProcessingStep = "idle" | "uploading" | "extracting" | "analyzing" | "complete" | "error";
+type ProcessingStep = "idle" | "uploading" | "extracting" | "analyzing" | "translating" | "complete" | "error";
 
 // Validation schema is created per-render to use current language
 const getFileSchema = (t: typeof uploadTexts['de']) => z.object({
@@ -413,6 +425,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
   const [failedStep, setFailedStep] = useState<"uploading" | "extracting" | "analyzing" | null>(null);
   const [retryContext, setRetryContext] = useState<{ uploadId: string; images: { base64: string; mimeType: string; pageNumber: number }[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { language } = useLanguage();
@@ -628,6 +641,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
     setIsUploading(true);
     setError(null);
+    setErrorCode(null);
     
     // Determine starting context
     let currentUploadId = retryContext?.uploadId;
@@ -659,8 +673,9 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
           );
         }
 
-        const uploadData: UploadResponse = await uploadRes.json();
+        const uploadData: UploadResponse & { errorCode?: string } = await uploadRes.json();
         if (!uploadRes.ok || !uploadData.success) {
+          setErrorCode(uploadData.errorCode || 'ERR_10'); // Default to file/upload error
           throw new Error(uploadData.error || txt.uploadFailed);
         }
 
@@ -700,6 +715,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
         const extractData = await extractRes.json();
         if (!extractRes.ok || !extractData.success) {
+          setErrorCode(extractData.errorCode || 'ERR_17');
           throw new Error(extractData.error || txt.extractFailed);
         }
         console.log(`[UploadZone] Step 2 complete: ${extractData.extractionLength} chars extracted`);
@@ -729,9 +745,27 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
 
         const reportData = await reportRes.json();
         if (!reportRes.ok || !reportData.success) {
+          setErrorCode(reportData.errorCode || 'ERR_17');
           throw new Error(reportData.error || txt.reportFailed);
         }
         console.log(`[UploadZone] Step 3 complete: grade=${reportData.grade}`);
+
+        // === STEP 4: Translate (Conditional) ===
+        if (language !== 'de') {
+          setProcessingStep("translating");
+          console.log(`[UploadZone] Step 4: Translating report to ${language}...`);
+          const translateRes = await fetch("/api/ai/translate-report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uploadId: currentUploadId, language }),
+          });
+          
+          if (!translateRes.ok) {
+            console.warn("[UploadZone] Proactive translation failed, but continuing to report page.");
+          } else {
+            console.log("[UploadZone] Step 4 complete: Proactive translation saved.");
+          }
+        }
       } catch (err) {
         console.error("[UploadZone] Report Error:", err);
         setError(err instanceof Error ? err.message : txt.reportFailed);
@@ -755,6 +789,7 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
     { step: "uploading" as const, label: txt.stepUpload },
     { step: "extracting" as const, label: txt.stepExtract },
     { step: "analyzing" as const, label: txt.stepReport },
+    ...(language !== 'de' ? [{ step: "translating" as const, label: txt.stepTranslate }] : []),
     { step: "complete" as const, label: txt.stepDone },
   ];
 
@@ -762,69 +797,49 @@ export default function UploadZone({ childId, retryUploadId }: UploadZoneProps) 
     <div className="w-full">
       {/* Error Message & Retry UI */}
       {error && failedStep && (
-        <div className="mb-6 card-story overflow-hidden border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
-          <div className="p-4 sm:p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--coral)]/10">
-                <XCircle className="h-5 w-5 text-[var(--coral)]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-[var(--gray-900)] mb-1">
-                  {failedStep === "uploading" ? txt.uploadFailed : 
-                   failedStep === "extracting" ? txt.extractFailed : txt.reportFailed}
-                </h3>
-                <p className="text-sm text-[var(--gray-700)] mb-3">
-                  {error}
+        <div className="mb-8">
+          <ErrorMessage 
+            title={failedStep === "uploading" ? txt.uploadFailed : 
+                  failedStep === "extracting" ? txt.extractFailed : txt.reportFailed}
+            message={resolveErrorMessage(errorCode, language) || error}
+            errorCode={errorCode || undefined}
+            onRetry={() => handleUpload(true)}
+            variant="inline"
+          />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="rounded-lg bg-white/60 p-3 text-sm text-[var(--gray-600)] flex-1">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 text-[var(--coral)] flex-shrink-0 mt-0.5" />
+                <p>
+                  {failedStep === "uploading" ? resolveErrorMessage('ERR_16', language) : 
+                   failedStep === "extracting" ? resolveErrorMessage('HINT_EXTRACT_RETRY', language) : 
+                   resolveErrorMessage('HINT_REPORT_RETRY', language)}
                 </p>
-                <div className="rounded-lg bg-white/60 p-3 text-sm text-[var(--gray-600)] mb-4">
-                  <div className="flex gap-2">
-                    <AlertCircle className="h-4 w-4 text-[var(--coral)] flex-shrink-0 mt-0.5" />
-                    <p>
-                      {failedStep === "uploading" ? txt.retryTipUpload : 
-                       failedStep === "extracting" ? txt.retryTipExtract : txt.retryTipReport}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => handleUpload(true)}
-                    disabled={isUploading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--coral)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--coral-dark)] disabled:opacity-50"
-                  >
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    {txt.retryBtn}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFailedStep(null);
-                      setProcessingStep("idle");
-                      setError(null);
-                      if (retryUploadId) router.push('/dashboard');
-                    }}
-                    disabled={isUploading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-sm ring-1 ring-inset ring-[var(--gray-300)] transition-colors hover:bg-[var(--gray-50)] disabled:opacity-50"
-                  >
-                    {txt.startOverBtn}
-                  </button>
-                </div>
               </div>
             </div>
+            <button
+              onClick={() => {
+                setFailedStep(null);
+                setProcessingStep("idle");
+                setError(null);
+                setErrorCode(null);
+                if (retryUploadId) router.push('/dashboard');
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-sm ring-1 ring-inset ring-[var(--gray-300)] transition-colors hover:bg-[var(--gray-50)]"
+            >
+              {txt.startOverBtn}
+            </button>
           </div>
         </div>
       )}
       
       {error && !failedStep && (
-        <div className="mb-6 card-story p-4 border-2 border-[var(--coral)]/30 bg-[var(--coral)]/5">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-[var(--coral)] flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-[var(--coral)] mb-1">
-                {txt.error}
-              </p>
-              <p className="text-sm text-[var(--gray-700)]">{error}</p>
-            </div>
-          </div>
+        <div className="mb-6">
+          <ErrorMessage 
+            message={resolveErrorMessage(errorCode, language) || error}
+            errorCode={errorCode || undefined}
+            variant="inline"
+          />
         </div>
       )}
 

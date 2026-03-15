@@ -104,6 +104,7 @@ model Upload {
   fairnessCheck    Json?
   learningMaterial Json?
   errorMessage     String?
+  errorCode        String?
   uploadedAt       DateTime            @default(now())
   processedAt      DateTime?
   child            Child               @relation(fields: [childId], references: [id], onDelete: Cascade)

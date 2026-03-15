@@ -136,7 +136,9 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
     console.log(`[Analysis]   - Confidence: ${multiOcrResult.confidence.toFixed(1)}%`);
 
     if (multiOcrResult.text.length < 50) {
-      throw new Error('Insufficient text extracted from test - image may be blank or unreadable');
+      const error = new Error('Insufficient text extracted');
+      (error as any).errorCode = 'ERR_18';
+      throw error;
     }
     
     // Build Visual Evidence Package from image to reduce OCR noise and enrich AI context
@@ -268,7 +270,8 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
       where: { id: uploadId },
       data: {
         analysisStatus: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
+        errorCode: (error as any).errorCode || 'ERR_17'
       }
     });
 
@@ -279,7 +282,7 @@ export async function analyzeUploadBuffer(uploadId: string, fileBuffers: Buffer 
 /**
  * Stage 1: Reject technical content (database diagrams, code, etc.)
  */
-function containsTechnicalContent(text: string): boolean {
+function getTechnicalError(text: string): string | null {
   const techKeywords = [
     'database', 'frontend', 'backend', 'api', 'postgresql', 'prisma', 'schema',
     'react', 'typescript', 'javascript', 'node.js', 'express', 'mongodb',
@@ -294,13 +297,13 @@ function containsTechnicalContent(text: string): boolean {
   const textLower = text.toLowerCase();
   const matches = techKeywords.filter(keyword => textLower.includes(keyword));
   
-  return matches.length >= 3; // Requires 3+ tech keywords
+  return matches.length >= 3 ? 'ERR_11' : null;
 }
 
 /**
  * Stage 2: Verify content is likely a school test
  */
-function isLikelySchoolTest(text: string): boolean {
+function getSchoolTestError(text: string): string | null {
   const schoolKeywords = [
     'klassenarbeit', 'test', 'klasse', 'aufgabe', 'punkte', 'note', 'fach',
     'schule', 'mathematik', 'deutsch', 'englisch', 'französisch', 'biologie',
@@ -319,13 +322,13 @@ function isLikelySchoolTest(text: string): boolean {
   const textLower = text.toLowerCase();
   const matches = schoolKeywords.filter(keyword => textLower.includes(keyword));
   
-  return matches.length >= 2; // Requires 2+ school keywords
+  return matches.length >= 2 ? null : 'ERR_01';
 }
 
 /**
  * Stage 3: Ensure test is actually graded (not blank/instructions)
  */
-function isActualGradedTest(text: string): boolean {
+function getGradedError(text: string): string | null {
   const textLower = text.toLowerCase();
   
   // Must have grade indicators
@@ -346,5 +349,6 @@ function isActualGradedTest(text: string): boolean {
     (textLower.includes('bearbeiten sie') && !hasGrade)
   );
   
-  return hasGrade && !isInstructions;
+  if (hasGrade && !isInstructions) return null;
+  return 'ERR_07';
 }

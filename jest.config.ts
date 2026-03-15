@@ -29,7 +29,7 @@ const config: Config = {
     },
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(pdfjs-dist|@google-cloud)/)',
+    'node_modules/(?!(pdfjs-dist|@google-cloud|jose|next-auth|openid-client)/)',
   ],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

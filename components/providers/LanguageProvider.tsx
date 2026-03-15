@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { Language, Translations, getTranslation } from '@/lib/translations'
+import { useSession } from 'next-auth/react'
 
 interface LanguageContextType {
   language: Language
@@ -12,26 +13,29 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const { data: session, update: updateSession } = useSession()
   const [language, setLanguageState] = useState<Language>('de')
   const [t, setT] = useState<Translations>(getTranslation('de'))
 
+  // Initialize from session or localStorage
   useEffect(() => {
-    // Load language from localStorage
+    const sessionLang = (session?.user as any)?.language as Language
     const savedLang = localStorage.getItem('language') as Language
-    if (savedLang && ['de', 'en', 'ar', 'tr', 'ro', 'ru', 'fa', 'ku', 'kmr'].includes(savedLang)) {
-      setLanguageState(savedLang)
-      setT(getTranslation(savedLang))
-      
-      // Set dir attribute for RTL languages
-      if (['ar', 'fa', 'ku'].includes(savedLang)) {
-        document.documentElement.dir = 'rtl'
-      } else {
-        document.documentElement.dir = 'ltr'
-      }
-    }
-  }, [])
+    
+    const initialLang = (sessionLang && isValidLanguage(sessionLang)) 
+      ? sessionLang 
+      : (savedLang && isValidLanguage(savedLang)) 
+        ? savedLang 
+        : 'de'
 
-  const setLanguage = (lang: Language) => {
+    applyLanguage(initialLang)
+  }, [session?.user])
+
+  const isValidLanguage = (lang: string): lang is Language => {
+    return ['de', 'en', 'ar', 'tr', 'ro', 'ru', 'fa', 'ku', 'kmr'].includes(lang)
+  }
+
+  const applyLanguage = (lang: Language) => {
     setLanguageState(lang)
     setT(getTranslation(lang))
     localStorage.setItem('language', lang)
@@ -41,6 +45,26 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       document.documentElement.dir = 'rtl'
     } else {
       document.documentElement.dir = 'ltr'
+    }
+  }
+
+  const setLanguage = async (lang: Language) => {
+    applyLanguage(lang)
+    
+    // Persist to DB if user is logged in
+    if (session?.user) {
+      try {
+        await fetch('/api/user/language', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: lang }),
+        })
+        
+        // Update local session to avoid reload lag
+        updateSession({ ...session, user: { ...session.user, language: lang } })
+      } catch (err) {
+        console.error('[LanguageSync] Failed to save preference:', err)
+      }
     }
   }
 

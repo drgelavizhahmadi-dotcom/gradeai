@@ -45,17 +45,18 @@ describe('UploadZone Component', () => {
   })
 
   test('renders upload zone initially', () => {
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
-    expect(screen.getByText('Upload Test Pages')).toBeInTheDocument()
-    expect(screen.getByText(/Accepts JPG, PNG, PDF/)).toBeInTheDocument()
+    expect(screen.getByText(/Upload test pages/i)).toBeInTheDocument()
+    expect(screen.getByText(/JPG, PNG/i)).toBeInTheDocument()
+    expect(screen.getByText(/PDF/i)).toBeInTheDocument()
   })
 
   test('handles file drop', async () => {
     const user = userEvent.setup()
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
-    const dropZone = screen.getByText('Upload Test Pages').closest('div')
+    const dropZone = screen.getByText('Upload test pages').closest('div')
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
     const dropEvent = {
@@ -75,9 +76,9 @@ describe('UploadZone Component', () => {
 
   test('validates file types', async () => {
     const user = userEvent.setup()
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
-    const dropZone = screen.getByText('Upload Test Pages').closest('div')
+    const dropZone = screen.getByText('Upload test pages').closest('div')
 
     const invalidFile = new File(['test'], 'test.txt', { type: 'text/plain' })
     const dropEvent = {
@@ -91,15 +92,15 @@ describe('UploadZone Component', () => {
     fireEvent.drop(dropZone!, dropEvent as any)
 
     await waitFor(() => {
-      expect(screen.getByText(/Only JPG, PNG, and PDF files are allowed/)).toBeInTheDocument()
+      expect(screen.getByText(/Only JPG, PNG and PDF files are allowed/i)).toBeInTheDocument()
     })
   })
 
   test('validates file size', async () => {
     const user = userEvent.setup()
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
-    const dropZone = screen.getByText('Upload Test Pages').closest('div')
+    const dropZone = screen.getByText('Upload test pages').closest('div')
 
     const largeFile = new File(['x'.repeat(5 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' })
     const dropEvent = {
@@ -113,12 +114,12 @@ describe('UploadZone Component', () => {
     fireEvent.drop(dropZone!, dropEvent as any)
 
     await waitFor(() => {
-      expect(screen.getByText(/File must be less than 4.5MB/)).toBeInTheDocument()
+      expect(screen.getByText(/File must be smaller than 4.5 MB/i)).toBeInTheDocument()
     })
   })
 
   test('handles file input change', async () => {
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
@@ -132,9 +133,9 @@ describe('UploadZone Component', () => {
 
   test('removes files', async () => {
     const user = userEvent.setup()
-    render(<UploadZone childId={mockChildId} />)
+    render(<UploadZone childId={mockChildId} retryUploadId={null} />)
 
-    const dropZone = screen.getByText('Upload Test Pages').closest('div')
+    const dropZone = screen.getByText('Upload test pages').closest('div')
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     fireEvent.drop(dropZone!, {

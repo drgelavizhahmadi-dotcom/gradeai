@@ -6,6 +6,7 @@ import { extractWithClaude } from "@/lib/ai/vision/claude-extract";
 import { analyzeTestComplete } from "@/lib/ai/analyze-complete";
 import { z } from "zod";
 import { RateLimiter, getClientIP } from "@/lib/rate-limit";
+import { detectBlurryImage, isBlankImage } from "@/lib/utils/image-processing";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
         JSON.stringify({
           success: false,
           error: "Too many requests. Please try again later.",
+          errorCode: "ERR_15",
           retryAfter: rateLimitResult.retryAfter,
         }),
         {
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error: "Invalid request parameters",
+            errorCode: "ERR_13",
             issues: error.issues.map((issue) => ({
               path: issue.path.join("."),
               message: issue.message,
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
     const upload = await db.upload.findUnique({ where: { id: uploadId } });
     if (!upload || upload.userId !== userId) {
       return NextResponse.json(
-        { success: false, error: "Upload not found" },
+        { success: false, error: "Upload not found", errorCode: "ERR_14" },
         { status: 404 }
       );
     }
@@ -100,6 +103,29 @@ export async function POST(request: NextRequest) {
       where: { id: uploadId },
       data: { analysisStatus: "extracting" },
     });
+
+    // LAYER 0: Pre-check for Blurry or Blank images
+    console.log("[Extract API] Layer 0: Image quality pre-check...");
+    for (const img of images) {
+      const imgBuffer = Buffer.from(img.base64, 'base64');
+      
+      const blankCheck = await isBlankImage(imgBuffer);
+      if (blankCheck) {
+        return NextResponse.json(
+          { success: false, error: "Blank image detected", errorCode: "ERR_18" },
+          { status: 400 }
+        );
+      }
+
+      const blurCheck = await detectBlurryImage(imgBuffer);
+      if (blurCheck.isBlurry) {
+        console.warn(`[Extract API] Blurry image detected (score: ${blurCheck.score}) on page ${img.pageNumber}`);
+        return NextResponse.json(
+          { success: false, error: "Blurry image detected", errorCode: "ERR_03" },
+          { status: 400 }
+        );
+      }
+    }
 
     // LAYER 1: Vision Extraction
     console.log("[Extract API] Layer 1: Vision Extraction...");
@@ -144,16 +170,21 @@ export async function POST(request: NextRequest) {
 
     if (!analysisResult.success) {
       const errorMsg = analysisResult.error || "Unknown analysis error";
-      console.error(`[Extract API] Analysis failed: ${errorMsg}`);
+      const errorCode = analysisResult.errorCode || "ERR_17";
+      console.error(`[Extract API] Analysis failed: ${errorMsg} (${errorCode})`);
       await db.upload.update({
         where: { id: uploadId },
         data: {
           analysisStatus: "failed",
           errorMessage: errorMsg,
+          errorCode: errorCode,
           extractedText: extractResult.extraction,
         },
       });
-      throw new Error(errorMsg);
+      return NextResponse.json(
+        { success: false, error: errorMsg, errorCode: errorCode },
+        { status: 400 }
+      );
     }
 
     console.log(`[Extract API] Analysis complete`);
@@ -221,6 +252,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: error instanceof Error ? error.message : "Extraction failed",
+        errorCode: (error as any).errorCode || "ERR_17",
       },
       { status: 500 }
     );
