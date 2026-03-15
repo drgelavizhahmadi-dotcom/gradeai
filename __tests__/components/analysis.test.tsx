@@ -7,40 +7,7 @@ import AnalysisDisplay from '@/components/AnalysisDisplay'
 import ComprehensiveAnalysis from '@/components/ComprehensiveAnalysis'
 import { LanguageProvider } from '@/components/providers/LanguageProvider'
 
-// Mock the useLanguage hook to return English translations
-jest.mock('@/components/providers/LanguageProvider', () => ({
-  LanguageProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useLanguage: () => ({
-    t: {
-      analysis: {
-        comprehensive: 'Comprehensive Analysis',
-        strengths: 'Strengths',
-        weaknesses: 'Weaknesses',
-        recommendations: 'Recommendations',
-        subject: 'Subject',
-        grade: 'Grade',
-        detectedGrade: 'Detected Grade',
-        ocrConfidence: 'AI Confidence',
-        howAnalyzed: 'How it was analyzed',
-        aiExperts: 'AI Experts',
-        consensusScore: 'Consensus Score',
-        visualEvidence: 'Visual Evidence',
-        extractedText: 'Extracted Text',
-        points: 'Points',
-        correctionDensity: 'Correction Density',
-        teacherComment: 'Teacher Comments',
-        marks: 'Marks',
-        priority: 'Priority',
-        timeframe: 'Timeframe',
-      },
-      upload: {
-        subject: 'Subject',
-      },
-    },
-    language: 'en',
-    setLanguage: jest.fn(),
-  }),
-}))
+// Redundant mock removed - using global mock from jest.setup.ts
 
 // Mock the analysis data
 const mockAnalysisData = {
@@ -197,7 +164,7 @@ describe('ComprehensiveAnalysis Component', () => {
     )
 
     expect(screen.getByText('John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Grade 5')).toBeInTheDocument()
+    expect(screen.getByText(/Grade 5/)).toBeInTheDocument()
     expect(screen.getByText('2023-2024')).toBeInTheDocument()
     expect(screen.getByText('B+')).toBeInTheDocument()
     expect(screen.getByText('Good overall performance with room for improvement')).toBeInTheDocument()
@@ -286,7 +253,7 @@ describe('ComprehensiveAnalysis Component', () => {
     )
 
     expect(screen.getByText('Jane Smith')).toBeInTheDocument()
-    expect(screen.getByText('Grade 3')).toBeInTheDocument()
+    expect(screen.getByText(/Grade 3/)).toBeInTheDocument()
     expect(screen.getByText('Excellent work')).toBeInTheDocument()
   })
 })

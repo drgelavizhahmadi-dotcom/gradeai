@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { useLanguage } from '@/components/providers/LanguageProvider'
 
 interface ErrorMessageProps {
-  title?: string
+  title?: string | undefined
   message: string
-  errorCode?: string
-  onRetry?: () => void
-  variant?: 'inline' | 'card'
+  errorCode?: string | undefined
+  onRetry?: (() => void) | undefined
+  variant?: 'inline' | 'card' | undefined
 }
 
 export default function ErrorMessage({

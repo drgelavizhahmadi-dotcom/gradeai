@@ -14,6 +14,42 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/',
 }))
 
+// Mock next-auth/react
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({
+    data: { user: { id: 'test-user', name: 'Test User' } },
+    status: 'authenticated',
+    update: jest.fn(),
+  })),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+}))
+
+// Mock next-auth (server side)
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  getServerSession: jest.fn(() => Promise.resolve(null)),
+}))
+jest.mock('next-auth/providers/credentials', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}))
+
+// Mock LanguageProvider
+jest.mock('@/components/providers/LanguageProvider', () => {
+  const { getTranslation } = require('@/lib/translations');
+  const enTranslations = getTranslation('en');
+
+  return {
+    LanguageProvider: ({ children }: { children: React.ReactNode }) => children,
+    useLanguage: () => ({
+      language: 'en',
+      setLanguage: jest.fn(),
+      t: enTranslations,
+    }),
+  };
+});
+
 // Mock environment variables
 ;(process.env as any).NODE_ENV = 'test'
 ;(process.env as any).DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
@@ -24,6 +60,9 @@ jest.mock('next/navigation', () => ({
 ;(global as any).fetch = jest.fn()
 ;(global as any).Request = jest.fn()
 ;(global as any).Response = jest.fn()
+import { TextEncoder, TextDecoder } from 'util'
+;(global as any).TextEncoder = TextEncoder
+;(global as any).TextDecoder = TextDecoder
 
 // Mock console methods to reduce noise in tests
 const originalConsoleError = console.error
